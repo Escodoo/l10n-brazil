@@ -33,7 +33,7 @@ Link com informações Oficiais [Translate OCA] (https://odoo-community.org/page
 
 ### Tradução do Core
 
-A Odoo SA utiliza a ferramenta Transifex para gerencair as traduções do Core.
+A Odoo SA utiliza a ferramenta Transifex para gerenciar as traduções do Core.
 
 O serviço de tradução pode ser acessado através do link https://www.transifex.com/odoo/odoo-12/
 
