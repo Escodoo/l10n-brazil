@@ -48,34 +48,7 @@
         </div>
       </div>
     </article>
-    <article class="example">
-      <div class="container">
-        <h2>Example</h2>
-        <div class="row">
-          <section class="column">
-<pre><code class="javascript">import { Component, QWeb, useState } from "owl";
 
-class Counter extends Component {
-  state = useState({ value: 0 });
-
-  increment() {
-    this.state.value++;
-  }
-}
-
-const counter = new Counter();
-counter.mount(document.body);</code></pre>
-          </section>
-          <section class="column">
-<pre><code class="xml">&lt;templates&gt;
-  &lt;button t-name=&quot;Counter&quot; t-on-click=&quot;increment&quot;&gt;
-    Click Me! [&lt;t t-esc=&quot;state.value&quot;/&gt;]
-  &lt;/button&gt;
-&lt;/templates&gt;</code></pre>
-          </section>
-        </div>
-      </div>
-    </article>
     <article class="example">
       <div class="container">
         <h2>Indices e Tabelas</h2>
