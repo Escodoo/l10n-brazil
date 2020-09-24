@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo noupdate="1">
+<odoo noupdate="0">
 
     <!-- Account Fiscal Position Template for Sale -->
     <record id="fp_template_sale" model="account.fiscal.position.template">
