@@ -2335,7 +2335,7 @@ class NFref(models.AbstractModel):
     _generateds_type = 'NFrefType'
     _concrete_rec_name = 'nfe40_refNFe'
 
-    nfe40_NFref_ide_id = fields.Many2one(
+    key_nfe40_NFref_ide_id = fields.Many2one(
         "nfe.40.ide")
     nfe40_choice4 = fields.Selection([
         ('nfe40_refNFe', 'refNFe'),
@@ -4025,7 +4025,7 @@ class Ide(models.AbstractModel):
         xsd_type="xJustType")
     nfe40_NFref = fields.One2many(
         "nfe.40.nfref",
-        "nfe40_NFref_ide_id",
+        "key_nfe40_NFref_ide_id",
         string="Grupo de infromações da NF referenciada"
     )
 
