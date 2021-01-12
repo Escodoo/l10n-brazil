@@ -4977,7 +4977,7 @@ class Transp(models.AbstractModel):
         xsd_type="balsaType")
     nfe40_vol = fields.One2many(
         "nfe.40.vol",
-        "nfe40_vol_transp_id",
+        "key_nfe40_vol_transp_id",
         string="Dados dos volumes"
     )
 
@@ -5154,7 +5154,7 @@ class Vol(models.AbstractModel):
     _generateds_type = 'volType'
     _concrete_rec_name = 'nfe40_qVol'
 
-    nfe40_vol_transp_id = fields.Many2one(
+    key_nfe40_vol_transp_id = fields.Many2one(
         "nfe.40.transp")
     nfe40_qVol = fields.Char(
         string="Quantidade de volumes transportados",
