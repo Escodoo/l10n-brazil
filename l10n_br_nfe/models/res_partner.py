@@ -13,8 +13,7 @@ class ResPartner(spec_models.SpecModel):
     # should we stack tendereco from dest? will m2o to tendereco work?
     # can we use related fields and context views to avoid troubles?
     _name = 'res.partner'
-    _inherit = ['res.partner', 'nfe.40.tendereco',
-                'nfe.40.tlocal', 'nfe.40.dest', 'nfe.40.tenderemi']
+    _inherit = ['res.partner', 'nfe.40.dest']
     _nfe_search_keys = ['nfe40_CNPJ', 'nfe40_CPF', 'nfe40_xNome']
 
     @api.model
@@ -32,6 +31,8 @@ class ResPartner(spec_models.SpecModel):
     nfe40_CPF = fields.Char(compute='_compute_nfe_data',
                             inverse='_inverse_nfe40_CNPJ',
                             store=True)
+    nfe40_idEstrangeiro = fields.Char()
+
     nfe40_xLgr = fields.Char(related='street', readonly=False)
     nfe40_nro = fields.Char(related='street_number', readonly=False)
     nfe40_xCpl = fields.Char(related='street2', readonly=False)
@@ -49,13 +50,13 @@ class ResPartner(spec_models.SpecModel):
     nfe40_fone = fields.Char(related='phone', readonly=False)  # TODO mobile?
 
     # nfe.40.dest
-#    nfe40_idEstrangeiro = fields.Char(
     nfe40_xNome = fields.Char(related='legal_name')
     nfe40_enderDest = fields.Many2one('res.partner',
                                       compute='_compute_nfe40_enderDest')
     nfe40_indIEDest = fields.Selection(related='ind_ie_dest')
     nfe40_IE = fields.Char(related='inscr_est')
     nfe40_ISUF = fields.Char(related='suframa')
+    nfe40_IM = fields.Char(related='inscr_mun')
     nfe40_email = fields.Char(related='email')
 
     @api.multi
