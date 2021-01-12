@@ -3597,7 +3597,7 @@ class DetPag(models.AbstractModel):
     _generateds_type = 'detPagType'
     _concrete_rec_name = 'nfe40_indPag'
 
-    nfe40_detPag_pag_id = fields.Many2one(
+    key_nfe40_detPag_pag_id = fields.Many2one(
         "nfe.40.pag")
     nfe40_indPag = fields.Selection(
         INDPAG_DETPAG,
@@ -4432,7 +4432,7 @@ class Pag(models.AbstractModel):
 
     nfe40_detPag = fields.One2many(
         "nfe.40.detpag",
-        "nfe40_detPag_pag_id",
+        "key_nfe40_detPag_pag_id",
         string="Grupo de detalhamento da forma de pagamento",
         xsd_required=True
     )
