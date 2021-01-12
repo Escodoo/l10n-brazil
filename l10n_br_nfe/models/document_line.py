@@ -121,6 +121,10 @@ class NFeLine(spec_models.StackedModel):
         related='icms_base_type',
     )
 
+    nfe40_vBC = fields.Monetary(
+       related='icms_base', readonly=False
+    )
+
     nfe40_vICMS = fields.Monetary(
         related='icms_value',
     )
