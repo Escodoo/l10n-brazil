@@ -3572,7 +3572,7 @@ class Det(models.AbstractModel):
     _generateds_type = 'detType'
     _concrete_rec_name = 'nfe40_nItem'
 
-    nfe40_det_infNFe_id = fields.Many2one(
+    key_nfe40_det_infNFe_id = fields.Many2one(
         "nfe.40.infnfe")
     nfe40_nItem = fields.Char(
         string="nItem", xsd_required=True,
@@ -4150,7 +4150,7 @@ class InfNFe(models.AbstractModel):
     )
     nfe40_det = fields.One2many(
         "nfe.40.det",
-        "nfe40_det_infNFe_id",
+        "key_nfe40_det_infNFe_id",
         string="Dados dos detalhes da NF-e",
         xsd_required=True
     )
