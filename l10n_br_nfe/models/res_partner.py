@@ -8,7 +8,7 @@ from odoo.addons.spec_driven_model.models import spec_models
 
 class ResPartner(spec_models.StackedModel):
     _name = 'res.partner'
-    _inherit = ['res.partner', 'nfe.40.dest']
+    _inherit = ['res.partner', 'nfe.40.dest', 'nfe.40.transporta']
     _stacked = 'nfe.40.dest'
     _field_prefix = 'nfe40_'
     _schema_name = 'nfe'
@@ -53,6 +53,8 @@ class ResPartner(spec_models.StackedModel):
     nfe40_IM = fields.Char(related='inscr_mun')
     nfe40_email = fields.Char(related='email')
 
+    nfe40_xEnder = fields.Char(compute='_compute_nfe_data')
+
     @api.multi
     def _compute_nfe40_enderDest(self):
         for rec in self:
@@ -69,6 +71,10 @@ class ResPartner(spec_models.StackedModel):
                     rec.nfe40_CPF = rec.cnpj_cpf
             rec.nfe40_cMun = "%s%s" % (rec.state_id.ibge_code,
                                        rec.city_id.ibge_code)
+            rec.nfe40_xEnder = "%s, %s" % (rec.street,
+                                           rec.street_number)
+            if rec.street2:
+                rec.nfe40_xEnder += " - %s" % (rec.street2)
 
     def _inverse_nfe40_CNPJ(self):
         for rec in self:
