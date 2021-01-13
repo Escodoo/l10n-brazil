@@ -39,16 +39,16 @@
               <button name="view_pdf" type="object" string="Visualizar PDF" groups="l10n_br_fiscal.group_user" states="autorizada" class="btn-primary"/>
               <button name="gera_pdf" type="object" string="Gerar PDF" groups="l10n_br_fiscal.group_user" states="autorizada" class="btn-primary"/>
           </button>
-          <page name="amounts" position="after">
-              <page name="pag" string="Pagamento">
-                  <group>
-                      <field name="nfe40_detPag"/>
-                  </group>
-                  <group>
-                      <field name="nfe40_cobr"/>
-                  </group>
-              </page>
+
+          <page name="finance" position="inside">
+              <group>
+                  <field name="nfe40_detPag"/>
+              </group>
+              <group>
+                  <field name="nfe40_cobr"/>
+              </group>
           </page>
+
           <field name="state_fiscal" position="after">
               <field name="nfe40_infAdic"/>
           </field>
