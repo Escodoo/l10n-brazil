@@ -191,7 +191,7 @@
                 </tree>
               </field>
             </page>
-            <page nam="finance" string="Finance">
+            <page name="finance" string="Finance">
 
             </page>
 
