@@ -210,6 +210,21 @@ class NFe(spec_models.StackedModel):
         related='amount_freight_value',
     )
 
+    nfe40_transporta = fields.Many2one(
+        "delivery.carrier",
+    )
+
+    def _get_transporta(self):
+        for doc in self:  # TODO if out
+            doc.nfe40_transporta = doc.carrier_id.partner_id
+            doc.nfe40_choice19 = 'CNPJ'
+
+    nfe40_transporta = fields.Many2one('res.partner', compute='_get_transporta',
+                                 readonly=True, string="Transporta")
+
+    nfe40_choice19 = fields.Char(compute='_get_transporta')
+    nfe40_xEnder = fields.Char(compute='_get_transporta')
+
     @api.multi
     @api.depends('fiscal_operation_type')
     def _compute_nfe_data(self):

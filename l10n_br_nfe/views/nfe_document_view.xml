@@ -88,6 +88,15 @@
               <field name="partner_zip"/>
               <field name="partner_phone"/>
           </field>
+          <page name="delivery" position="inside">
+              <group>
+                  <field name="nfe40_modFrete"/>
+                  <field name="nfe40_transporta"/>
+              </group>
+              <group>
+                  <field name="nfe40_vol"/>
+              </group>
+          </page>
       </field>
   </record>
 
