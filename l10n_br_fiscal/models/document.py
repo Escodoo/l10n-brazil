@@ -678,6 +678,11 @@ class Document(models.Model):
         string='DF-e Consult',
     )
 
+    carrier_id = fields.Many2one(
+        comodel_name='delivery.carrier',
+        string='Carrier',
+    )
+
     # Você não vai poder fazer isso em modelos que já tem state
     # TODO Porque não usar o campo state do fiscal.document???
     state = fields.Selection(

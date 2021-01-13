@@ -14,6 +14,8 @@
         "uom",
         "decimal_precision",
         "product",
+        "delivery",
+        "delivery_carrier_partner",
         "l10n_br_base",
     ],
     "data": [
