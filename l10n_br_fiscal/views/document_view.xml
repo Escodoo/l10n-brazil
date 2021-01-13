@@ -193,7 +193,6 @@
             </page>
             <page name="finance" string="Finance">
             </page>
-            <page name="others" string="Others">
 
             <page name="delivery" string="Delivery">
                 <group>
