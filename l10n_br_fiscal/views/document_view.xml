@@ -201,7 +201,7 @@
                 </group>
             </page>
 
-            <page nam="others" string="Others">
+            <page name="others" string="Others">
                 <group>
                     <field name="operation_name"/>
                 </group>
