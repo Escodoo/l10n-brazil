@@ -3376,7 +3376,7 @@ class Cobr(models.AbstractModel):
         string="Dados da fatura")
     nfe40_dup = fields.One2many(
         "nfe.40.dup",
-        "nfe40_dup_cobr_id",
+        "key_nfe40_dup_cobr_id",
         string="Dados das duplicatas NT 2011/004"
     )
 
@@ -3668,7 +3668,7 @@ class Dup(models.AbstractModel):
     _generateds_type = 'dupType'
     _concrete_rec_name = 'nfe40_nDup'
 
-    nfe40_dup_cobr_id = fields.Many2one(
+    key_nfe40_dup_cobr_id = fields.Many2one(
         "nfe.40.cobr")
     nfe40_nDup = fields.Char(
         string="Número da duplicata",
