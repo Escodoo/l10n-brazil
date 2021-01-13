@@ -192,7 +192,15 @@
               </field>
             </page>
             <page nam="finance" string="Finance">
+
             </page>
+
+            <page name="delivery" string="Delivery">
+                <group>
+                    <field name="carrier_id"/>
+                </group>
+            </page>
+
             <page nam="others" string="Others">
                 <group>
                     <field name="operation_name"/>
