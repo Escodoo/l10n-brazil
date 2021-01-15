@@ -350,18 +350,18 @@ class NFe(spec_models.StackedModel):
         super()._document_export()
         for record in self.filtered(filter_processador_edoc_nfe):
             # TODO map this better
-            total = sum(self.line_ids.filtered(
-                lambda l: l.cfop_id.finance_move).mapped('amount_total'))
-            tpag = '99'
-            if not total:
-                tpag = '90'
-
-            record.nfe40_detPag = [(5, 0, 0), (0, 0, {
-                'nfe40_indPag': '0',
-                'nfe40_tPag': tpag,
-                'nfe40_vPag': total,
-            })]
-            record.nfe40_detPag.__class__._field_prefix = 'nfe40_'
+            # total = sum(self.line_ids.filtered(
+            #     lambda l: l.cfop_id.finance_move).mapped('amount_total'))
+            # tpag = '99'
+            # if not total:
+            #     tpag = '90'
+            #
+            # record.nfe40_detPag = [(5, 0, 0), (0, 0, {
+            #     'nfe40_indPag': '0',
+            #     'nfe40_tPag': tpag,
+            #     'nfe40_vPag': total,
+            # })]
+            # record.nfe40_detPag.__class__._field_prefix = 'nfe40_'
 
             edoc = record.serialize()[0]
             processador = record._processador()
