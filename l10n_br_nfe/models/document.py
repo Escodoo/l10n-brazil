@@ -210,6 +210,10 @@ class NFe(spec_models.StackedModel):
         related='amount_freight_value',
     )
 
+    nfe40_vTotTrib = fields.Monetary(
+        related='amount_estimate_tax'
+    )
+
     nfe40_transporta = fields.Many2one(
         "delivery.carrier",
     )
