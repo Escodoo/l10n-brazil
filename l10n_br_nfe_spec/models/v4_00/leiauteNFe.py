@@ -1562,6 +1562,62 @@ class DI(models.AbstractModel):
         string="Adições (NT 2011/004)", xsd_required=True
     )
 
+class ICMS00(models.AbstractModel):
+    """Tributação pelo ICMS
+    00 - Tributada integralmente"""
+    _description = textwrap.dedent("    %s" % (__doc__,))
+    _name = 'nfe.40.icms00'
+    _inherit = 'spec.mixin.nfe'
+    _generateds_type = 'ICMS00Type'
+    _concrete_rec_name = 'nfe40_orig'
+
+    nfe40_orig = fields.Selection(
+        TORIG,
+        string="origem da mercadoria: 0 - Nacional",
+        xsd_required=True,
+        help="Tipo Origem da mercadoria CST ICMS origem da mercadoria")
+    nfe40_CST = fields.Selection(
+        CST_ICMS00,
+        string="Tributção pelo ICMS", xsd=True, xsd_required=True,
+        xsd_type="CSTType",
+        help="Tributção pelo ICMS"
+        "\n00 - Tributada integralmente")
+    nfe40_modBC = fields.Selection(
+        MODBC_ICMS00,
+        string="Modalidade de determinação da BC do ICMS",
+        xsd_required=True,
+        help="Modalidade de determinação da BC do ICMS:"
+        "\n0 - Margem Valor Agregado (%);"
+        "\n1 - Pauta (valor);"
+        "\n2 - Preço Tabelado Máximo (valor);"
+        "\n3 - Valor da Operação.")
+    nfe40_vBC = fields.Monetary(
+        currency_field="brl_currency_id",
+        xsd_required=True,
+        xsd_type="TDec_1302",
+        digits=2, string="Valor da BC do ICMS")
+    nfe40_pICMS = fields.Monetary(
+        currency_field="brl_currency_id",
+        xsd_type="TDec_0302a04Opc",
+        digits=2, string="Alíquota do ICMS")
+    nfe40_vICMS = fields.Monetary(
+        currency_field="brl_currency_id",
+        xsd_required=True,
+        xsd_type="TDec_1302",
+        digits=2, string="Valor do ICMS")
+    nfe40_pFCP = fields.Monetary(
+        currency_field="brl_currency_id",
+        digits=2,
+        string="Percentual de ICMS relativo ao Fundo de Combate à Pobreza",
+        xsd_type="TDec_0302a04Opc",
+        help="Percentual de ICMS relativo ao Fundo de Combate à Pobreza"
+        "\n(FCP).")
+    nfe40_vFCP = fields.Monetary(
+        currency_field="brl_currency_id",
+        digits=2,
+        string="Valor do ICMS relativo ao Fundo de Combate à Pobreza",
+        xsd_type="TDec_1302",
+        help="Valor do ICMS relativo ao Fundo de Combate à Pobreza (FCP).")
 
 class ICMSPart(models.AbstractModel):
     """Partilha do ICMS entre a UF de origem e UF de destino ou a UF definida
@@ -1905,6 +1961,15 @@ class ICMS(models.AbstractModel):
         ('nfe40_ICMSSN500', 'ICMSSN500'),
         ('nfe40_ICMSSN900', 'ICMSSN900')],
         "ICMS00/ICMS10/ICMS20/ICMS30/ICMS40/ICMS51/ICMS60/I...")
+
+    nfe40_ICMS00 = fields.Many2one(
+        "nfe.40.icms00",
+        choice='11',
+        string="Tributação pelo ICMS",
+        xsd_required=True,
+        help="Tributação pelo ICMS"
+        "\n00 - Tributada integralmente")
+
     nfe40_ICMSPart = fields.Many2one(
         "nfe.40.icmspart",
         choice='11',
