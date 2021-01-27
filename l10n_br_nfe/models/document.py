@@ -305,8 +305,11 @@ class NFe(spec_models.StackedModel):
         edocs = super()._serialize(edocs)
         for record in (self.with_context(
                        {'lang': 'pt_BR'}).filtered(filter_processador_edoc_nfe)):
-            inf_nfe = record.export_ds()[0]
 
+            if record.nfe40_tpAmb == '2':
+                record.nfe40_dest.nfe40_xNome = 'NF-E EMITIDA EM AMBIENTE DE ' \
+                                                'HOMOLOGACAO - SEM VALOR FISCAL'
+            inf_nfe = record.export_ds()[0]
             tnfe = leiauteNFe.TNFe(
                 infNFe=inf_nfe,
                 infNFeSupl=None,
