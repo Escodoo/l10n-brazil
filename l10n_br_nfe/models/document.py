@@ -310,6 +310,9 @@ class NFe(spec_models.StackedModel):
                 infNFeSupl=None,
                 Signature=None)
             nfe_binding.original_tagname_ = 'NFe'
+            if record.nfe40_tpAmb == '2':
+                nfe_binding.infNFe.dest.xNome = 'NF-E EMITIDA EM AMBIENTE DE ' \
+                                                'HOMOLOGACAO - SEM VALOR FISCAL'
         return nfe_binding
 
     def _generate_nfe_xml(self, edocs, nfe_binding):
