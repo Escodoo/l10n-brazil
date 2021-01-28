@@ -82,7 +82,7 @@
         <vTotTrib>0.00</vTotTrib>
         <ICMS>
           <ICMS00>
-            <orig>0</orig>
+            <orig>5</orig>
             <CST>00</CST>
             <modBC>0</modBC>
             <vBC>320.00</vBC>
@@ -113,7 +113,6 @@
           </COFINSAliq>
         </COFINS>
       </imposto>
-      <infAdProd>Val Aprox Tributos Federal R$ 182.25</infAdProd>
     </det>
     <det nItem="2">
       <prod>
@@ -136,12 +135,12 @@
         <vTotTrib>0.00</vTotTrib>
         <ICMS>
           <ICMS00>
-            <orig>0</orig>
+            <orig>5</orig>
             <CST>00</CST>
             <modBC>0</modBC>
-            <vBC>3645.00</vBC>
+            <vBC>3827.25</vBC>
             <pICMS>12.0000</pICMS>
-            <vICMS>437.40</vICMS>
+            <vICMS>459.27</vICMS>
           </ICMS00>
         </ICMS>
         <IPI>
@@ -170,11 +169,12 @@
           </COFINSAliq>
         </COFINS>
       </imposto>
+      <infAdProd>Val Aprox Tributos Federal R$ 182.25</infAdProd>
     </det>
     <total>
       <ICMSTot>
-        <vBC>3965.00</vBC>
-        <vICMS>475.80</vICMS>
+        <vBC>4147.25</vBC>
+        <vICMS>497.67</vICMS>
         <vICMSDeson>0.00</vICMSDeson>
         <vFCPUFDest>0.00</vFCPUFDest>
         <vICMSUFDest>0.00</vICMSUFDest>
