@@ -4,7 +4,7 @@
 from openupgradelib import openupgrade
 
 _column_renames = {
-    'l10n_br_fiscal_operation_line': [
+    'res_company': [
         ('contract_fiscal_operation_id', 'contract_sale_fiscal_operation_id')],}
 
 
