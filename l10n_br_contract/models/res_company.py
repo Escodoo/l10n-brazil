@@ -11,7 +11,8 @@ class ResCompany(models.Model):
     contract_sale_fiscal_operation_id = fields.Many2one(
         comodel_name='l10n_br_fiscal.operation',
         string='Default Contract Sale Fiscal Operation',
-        required=False)
+        required=False,
+        oldname='contract_fiscal_operation_id')
 
     contract_purchase_fiscal_operation_id = fields.Many2one(
         comodel_name='l10n_br_fiscal.operation',
