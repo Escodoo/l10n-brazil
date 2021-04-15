@@ -82,6 +82,11 @@ class StockInvoiceOnshipping(models.TransientModel):
         move = fields.first(moves)
         fiscal_values = move._prepare_br_fiscal_dict()
 
+        fiscal_position = self.env['account.fiscal.position']. \
+            browse(invoice_values.get('fiscal_position_id'))
+        account = self.env['account.account'].browse(values.get('account_id'))
+        account = move._get_account(fiscal_position, account)
+
         # A Fatura não pode ser criada com os campos price_unit e fiscal_price
         # negativos, o metodo _prepare_br_fiscal_dict retorna o price_unit
         # negativo, por isso é preciso tira-lo antes do update, e no caso do
@@ -101,6 +106,10 @@ class StockInvoiceOnshipping(models.TransientModel):
         # será recalculado já com a quantidade correta.
 
         values.update(fiscal_values)
+
+        values.update({
+            'account_id': account.id
+        })
 
         values['invoice_line_tax_ids'] = [
             (6, 0, self.env['l10n_br_fiscal.tax'].browse(
