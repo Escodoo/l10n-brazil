@@ -54,6 +54,10 @@ class StockInvoiceOnshipping(models.TransientModel):
 
         fiscal_vals['fiscal_position_id'] = fiscal_position_id
 
+        account_id = pick.fiscal_operation_id.account_id
+        if account_id:
+            fiscal_vals['account_id'] = account_id.id
+
         document_serie = document_type.get_document_serie(
             pick.company_id, pick.fiscal_operation_id)
         if document_serie:
