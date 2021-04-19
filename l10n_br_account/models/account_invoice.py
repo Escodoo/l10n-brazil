@@ -112,6 +112,11 @@ class AccountInvoice(models.Model):
         return self.mapped('invoice_line_ids')
 
     @api.multi
+    def _get_amount_lines(self):
+        """Get object lines instaces used to compute fields"""
+        return self.mapped('invoice_line_ids')
+
+    @api.multi
     @api.depends('move_id.line_ids')
     def _compute_financial(self):
         for invoice in self:
@@ -215,6 +220,15 @@ class AccountInvoice(models.Model):
             {'move_name': False}
         )
         return super().unlink()
+
+    @api.multi
+    @api.returns('self', lambda value: value.id)
+    def copy(self, default=None):
+        default = default or {}
+        dummy_doc = self.env.ref('l10n_br_fiscal.fiscal_document_dummy')
+        if self.fiscal_document_id != dummy_doc:
+            default['line_ids'] = False
+        return super().copy(default)
 
     @api.one
     @api.depends(
