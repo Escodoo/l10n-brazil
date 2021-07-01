@@ -92,6 +92,7 @@ class Document(models.Model):
         pdf = self.env.ref("l10n_br_nfse.report_br_nfse_danfe").render_qweb_pdf(
             self.ids
         )[0]
+        self.file_report_id = False
         self.file_report_id.unlink()
 
         if self.document_number:
