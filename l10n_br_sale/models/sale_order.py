@@ -253,7 +253,7 @@ class SaleOrder(models.Model):
                         )
                         if fiscal_document_type.id == document_type.id:
                             inv_line.invoice_id = invoice.id
-
+            invoice_created_by_super.fiscal_document_id._compute_amount()
         return inv_ids
 
     # TODO open by default Invoice view with Fiscal Details Button
