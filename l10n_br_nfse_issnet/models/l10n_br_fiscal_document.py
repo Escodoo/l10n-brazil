@@ -63,7 +63,7 @@ class Document(models.Model):
         return edocs
 
     def _serialize_issnet_dados_servico(self):
-        self.line_ids.ensure_one()
+        # self.line_ids.ensure_one()
         dados = self._prepare_dados_servico()
         return tcDadosServico(
             Valores=tcValores(
