@@ -89,29 +89,66 @@ class DocumentLine(models.Model):
         return model_view
 
     def prepare_line_servico(self):
+        valor_servicos = 0
+        valor_deducoes = 0
+        valor_pis = 0
+        valor_pis_retido = 0
+        valor_cofins = 0
+        valor_cofins_retido = 0
+        valor_inss = 0
+        valor_inss_retido = 0
+        valor_ir = 0
+        valor_ir_retido = 0
+        valor_csll = 0
+        valor_csll_retido = 0
+        valor_iss = 0
+        valor_iss_retido = 0
+        outras_retencoes = 0
+        base_calculo = 0
+        valor_liquido_nfse = 0
+
+        for rec in self:
+            valor_servicos += rec.fiscal_price
+            valor_deducoes += rec.fiscal_deductions_value
+            valor_pis += round(rec.pis_value, 2) or round(rec.pis_wh_value, 2)
+            valor_pis_retido += round(rec.pis_wh_value, 2)
+            valor_cofins += round(rec.cofins_value, 2) or round(rec.cofins_wh_value, 2)
+            valor_cofins_retido += round(rec.cofins_wh_value, 2)
+            valor_inss += round(rec.inss_value, 2) or round(rec.inss_wh_value, 2)
+            valor_inss_retido += round(rec.inss_wh_value, 2)
+            valor_ir += round(rec.irpj_value, 2) or round(rec.irpj_wh_value, 2)
+            valor_ir_retido += round(rec.irpj_wh_value, 2)
+            valor_csll += round(rec.csll_value, 2) or round(rec.csll_wh_value, 2)
+            valor_csll_retido += round(rec.csll_wh_value, 2)
+            valor_iss += round(rec.issqn_value, 2)
+            valor_iss_retido += round(rec.issqn_wh_value, 2)
+            outras_retencoes += rec.other_retentions_value
+            base_calculo += rec.issqn_base or rec.issqn_wh_base
+            valor_liquido_nfse += round(rec.amount_taxed, 2)
+
         return {
-            "valor_servicos": self.fiscal_price,
-            "valor_deducoes": self.fiscal_deductions_value,
-            "valor_pis": round(self.pis_value, 2) or round(self.pis_wh_value, 2),
-            "valor_pis_retido": round(self.pis_wh_value, 2),
-            "valor_cofins": round(self.cofins_value, 2) or round(self.cofins_wh_value, 2),
-            "valor_cofins_retido": round(self.cofins_wh_value, 2),
-            "valor_inss": round(self.inss_value, 2) or round(self.inss_wh_value, 2),
-            "valor_inss_retido": round(self.inss_wh_value, 2),
-            "valor_ir": round(self.irpj_value, 2) or round(self.irpj_wh_value, 2),
-            "valor_ir_retido": round(self.irpj_wh_value, 2),
-            "valor_csll": round(self.csll_value, 2) or round(self.csll_wh_value, 2),
-            "valor_csll_retido": round(self.csll_wh_value, 2),
-            "iss_retido": "1" if self.issqn_wh_value else "2",
-            "valor_iss": round(self.issqn_value, 2),
-            "valor_iss_retido": round(self.issqn_wh_value, 2),
-            "outras_retencoes": self.other_retentions_value,
-            "base_calculo": self.issqn_base or self.issqn_wh_base,
-            "aliquota": (self.issqn_percent / 100) or (self.issqn_wh_percent / 100),
-            "valor_liquido_nfse": round(self.amount_taxed, 2),
-            "item_lista_servico": self.service_type_id.code
-            and self.service_type_id.code.replace(".", ""),
-            "codigo_tributacao_municipio": self.city_taxation_code_id.code or "",
-            "discriminacao": str(self.name[:2000] or ""),
-            "codigo_cnae": misc.punctuation_rm(self.cnae_id.code) or None,
+            "valor_servicos": valor_servicos,
+            "valor_deducoes": valor_deducoes,
+            "valor_pis": round(valor_pis, 2) or round(valor_pis_retido, 2),
+            "valor_pis_retido": round(valor_pis_retido, 2),
+            "valor_cofins": round(valor_cofins, 2) or round(valor_cofins_retido, 2),
+            "valor_cofins_retido": round(valor_cofins_retido, 2),
+            "valor_inss": round(valor_inss, 2) or round(valor_inss_retido, 2),
+            "valor_inss_retido": round(valor_inss_retido, 2),
+            "valor_ir": round(valor_ir, 2) or round(valor_ir_retido, 2),
+            "valor_ir_retido": round(valor_ir_retido, 2),
+            "valor_csll": round(valor_csll, 2) or round(valor_csll_retido, 2),
+            "valor_csll_retido": round(valor_csll_retido, 2),
+            "iss_retido": "1" if self[0].issqn_wh_value else "2",
+            "valor_iss": round(valor_iss, 2),
+            "valor_iss_retido": round(valor_iss_retido, 2),
+            "outras_retencoes": round(outras_retencoes, 2),
+            "base_calculo": round(base_calculo, 2),
+            "aliquota": (self[0].issqn_percent / 100) or (self[0].issqn_wh_percent / 100),
+            "valor_liquido_nfse": round(valor_liquido_nfse, 2),
+            "item_lista_servico": self[0].service_type_id.code
+            and self[0].service_type_id.code.replace(".", ""),
+            "codigo_tributacao_municipio": self[0].city_taxation_code_id.code or "",
+            "discriminacao": str(self[0].name[:2000] or ""),
+            "codigo_cnae": misc.punctuation_rm(self[0].cnae_id.code) or None,
         }
