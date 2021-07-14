@@ -106,6 +106,7 @@ class DocumentLine(models.Model):
         outras_retencoes = 0
         base_calculo = 0
         valor_liquido_nfse = 0
+        valor_desconto_incondicionado = 0
 
         for rec in self:
             valor_servicos += rec.fiscal_price
@@ -125,6 +126,7 @@ class DocumentLine(models.Model):
             outras_retencoes += rec.other_retentions_value
             base_calculo += rec.issqn_base or rec.issqn_wh_base
             valor_liquido_nfse += round(rec.amount_taxed, 2)
+            valor_desconto_incondicionado += round(rec.discount_value, 2)
 
         return {
             "valor_servicos": valor_servicos,
@@ -151,4 +153,5 @@ class DocumentLine(models.Model):
             "codigo_tributacao_municipio": self[0].city_taxation_code_id.code or "",
             "discriminacao": str(self[0].name[:2000] or ""),
             "codigo_cnae": misc.punctuation_rm(self[0].cnae_id.code) or None,
+            "valor_desconto_incondicionado" : round(valor_desconto_incondicionado, 2),
         }
