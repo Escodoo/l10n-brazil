@@ -96,7 +96,9 @@ class Document(models.Model):
                 ValorLiquidoNfse=self.convert_type_nfselib(
                     tcValores, 'ValorLiquidoNfse',
                     dados['valor_liquido_nfse']),
-                DescontoIncondicionado=0,
+                DescontoIncondicionado=self.convert_type_nfselib(
+                    tcValores, 'DescontoIncondicionado',
+                    dados['valor_desconto_incondicionado']),
                 DescontoCondicionado=0,
             ),
             ItemListaServico=self.convert_type_nfselib(
