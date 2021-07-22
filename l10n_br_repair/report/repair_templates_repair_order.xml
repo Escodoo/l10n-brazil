@@ -2,29 +2,29 @@
 <odoo>
     <template id="report_repair_order" inherit_id="repair.report_repairorder">
 
-<!--        <xpath expr="//table[@class='table table-sm o_main_table']//tr//t/th[3]" position="before">-->
-<!--            <th class="text-right">Discount Value</th>-->
-<!--        </xpath>-->
+        <xpath expr="//table[@class='table table-sm o_main_table']//tr//t/th[3]" position="before">
+            <th class="text-right">Discount Value</th>
+        </xpath>
 
-<!--        <xpath expr="//table[@class='table table-sm o_main_table']//tbody//t[1]/tr[1]" position="replace">-->
-<!--            <tr class="bg-200 o_line_section"><td colspan="6"><strong>Parts</strong></td></tr>-->
-<!--        </xpath>-->
+        <xpath expr="//table[@class='table table-sm o_main_table']//tbody//t[1]/tr[1]" position="replace">
+            <tr class="bg-200 o_line_section"><td colspan="6"><strong>Parts</strong></td></tr>
+        </xpath>
 
-<!--        <xpath expr="//table[@class='table table-sm o_main_table']//tbody//t[2]/tr[1]" position="replace">-->
-<!--            <tr class="bg-200 o_line_section"><td colspan="6"><strong>Operations</strong></td></tr>-->
-<!--        </xpath>-->
+        <xpath expr="//table[@class='table table-sm o_main_table']//tbody//t[2]/tr[1]" position="replace">
+            <tr class="bg-200 o_line_section"><td colspan="6"><strong>Operations</strong></td></tr>
+        </xpath>
 
-<!--        <xpath expr="//table[@class='table table-sm o_main_table']//tbody//t[1]/td[@class='text-right o_price_total']" position="before">-->
-<!--            <td class="text-right">-->
-<!--                <span t-field="line.discount_value"/>-->
-<!--            </td>-->
-<!--        </xpath>-->
+        <xpath expr="//table[@class='table table-sm o_main_table']//tbody//t[1]/td[@class='text-right o_price_total']" position="before">
+            <td class="text-right">
+                <span t-field="line.discount_value"/>
+            </td>
+        </xpath>
 
-<!--        <xpath expr="//table[@class='table table-sm o_main_table']//tbody//t[2]//td[@class='text-right o_price_total']" position="before">-->
-<!--            <td class="text-right">-->
-<!--                <span t-field="fees.discount_value"/>-->
-<!--            </td>-->
-<!--        </xpath>-->
+        <xpath expr="//table[@class='table table-sm o_main_table']//tbody//t[2]//td[@class='text-right o_price_total']" position="before">
+            <td class="text-right">
+                <span t-field="fees.discount_value"/>
+            </td>
+        </xpath>
 
          <xpath expr="//table[@class='table table-sm o_main_table']//tbody//t[1]/td[@class='text-center']" position="replace">
             <td
