@@ -647,14 +647,14 @@ class TestFiscalDocumentGeneric(SavepointCase):
             # IPI
             self.assertEqual(
                 line.ipi_tax_id.name,
-                "IPI Outros",
+                "IPI NT",
                 "Error to mapping IPI Simples Nacional"
                 " for Venda de Simples Nacional Fora do Estado.",
             )
             self.assertEqual(
                 line.ipi_cst_id.code,
-                "99",
-                "Error to mapping CST 99 from IPI Simples Nacional"
+                "53",
+                "Error to mapping CST 53 from IPI Simples Nacional"
                 " for Venda de Simples Nacional Fora do Estado.",
             )
 
@@ -740,14 +740,14 @@ class TestFiscalDocumentGeneric(SavepointCase):
             # IPI
             self.assertEqual(
                 line.ipi_tax_id.name,
-                "IPI Outros",
+                "IPI NT",
                 "Error to mapping IPI Simples Nacional"
                 " for Venda de Simples Nacional Fora do Estado.",
             )
             self.assertEqual(
                 line.ipi_cst_id.code,
-                "99",
-                "Error to mapping CST 99 from IPI Simples Nacional"
+                "53",
+                "Error to mapping CST 53 from IPI Simples Nacional"
                 " for Venda de Simples Nacional Fora do Estado.",
             )
 
@@ -926,14 +926,14 @@ class TestFiscalDocumentGeneric(SavepointCase):
             # IPI
             self.assertEqual(
                 line.ipi_tax_id.name,
-                "IPI Outros",
+                "IPI NT",
                 "Error to mapping IPI Simples Nacional"
                 " for Venda de Simples Nacional Fora do Estado.",
             )
             self.assertEqual(
                 line.ipi_cst_id.code,
-                "99",
-                "Error to mapping CST 99 from IPI Simples Nacional"
+                "53",
+                "Error to mapping CST 53 from IPI Simples Nacional"
                 " for Venda de Simples Nacional Fora do Estado.",
             )
 
