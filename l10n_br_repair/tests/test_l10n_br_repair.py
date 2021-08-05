@@ -70,8 +70,8 @@ class L10nBrRepairBaseTest(TransactionCase):
                 "tax": self.env.ref("l10n_br_fiscal.tax_issqn_5"),
             },
             "ipi": {
-                "tax": self.env.ref("l10n_br_fiscal.tax_ipi_outros"),
-                "cst": self.env.ref("l10n_br_fiscal.cst_ipi_99"),
+                "tax": self.env.ref("l10n_br_fiscal.tax_ipi_nt"),
+                "cst": self.env.ref("l10n_br_fiscal.cst_ipi_53"),
             },
             "pis": {
                 "tax": self.env.ref("l10n_br_fiscal.tax_pis_outros"),

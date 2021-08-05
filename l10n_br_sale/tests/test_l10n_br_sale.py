@@ -72,8 +72,8 @@ class L10nBrSaleBaseTest(SavepointCase):
                 "tax": cls.env.ref("l10n_br_fiscal.tax_issqn_5"),
             },
             "ipi": {
-                "tax": cls.env.ref("l10n_br_fiscal.tax_ipi_outros"),
-                "cst": cls.env.ref("l10n_br_fiscal.cst_ipi_99"),
+                "tax": cls.env.ref("l10n_br_fiscal.tax_ipi_nt"),
+                "cst": cls.env.ref("l10n_br_fiscal.cst_ipi_53"),
             },
             "pis": {
                 "tax": cls.env.ref("l10n_br_fiscal.tax_pis_outros"),
