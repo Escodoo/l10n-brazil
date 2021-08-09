@@ -17,6 +17,7 @@ from ..constants.fiscal import (
     TAX_DOMAIN_ISSQN,
     TAX_FRAMEWORK,
     TAX_FRAMEWORK_NORMAL,
+    TAX_FRAMEWORK_SIMPLES_ALL,
     TAX_ICMS_OR_ISSQN,
 )
 from ..constants.icms import ICMS_ORIGIN
@@ -215,6 +216,12 @@ class OperationLine(models.Model):
             company, partner, product, ncm=ncm, nbm=nbm, nbs=nbs, cest=cest
         ):
             self._build_mapping_result(mapping_result, tax_definition)
+
+        if company.tax_framework in TAX_FRAMEWORK_SIMPLES_ALL:
+            for tax_definition in self.tax_definition_ids.map_tax_definition(
+                company, partner, product, ncm=ncm, nbm=nbm, nbs=nbs, cest=cest
+            ):
+                self._build_mapping_result(mapping_result, tax_definition)
 
         # 2 From NCM
         if not ncm and product:
