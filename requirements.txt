@@ -4,10 +4,12 @@ workalendar==7.1.1
 erpbrasil.base==2.2.2
 erpbrasil.assinatura==1.2.0
 erpbrasil.transmissao==1.0.0
-erpbrasil.edoc==2.2.1
+#erpbrasil.edoc==2.2.1
+-e git+https://github.com/escodoo/erpbrasil.edoc.git@master-imp_fix-consulta_nfse_rps#egg=erpbrasil.edoc
 erpbrasil.edoc.pdf==0.1.2
 nfselib.ginfes==0.2.0
-nfselib.issnet==0.2.0
+#nfselib.issnet==0.2.0
+-e git+https://github.com/escodoo/nfselib.issnet.git@master-gen-fix-servico_consultar_nfse_rps_envio#egg=nfselib.issnet
 nfselib.paulistana==0.2.0
 nfelib==1.2.0
 xmldiff==2.4
