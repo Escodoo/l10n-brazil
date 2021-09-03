@@ -248,7 +248,7 @@ class Document(models.Model):
             processador = record._processador_erpbrasil_nfse()
             processo = processador.consulta_nfse_rps(
                 rps_number=int(record.rps_number),
-                document_serie=record.document_serie,
+                rps_serie=record.document_serie,
                 rps_type=int(record.rps_type)
             )
 
