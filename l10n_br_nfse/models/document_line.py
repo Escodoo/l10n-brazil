@@ -129,8 +129,8 @@ class DocumentLine(models.Model):
             valor_desconto_incondicionado += round(rec.discount_value, 2)
 
         return {
-            "valor_servicos": valor_servicos,
-            "valor_deducoes": valor_deducoes,
+            "valor_servicos": round(valor_servicos, 2),
+            "valor_deducoes": round(valor_deducoes, 2),
             "valor_pis": round(valor_pis, 2) or round(valor_pis_retido, 2),
             "valor_pis_retido": round(valor_pis_retido, 2),
             "valor_cofins": round(valor_cofins, 2) or round(valor_cofins_retido, 2),
