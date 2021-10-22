@@ -112,7 +112,7 @@ class Event(models.Model):
 
     document_serie_id = fields.Many2one(
         comodel_name="l10n_br_fiscal.document.serie",
-        required=True,
+        required=False,
     )
 
     document_number = fields.Char(
