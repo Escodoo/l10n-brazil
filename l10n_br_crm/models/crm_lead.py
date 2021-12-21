@@ -152,6 +152,7 @@ class Lead(models.Model):
         if is_company:
             values.update(
                 {
+                    "legal_name": self.legal_name,
                     "cnpj_cpf": self.cnpj,
                     "inscr_est": self.inscr_est,
                     "inscr_mun": self.inscr_mun,
