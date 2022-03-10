@@ -213,6 +213,10 @@ class AccountMoveLine(models.Model):
                 )
             )
 
+            # Marcel Savegnago: hack porco até conseguir identificar o problema
+            if not values.get("amount_currency"):
+                return
+            
         lines = super().create(vals_list)
         # Hack to call again the onchange subtotal to force to use price_total instead
         for line in lines:
