@@ -211,6 +211,10 @@ class AccountMoveLine(models.Model):
                 )
             )
 
+            # Marcel Savegnago: hack porco até conseguir identificar o problema
+            if not values.get("amount_currency"):
+                return
+            
         lines = super().create(vals_list)
         if dummy_doc.id != fiscal_doc_id:
             for line in lines:
