@@ -32,13 +32,22 @@
                             <field name="date_maturity" />
                             <field name="partner_id" />
                             <field name="account_id" />
-                            <field name="balance" />
+                            <field name="price_total" />
                             <field name="matching_number" />
                         </tree>
                     </field>
                 </page>
                 <page string="Payments" name="payment_move_line_tab">
-                    <field name="payment_move_line_ids" />
+                    <field name="payment_move_line_ids" >
+                        <tree>
+                            <field name="date" />
+                            <field name="move_name" />
+                            <field name="account_id" />
+                            <field name="price_total" />
+                            <field name="matching_number" />
+                            <field name="parent_state" />
+                        </tree>
+                    </field>
                 </page>
             </notebook>
         </field>
