@@ -36,14 +36,14 @@ class ContractLine(models.Model):
 
     ind_final = fields.Selection(related="contract_id.ind_final")
 
-    @api.multi
-    def _prepare_invoice_line(self, invoice_id=False, invoice_values=False):
-        values = super()._prepare_invoice_line(invoice_id, invoice_values)
-        quantity = values.get("quantity")
-        if values:
-            values.update(self._prepare_br_fiscal_dict())
-            values["quantity"] = quantity
-        return values
+    def _prepare_invoice_line(self, move_form):
+        self.ensure_one()
+        invoice_line_vals = super()._prepare_invoice_line(move_form)
+        quantity = invoice_line_vals.get("quantity")
+        if invoice_line_vals:
+            invoice_line_vals.update(self._prepare_br_fiscal_dict())
+            invoice_line_vals["quantity"] = quantity
+        return invoice_line_vals
 
     @api.model
     def create(self, values):
