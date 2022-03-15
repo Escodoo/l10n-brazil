@@ -67,6 +67,11 @@ class ContractContract(models.Model):
         string="Comments",
     )
 
+    operation_name = fields.Char(
+        string="Operation Name",
+        copy=False,
+    )
+
     def _get_amount_lines(self):
         """Get object lines instaces used to compute fields"""
         return self.mapped("contract_line_ids")
