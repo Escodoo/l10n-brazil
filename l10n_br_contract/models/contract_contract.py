@@ -163,19 +163,3 @@ class ContractContract(models.Model):
                     inv_ids[index]["invoice_line_ids"].append(inv_line)
 
         return inv_ids
-
-    def recurring_create_invoice(self):
-        """
-        override the contract method to allow posting for more than one invoice
-        """
-        invoices = self._recurring_create_invoice()
-        for invoice in invoices:
-            self.message_post(
-                body=_(
-                    "Contract manually invoiced: "
-                    '<a href="#" data-oe-model="%s" data-oe-id="%s">Invoice'
-                    "</a>"
-                )
-                % (invoice._name, invoice.id)
-            )
-        return invoices
