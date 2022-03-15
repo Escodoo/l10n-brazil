@@ -82,9 +82,9 @@ class ContractContract(models.Model):
 
     def _prepare_invoice(self, date_invoice, journal=None):
         self.ensure_one()
-        invoice_vals = self._prepare_br_fiscal_dict()
-        invoice_vals.update(super()._prepare_invoice(date_invoice, journal))
-        return invoice_vals
+        invoice_vals, move_form = super()._prepare_invoice(date_invoice, journal)
+        invoice_vals.update(self._prepare_br_fiscal_dict())
+        return invoice_vals, move_form
 
     @api.model
     def _finalize_invoice_creation(self, invoices):
