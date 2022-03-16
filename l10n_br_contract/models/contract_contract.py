@@ -86,15 +86,14 @@ class ContractContract(models.Model):
         invoice_vals.update(self._prepare_br_fiscal_dict())
         return invoice_vals, move_form
 
-    @api.model
-    def _finalize_invoice_creation(self, invoices):
-        super()._finalize_invoice_creation(invoices)
+    def _recurring_create_invoice(self, date_ref=False):
+        moves = super()._recurring_create_invoice(date_ref)
 
-        for invoice in invoices:
-            invoice.fiscal_document_id._onchange_document_serie_id()
-            invoice.fiscal_document_id._onchange_company_id()
+        for move in moves:
+            move.fiscal_document_id._onchange_document_serie_id()
+            move.fiscal_document_id._onchange_company_id()
 
-            for line in invoice.invoice_line_ids:
+            for line in move.invoice_line_ids:
                 name = line.name
                 line._onchange_product_id_fiscal()
                 line.name = name
@@ -102,7 +101,9 @@ class ContractContract(models.Model):
                 line._onchange_fiscal_operation_id()
                 line._onchange_fiscal_tax_ids()
 
-            invoice._onchange_invoice_line_ids()
+            move._onchange_invoice_line_ids()
+
+        return moves
 
     def _prepare_recurring_invoices_values(self, date_ref=False):
         """
