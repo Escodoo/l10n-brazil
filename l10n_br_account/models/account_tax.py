@@ -71,6 +71,13 @@ class AccountTax(models.Model):
             handle_price_include,
         )
 
+        base = currency.round(price_unit * quantity)
+        sign = 1
+        if currency.is_zero(base):
+            sign = self._context.get('force_sign', 1)
+        elif base < 0:
+            sign = -1
+
         if not fiscal_taxes:
             fiscal_taxes = self.env["l10n_br_fiscal.tax"]
 
@@ -129,16 +136,18 @@ class AccountTax(models.Model):
                     taxes_results["total_included"] += fiscal_tax.get("tax_value")
 
                 fiscal_group = tax.tax_group_id.fiscal_tax_group_id
-                tax_amount = fiscal_tax.get("tax_value", 0.0)
+                tax_amount = fiscal_tax.get("tax_value", 0.0) * sign
+                tax_base = fiscal_tax.get("base") * sign
                 if tax.deductible or fiscal_group.tax_withholding:
-                    tax_amount = fiscal_tax.get("tax_value", 0.0) * -1
+                    tax_amount = fiscal_tax.get("tax_value", 0.0) * -sign
+                    tax_base = fiscal_tax.get("base") * -sign
 
                 account_tax.update(
                     {
                         "id": account_tax.get("id"),
                         "name": fiscal_group.name,
                         "fiscal_name": fiscal_tax.get("name"),
-                        "base": fiscal_tax.get("base"),
+                        "base": tax_base,
                         "tax_include": fiscal_tax.get("tax_include"),
                         "amount": tax_amount,
                         "fiscal_tax_id": fiscal_tax.get("fiscal_tax_id"),
