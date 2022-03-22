@@ -66,7 +66,7 @@ class PurchaseOrder(models.Model):
 
             view = self.env["ir.ui.view"]
 
-            sub_form_view = order_view["fields"]["order_line"]["views"]["tree"][
+            sub_form_view = order_view["fields"]["order_line"]["views"]["form"][
                 "arch"
             ]
 
@@ -78,7 +78,7 @@ class PurchaseOrder(models.Model):
                 sub_form_node, "purchase.order.line", False
             )
 
-            order_view["fields"]["order_line"]["views"]["tree"] = {
+            order_view["fields"]["order_line"]["views"]["form"] = {
                 "fields": sub_fields,
                 "arch": sub_arch,
             }
