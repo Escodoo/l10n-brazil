@@ -14,7 +14,7 @@ class PurchaseOrder(models.Model):
 
     @api.model
     def _default_fiscal_operation(self):
-        return self.env.user.company_id.purchase_fiscal_operation_id
+        return self.env.company.purchase_fiscal_operation_id
 
     @api.model
     def _fiscal_operation_domain(self):
@@ -66,20 +66,14 @@ class PurchaseOrder(models.Model):
 
             view = self.env["ir.ui.view"]
 
-            sub_form_view = (
-                order_view.get("fields", {})
-                .get("order_line", {})
-                .get("views", {})
-                .get("form", {})
-                .get("arch", {})
-            )
+            sub_form_view = order_view["fields"]["order_line"]["views"]["form"]["arch"]
 
             sub_form_node = self.env["purchase.order.line"].inject_fiscal_fields(
                 sub_form_view
             )
 
             sub_arch, sub_fields = view.postprocess_and_fields(
-                "purchase.order.line", sub_form_node, None
+                sub_form_node, "purchase.order.line", False
             )
 
             order_view["fields"]["order_line"]["views"]["form"] = {
@@ -136,3 +130,14 @@ class PurchaseOrder(models.Model):
     @api.depends("order_line.price_total")
     def _amount_all(self):
         self._compute_amount()
+
+    def _prepare_invoice(self):
+        self.ensure_one()
+        invoice_vals = super()._prepare_invoice()
+        invoice_vals.update(
+            {
+                "fiscal_operation_id": self.fiscal_operation_id.id,
+                "document_type_id": self.company_id.document_type_id.id,
+            }
+        )
+        return invoice_vals
