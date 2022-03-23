@@ -194,6 +194,8 @@ class AccountMoveLine(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         dummy_doc = self.env.company.fiscal_dummy_id
+        fiscal_doc_id = (
+            self.env["account.move"])
         for values in vals_list:
             fiscal_doc_id = (
                 self.env["account.move"].browse(values["move_id"]).fiscal_document_id.id
