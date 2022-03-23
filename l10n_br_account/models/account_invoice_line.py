@@ -212,6 +212,10 @@ class AccountMoveLine(models.Model):
             )
 
         lines = super().create(vals_list)
+        # Hack to call again the onchange subtotal to force to use price_total instead
+        for line in lines:
+            line._get_fields_onchange_subtotal()
+
         if dummy_doc.id != fiscal_doc_id:
             for line in lines:
                 shadowed_fiscal_vals = line._prepare_shadowed_fields_dict()
@@ -230,6 +234,8 @@ class AccountMoveLine(models.Model):
             )
         result = super().write(values)
         for line in self:
+            # Hack to call again the onchange subtotal to force to use price_total instead
+            line._get_fields_onchange_subtotal()
             if line.wh_move_line_id and (
                 "quantity" in values or "price_unit" in values
             ):
@@ -240,6 +246,19 @@ class AccountMoveLine(models.Model):
                 shadowed_fiscal_vals = line._prepare_shadowed_fields_dict()
                 line.fiscal_document_line_id.write(shadowed_fiscal_vals)
         return result
+
+    def _get_fields_onchange_subtotal(self, price_subtotal=None, move_type=None, currency=None, company=None, date=None):
+        # Override the original method to use the price_total in balance
+        # In Brazil the taxes are included in the accounting of prices
+        # TODO: improve behavior for multicompany
+        self.ensure_one()
+        return self._get_fields_onchange_subtotal_model(
+            price_subtotal=price_subtotal or self.price_total,
+            move_type=move_type or self.move_id.move_type,
+            currency=currency or self.currency_id,
+            company=company or self.move_id.company_id,
+            date=date or self.move_id.date,
+        )
 
     def unlink(self):
         dummy_doc = self.env.company.fiscal_dummy_id
@@ -255,137 +274,15 @@ class AccountMoveLine(models.Model):
         self.clear_caches()
         return result
 
-    def _get_fields_onchange_balance(self, quantity=None, discount=None, amount_currency=None, move_type=None, currency=None, taxes=None, price_subtotal=None, force_computation=False):
-        self.ensure_one()
-        return super(
-            AccountMoveLine,
-            self.with_context(
-                fiscal_tax_ids=self.fiscal_tax_ids,
-                fiscal_operation_line_id=self.fiscal_operation_line_id,
-                ncm=self.ncm_id,
-                nbs=self.nbs_id,
-                nbm=self.nbm_id,
-                cest=self.cest_id,
-                discount_value=self.discount_value,
-                insurance_value=self.insurance_value,
-                other_value=self.other_value,
-                freight_value=self.freight_value,
-                fiscal_price=self.fiscal_price,
-                fiscal_quantity=self.fiscal_quantity,
-                uot=self.uot_id,
-                icmssn_range=self.icmssn_range_id,
-                icms_origin=self.icms_origin,
-                )
-            )._get_fields_onchange_balance_model(
-            quantity=quantity or self.quantity,
-            discount=discount or self.discount,
-            amount_currency=amount_currency or self.amount_currency,
-            move_type=move_type or self.move_id.move_type,
-            currency=currency or self.currency_id or self.move_id.currency_id,
-            taxes=taxes or self.tax_ids,
-            price_subtotal=price_subtotal or self.price_subtotal,
-            force_computation=force_computation,
-        )
-
     @api.model
     def _get_fields_onchange_balance_model(self, quantity, discount, amount_currency, move_type, currency, taxes, price_subtotal, force_computation=False):
-        """This method is used to recompute the values of 'quantity', 'discount', 'price_unit' due to a change made
-        in some accounting fields such as 'balance'.
-        This method is a bit complex as we need to handle some special cases.
-        For example, setting a positive balance with a 100% discount.
-        :param quantity:        The current quantity.
-        :param discount:        The current discount.
-        :param amount_currency: The new balance in line's currency.
-        :param move_type:       The type of the move.
-        :param currency:        The currency.
-        :param taxes:           The applied taxes.
-        :param price_subtotal:  The price_subtotal.
-        :return:                A dictionary containing 'quantity', 'discount', 'price_unit'.
-        """
-        if move_type in self.move_id.get_outbound_types():
-            sign = 1
-        elif move_type in self.move_id.get_inbound_types():
-            sign = -1
-        else:
-            sign = 1
-        amount_currency *= sign
+        # As in Brazil taxes are already included in the total price of the product,
+        # there is no need to deal with problems with rounding in sums of
+        # 'price without taxes' + 'taxes'. If placed together with the balance as
+        # price_total, adjustments would be necessary that in practice would not have
+        # much effect.
 
-        # Avoid rounding issue when dealing with price included taxes. For example, when the price_unit is 2300.0 and
-        # a 5.5% price included tax is applied on it, a balance of 2300.0 / 1.055 = 2180.094 ~ 2180.09 is computed.
-        # However, when triggering the inverse, 2180.09 + (2180.09 * 0.055) = 2180.09 + 119.90 = 2299.99 is computed.
-        # To avoid that, set the price_subtotal at the balance if the difference between them looks like a rounding
-        # issue.
-        if not force_computation and currency.is_zero(amount_currency - price_subtotal):
-            return {}
-
-        taxes = taxes.flatten_taxes_hierarchy()
-        if taxes and any(tax.price_include for tax in taxes):
-            # Inverse taxes. E.g:
-            #
-            # Price Unit    | Taxes         | Originator Tax    |Price Subtotal     | Price Total
-            # -----------------------------------------------------------------------------------
-            # 110           | 10% incl, 5%  |                   | 100               | 115
-            # 10            |               | 10% incl          | 10                | 10
-            # 5             |               | 5%                | 5                 | 5
-            #
-            # When setting the balance to -200, the expected result is:
-            #
-            # Price Unit    | Taxes         | Originator Tax    |Price Subtotal     | Price Total
-            # -----------------------------------------------------------------------------------
-            # 220           | 10% incl, 5%  |                   | 200               | 230
-            # 20            |               | 10% incl          | 20                | 20
-            # 10            |               | 5%                | 10                | 10
-            force_sign = -1 if move_type in ('out_invoice', 'in_refund', 'out_receipt') else 1
-            taxes_res = taxes._origin.with_context(force_sign=force_sign).compute_all(
-                amount_currency,
-                currency=currency,
-                quantity=quantity,
-                product=product,
-                partner=partner,
-                is_refund=move_type in ('out_refund', 'in_refund'),
-                handle_price_include=False, # FIXME
-                fiscal_taxes=self.env.context.get("fiscal_tax_ids"),
-                operation_line=self.env.context.get("fiscal_operation_line_id"),
-                ncm=self.env.context.get("ncm_id"),
-                nbs=self.env.context.get("nbs_id"),
-                nbm=self.env.context.get("nbm_id"),
-                cest=self.env.context.get("cest_id"),
-                discount_value=self.env.context.get("discount_value"),
-                insurance_value=self.env.context.get("insurance_value"),
-                other_value=self.env.context.get("other_value"),
-                freight_value=self.env.context.get("freight_value"),
-                fiscal_price=self.env.context.get("fiscal_price"),
-                fiscal_quantity=self.env.context.get("fiscal_quantity"),
-                uot=self.env.context.get("uot_id"),
-                icmssn_range=self.env.context.get("icmssn_range_id"),
-                icms_origin=self.env.context.get("icms_origin"))
-
-            for tax_res in taxes_res['taxes']:
-
-                if tax.price_include:
-                    amount_currency += tax_res['amount']
-
-        discount_factor = 1 - (discount / 100.0)
-        if amount_currency and discount_factor:
-            # discount != 100%
-            vals = {
-                'quantity': quantity or 1.0,
-                'price_unit': amount_currency / discount_factor / (quantity or 1.0),
-            }
-        elif amount_currency and not discount_factor:
-            # discount == 100%
-            vals = {
-                'quantity': quantity or 1.0,
-                'discount': 0.0,
-                'price_unit': amount_currency / (quantity or 1.0),
-            }
-        elif not discount_factor:
-            # balance of line is 0, but discount  == 100% so we display the normal unit_price
-            vals = {}
-        else:
-            # balance is 0, so unit price is 0 as well
-            vals = {'price_unit': 0.0}
-        return vals
+        return {}
 
     def _get_price_total_and_subtotal(self, price_unit=None, quantity=None, discount=None, currency=None, product=None, partner=None, taxes=None, move_type=None):
         self.ensure_one()
@@ -471,8 +368,8 @@ class AccountMoveLine(models.Model):
 
             fol = self.env.context.get("fiscal_operation_line_id")
             if fol and not fol.fiscal_operation_id.deductible_taxes:
-                result['price_subtotal'] = taxes_res['total_excluded'] - taxes_res['amount_tax_included']
-                result['price_total'] = taxes_res['total_included'] - taxes_res['amount_tax_included']
+                result['price_subtotal'] = taxes_res['total_excluded']
+                result['price_total'] = taxes_res['total_included'] - taxes_res['amount_tax_included'] - taxes_res['amount_tax_not_included']
 
         return result
 
