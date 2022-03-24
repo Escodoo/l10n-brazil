@@ -47,10 +47,12 @@ class ContractLine(models.Model):
     def _prepare_invoice_line(self, move_form):
         self.ensure_one()
         invoice_line_vals = super()._prepare_invoice_line(move_form)
+        self._onchange_fiscal_tax_ids()
         quantity = invoice_line_vals.get("quantity")
         if invoice_line_vals:
             invoice_line_vals.update(self._prepare_br_fiscal_dict())
             invoice_line_vals["quantity"] = quantity
+            invoice_line_vals["tax_ids"] = self.fiscal_tax_ids.account_taxes(user_type="purchase").ids
         return invoice_line_vals
 
     @api.model
