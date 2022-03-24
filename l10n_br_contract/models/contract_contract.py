@@ -93,13 +93,13 @@ class ContractContract(models.Model):
             move.fiscal_document_id._onchange_document_serie_id()
             move.fiscal_document_id._onchange_company_id()
 
-            for line in move.invoice_line_ids:
-                name = line.name
-                line._onchange_product_id_fiscal()
-                line.name = name
-                line.price_unit = line.contract_line_id.price_unit
-                line._onchange_fiscal_operation_id()
-                line._onchange_fiscal_tax_ids()
+            # for line in move.invoice_line_ids:
+            #     name = line.name
+            #     # line._onchange_product_id_fiscal()
+            #     # line.name = name
+            #     # line.price_unit = line.contract_line_id.price_unit
+            #     # line._onchange_fiscal_operation_id()
+            #     # line._onchange_fiscal_tax_ids()
 
             move._onchange_invoice_line_ids()
 
