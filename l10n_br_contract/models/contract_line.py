@@ -36,6 +36,14 @@ class ContractLine(models.Model):
 
     ind_final = fields.Selection(related="contract_id.ind_final")
 
+    comment_ids = fields.Many2many(
+        comodel_name="l10n_br_fiscal.comment",
+        relation="contract_line_comment_rel",
+        column1="contract_line_id",
+        column2="comment_id",
+        string="Comments",
+    )
+
     def _prepare_invoice_line(self, move_form):
         self.ensure_one()
 
