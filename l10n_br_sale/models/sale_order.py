@@ -85,6 +85,11 @@ class SaleOrder(models.Model):
         inverse="_inverse_amount_other",
     )
 
+    operation_name = fields.Char(
+        string="Operation Name",
+        copy=False,
+    )
+
     # Usado para tornar Somente Leitura os campos totais dos custos
     # de entrega quando a definição for por Linha
     delivery_costs = fields.Selection(
@@ -226,20 +231,14 @@ class SaleOrder(models.Model):
 
             view = self.env["ir.ui.view"]
 
-            sub_form_view = (
-                order_view.get("fields", {})
-                .get("order_line", {})
-                .get("views", {})
-                .get("form", {})
-                .get("arch", {})
-            )
+            sub_form_view = order_view["fields"]["order_line"]["views"]["form"]["arch"]
 
             sub_form_node = self.env["sale.order.line"].inject_fiscal_fields(
                 sub_form_view
             )
 
             sub_arch, sub_fields = view.postprocess_and_fields(
-                "sale.order.line", sub_form_node, None
+                sub_form_node, "sale.order.line", False
             )
 
             order_view["fields"]["order_line"]["views"]["form"] = {
@@ -308,7 +307,7 @@ class SaleOrder(models.Model):
         document_type_list = []
 
         for invoice_id in inv_ids:
-            invoice_created_by_super = self.env["account.invoice"].browse(invoice_id)
+            invoice_created_by_super = invoice_id
 
             # Identify how many Document Types exist
             for inv_line in invoice_created_by_super.invoice_line_ids:
@@ -318,7 +317,7 @@ class SaleOrder(models.Model):
 
                 fiscal_document_type = (
                     inv_line.fiscal_operation_line_id.get_document_type(
-                        inv_line.invoice_id.company_id
+                        inv_line.move_id.company_id
                     )
                 )
 
@@ -339,7 +338,7 @@ class SaleOrder(models.Model):
                         document_type
                     )
 
-                    inv_obj = self.env["account.invoice"]
+                    inv_obj = self.env["account.move"]
                     invoices = {}
                     references = {}
                     invoices_origin = {}
@@ -359,9 +358,9 @@ class SaleOrder(models.Model):
                             invoice = inv_obj.create(inv_data)
                             references[invoice] = order
                             invoices[group_key] = invoice
-                            invoices_origin[group_key] = [invoice.origin]
+                            invoices_origin[group_key] = [invoice.invoice_origin]
                             invoices_name[group_key] = [invoice.name]
-                            inv_ids.append(invoice.id)
+                            inv_ids = inv_ids + invoice
                         elif group_key in invoices:
                             if order.name not in invoices_origin[group_key]:
                                 invoices_origin[group_key].append(order.name)
@@ -376,11 +375,14 @@ class SaleOrder(models.Model):
                     for inv_line in invoice_created_by_super.invoice_line_ids:
                         fiscal_document_type = (
                             inv_line.fiscal_operation_line_id.get_document_type(
-                                inv_line.invoice_id.company_id
+                                inv_line.move_id.company_id
                             )
                         )
                         if fiscal_document_type.id == document_type.id:
-                            inv_line.invoice_id = invoice.id
+                            # TODO: Migração 14.0 precisa de alguma forma forçar o
+                            #  recalculo das linhas do movimento e não funciona apenas
+                            #  mudar o move_id da linha do movimento
+                            inv_line.move_id = invoice.id
 
             invoice_created_by_super.document_serie_id = (
                 fiscal_document_type.get_document_serie(
