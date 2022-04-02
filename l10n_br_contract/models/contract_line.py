@@ -50,6 +50,13 @@ class ContractLine(models.Model):
         contract = self.contract_id
 
         invoice_line_vals = super()._prepare_invoice_line(move_form)
+
+        # Por algum motivo com a localização o campo company_currency_id
+        # nao vem em invoice_line_val e isto impacta com o modulo contract
+        invoice_line_vals.update(
+            {"company_currency_id": contract.company_id.currency_id.id}
+        )
+
         self._onchange_fiscal_tax_ids()
         quantity = invoice_line_vals.get("quantity")
 
