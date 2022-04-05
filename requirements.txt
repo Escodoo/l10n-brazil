@@ -4,7 +4,9 @@ erpbrasil.base
 erpbrasil.edoc
 erpbrasil.transmissao
 nfelib
+nfselib.paulistana
 num2words
 odoo_test_helper
 pycep_correios
+unidecode
 workalendar
