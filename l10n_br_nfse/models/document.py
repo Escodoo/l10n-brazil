@@ -144,10 +144,15 @@ class Document(models.Model):
             record.make_pdf()
 
     def _prepare_dados_servico(self):
-        self.fiscal_line_ids.ensure_one()
+        # TODO: Migration 14.0
+        for line in self.fiscal_line_ids:
+            if line.product_id:
+                res = line
+        # TODO: Migration 14.0
+        # self.fiscal_line_ids.ensure_one()
         result = {}
-        result.update(self.fiscal_line_ids.prepare_line_servico())
-        result.update(self.company_id.prepare_company_servico())
+        result.update(res.prepare_line_servico())
+        result.update(res.company_id.prepare_company_servico())
 
         return result
 
