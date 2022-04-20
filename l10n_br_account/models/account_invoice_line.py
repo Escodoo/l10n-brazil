@@ -137,7 +137,7 @@ class AccountInvoiceLine(models.Model):
             # Update record
             self.update(
                 {
-                    "discount": self.discount_value,
+                    "discount": discount,
                     "price_subtotal": self.amount_untaxed + self.discount_value,
                     "price_tax": self.amount_tax,
                     "price_total": self.amount_total,
@@ -254,4 +254,11 @@ class AccountInvoiceLine(models.Model):
             user_type = "purchase"
         self.invoice_line_tax_ids |= self.fiscal_tax_ids.account_taxes(
             user_type=user_type
+        )
+
+    @api.onchange("discount_value")
+    def _onchange_discount_value(self):
+        """Update discount percent"""
+        self.discount = (self.discount_value * 100) / (
+            self.quantity * self.price_unit or 1
         )
