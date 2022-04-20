@@ -9,8 +9,8 @@
         <field name="arch" type="xml">
              <xpath expr="//field[@name='discount']/.." position="after">
                  <group name="fiscal">
-                     <field name="fiscal_operation_id" />
-                     <field name="fiscal_operation_line_id" />
+                     <field name="fiscal_operation_id" attrs="{'invisible': [('fiscal_operation_id', '=', False)]}"/>
+                     <field name="fiscal_operation_line_id" attrs="{'invisible': [('fiscal_operation_id', '=', False)]}"/>
                  </group>
             </xpath>
         </field>
