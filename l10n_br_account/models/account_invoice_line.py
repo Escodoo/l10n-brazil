@@ -135,6 +135,11 @@ class AccountInvoiceLine(models.Model):
             # Call mixin compute method
             self._compute_amounts()
             # Update record
+            discount = 0
+            if self.discount_value > 0 and self.amount_untaxed > 0:
+                discount = (
+                    self.discount_value / (self.amount_untaxed + self.discount_value)
+                ) * 100
             self.update(
                 {
                     "discount": discount,
