@@ -6,7 +6,6 @@ import logging
 
 from odoo import _, models
 
-from odoo.addons.queue_job.job import job
 
 _logger = logging.getLogger(__name__)
 
@@ -14,7 +13,6 @@ _logger = logging.getLogger(__name__)
 class SubsequentDocument(models.Model):
     _inherit = "l10n_br_fiscal.subsequent.document"
 
-    @job
     def _generate_subsequent_document_job(self):
         self._generate_subsequent_document()
 
