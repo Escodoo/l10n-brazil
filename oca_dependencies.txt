@@ -7,5 +7,6 @@ account-reconcile
 mis-builder
 contract
 manufacture
+queue
 purchase-workflow
 sale-workflow
