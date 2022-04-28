@@ -1,9 +1,10 @@
 # generated from manifests external_dependencies
--e git+https://github.com/akretion/erpbrasil.assinatura.git@master#egg=erpbrasil.assinatura
+#-e git+https://github.com/erpbrasil/erpbrasil.assinatura.git@master#egg=erpbrasil.assinatura
+erpbrasil.assinatura==1.2.0
 erpbrasil.base
 nfelib
 num2words
 odoo_test_helper
 pycep_correios
-pyOpenSSL==21.0.0
+#pyOpenSSL
 workalendar
