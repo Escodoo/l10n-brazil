@@ -8,3 +8,5 @@ odoo_test_helper
 pycep_correios
 #pyOpenSSL
 workalendar
+lxml==4.6.1
+extract-msg==0.29.3
