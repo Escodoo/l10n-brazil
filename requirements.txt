@@ -1,5 +1,6 @@
 # generated from manifests external_dependencies
-erpbrasil.assinatura-nopyopenssl
+# erpbrasil.assinatura-nopyopenssl
+-e git+https://github.com/escodoo/erpbrasil.assinatura.git@master-nfse_paulistana-workaround#egg=erpbrasil.assinatura
 erpbrasil.base
 erpbrasil.edoc
 erpbrasil.transmissao
