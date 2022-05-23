@@ -150,9 +150,14 @@ class AccountTax(models.Model):
                 fiscal_group = tax.tax_group_id.fiscal_tax_group_id
                 tax_amount = fiscal_tax.get("tax_value", 0.0) * sum_repartition_factor
                 tax_base = fiscal_tax.get("base") * sum_repartition_factor
-                if tax.deductible or fiscal_group.tax_withholding:
+
+                if tax.deductible:
                     tax_amount = (
                         fiscal_tax.get("tax_value", 0.0) * sum_repartition_factor
+                    )
+                elif fiscal_group.tax_withholding:
+                    tax_amount = (
+                        fiscal_tax.get("tax_value", 0.0) * -sum_repartition_factor
                     )
 
                 account_tax.update(
