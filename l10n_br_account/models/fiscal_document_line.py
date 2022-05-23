@@ -12,3 +12,11 @@ class FiscalDocumentLine(models.Model):
         inverse_name="fiscal_document_line_id",
         string="Invoice Lines",
     )
+
+    def write(self, values):
+        if values.get('document_id'):
+            dummy_doc = self.env["res.company"].search([]).mapped("fiscal_dummy_id")
+            dummy_doc_line = fields.first(dummy_doc.fiscal_line_ids).id
+            if values.get('document_id') != dummy_doc_line and not values.get('product_id'):
+                values["document_id"] = dummy_doc_line
+        return super().write(values)
