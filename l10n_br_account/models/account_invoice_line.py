@@ -140,6 +140,9 @@ class AccountMoveLine(models.Model):
                 self.env["account.move"].browse(values["move_id"]).fiscal_document_id.id
             )
             if dummy_doc.id == fiscal_doc_id or values.get("exclude_from_invoice_tab"):
+                if len(dummy_doc.fiscal_line_ids) < 1:
+                    raise UserError(_("Document line dummy not found. Please contact "
+                                      "your system administrator."))
                 values["fiscal_document_line_id"] = fields.first(
                     dummy_doc.fiscal_line_ids
                 ).id
