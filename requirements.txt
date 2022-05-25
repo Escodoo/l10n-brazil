@@ -2,6 +2,7 @@
 -e git+https://github.com/escodoo/erpbrasil.assinatura.git@master-nfse_paulistana-workaround#egg=erpbrasil.assinatura
 erpbrasil.base
 erpbrasil.edoc
+erpbrasil.edoc.pdf
 erpbrasil.transmissao
 nfelib
 nfselib.paulistana
@@ -13,5 +14,4 @@ workalendar
 xmlsec
 xmldiff
 endesive
-
 
