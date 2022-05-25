@@ -77,17 +77,18 @@ class Partner(models.Model):
                         )
 
                 if allow_cnpj_multi_ie == "True":
-                    for partner in record.env["res.partner"].search(domain):
-                        if (
-                            partner.inscr_est == record.inscr_est
-                            and not record.inscr_est
-                        ):
-                            raise ValidationError(
-                                _(
-                                    "There is already a partner record with this "
-                                    "Estadual Inscription !"
-                                )
-                            )
+                    return
+                    # for partner in record.env["res.partner"].search(domain):
+                    #     if (
+                    #         partner.inscr_est == record.inscr_est
+                    #         and not record.inscr_est
+                    #     ):
+                    #         raise ValidationError(
+                    #             _(
+                    #                 "There is already a partner record with this "
+                    #                 "Estadual Inscription !"
+                    #             )
+                    #         )
                 else:
                     raise ValidationError(
                         _("There is already a partner record with this CNPJ !")
