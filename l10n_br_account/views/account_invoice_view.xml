@@ -158,6 +158,12 @@
                 <field name="city_taxation_code_id" optional="hide" />
                 <field name="service_type_id" optional="hide" />
                 <field name="cnae_id" optional="hide" />
+                <field name="ncm_id" optional="hide" />
+                <field name="nbs_id" optional="hide" />
+                <field name="nbm_id" optional="hide" />
+                <field name="cest_id" optional="hide" />
+                <field name="uom_id" optional="hide" />
+                <field name="fiscal_genre_id" optional="hide" />
                 <field
                     name="fiscal_tax_ids"
                     attrs="{'invisible': [('document_type_id', '=', False)]}"
@@ -197,6 +203,12 @@
                 <field name="city_taxation_code_id" optional="hide" />
                 <field name="service_type_id" optional="hide" />
                 <field name="cnae_id" optional="hide" />
+                <field name="ncm_id" optional="hide" />
+                <field name="nbs_id" optional="hide" />
+                <field name="nbm_id" optional="hide" />
+                <field name="cest_id" optional="hide" />
+                <field name="uom_id" optional="hide" />
+                <field name="fiscal_genre_id" optional="hide" />
                 <field name="partner_company_type" invisible="1" />
                     <field name="fiscal_operation_type" invisible="1" />
                 <field
@@ -415,6 +427,21 @@
                 <field name="tax_icms_or_issqn" invisible="1" />
                 <notebook attrs="{'invisible': [('document_type_id', '=', False)]}">
                     <page name="fiscal_taxes" string="Taxes" />
+                    <page name="amounts" string="Amounts">
+                        <group>
+                            <group>
+                                <field name="amount_untaxed" />
+                                <field name="amount_fiscal" />
+                                <field name="amount_tax" />
+                                <field name="estimate_tax" />
+                            </group>
+                            <group>
+                                <field name="amount_total" />
+                                <field name="amount_tax_withholding" />
+                                <field name="amount_taxed" />
+                            </group>
+                        </group>
+                    </page>
                     <page name="others" string="Others">
                         <group>
                             <field name="freight_value" />
