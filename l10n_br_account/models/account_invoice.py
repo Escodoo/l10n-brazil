@@ -519,6 +519,10 @@ class AccountMove(models.Model):
         self.ensure_one()
         return self.fiscal_document_id.view_pdf()
 
+    def action_open_nfse_document_from_provider(self):
+        self.ensure_one()
+        return self.fiscal_document_id.action_open_nfse_document_from_provider()
+
     def action_send_email(self):
         self.ensure_one()
         return self.fiscal_document_id.action_send_email()
