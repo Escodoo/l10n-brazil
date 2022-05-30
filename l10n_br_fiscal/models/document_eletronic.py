@@ -227,3 +227,15 @@ class DocumentEletronic(models.AbstractModel):
         """Retorna o status do documento em texto e se necessário,
         atualiza o status do documento"""
         return
+
+    def action_open_nfse_document_from_provider(self):
+        self.ensure_one()
+        nfse = self.document_number or '481'
+        inscricao = self.company_inscr_mun
+        verificacao = self.move_ids[0].verify_code or 'WZ4RQEZ2'
+        url = "https://nfe.prefeitura.sp.gov.br/contribuinte/notaprint.aspx?nf=%s&inscricao=%s&verificacao=%s" % (nfse, inscricao, verificacao)
+        return {
+            'type': 'ir.actions.act_url',
+            'url': url,
+            'target': 'new',
+        }
