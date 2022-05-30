@@ -1,10 +1,15 @@
 # generated from manifests external_dependencies
-erpbrasil.assinatura
+-e git+https://github.com/escodoo/erpbrasil.assinatura.git@master-nfse_paulistana-workaround#egg=erpbrasil.assinatura
 erpbrasil.base
 erpbrasil.edoc
 erpbrasil.transmissao
 nfelib
+nfselib.paulistana
 num2words
 odoo_test_helper
 pycep_correios
+unidecode
 workalendar
+xmlsec
+xmldiff
+endesive
