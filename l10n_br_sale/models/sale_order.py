@@ -379,10 +379,18 @@ class SaleOrder(models.Model):
                             )
                         )
                         if fiscal_document_type.id == document_type.id:
-                            # TODO: Migração 14.0 precisa de alguma forma forçar o
-                            #  recalculo das linhas do movimento e não funciona apenas
-                            #  mudar o move_id da linha do movimento
-                            inv_line.move_id = invoice.id
+                            copied_vals = inv_line.copy_data()[0]
+                            copied_vals['move_id'] = invoice.id
+                            copied_vals['recompute_tax_line'] = True
+                            new_line = self.env['account.move.line'].new(copied_vals)
+                            invoice.invoice_line_ids += new_line
+                            order_line = self.order_line.filtered(lambda x: x.invoice_lines in inv_line)
+                            if len(order_line.invoice_lines) > 1:
+                                # TODO
+                                x=x+1
+                            else:
+                                order_line.invoice_lines = invoice.invoice_line_ids
+                            invoice_id.invoice_line_ids -= inv_line
 
             invoice_created_by_super.document_serie_id = (
                 fiscal_document_type.get_document_serie(
