@@ -62,8 +62,15 @@
                 />
             </field>
             <field name="validity_date" position="after">
-                <field name="fiscal_operation_id" required="True" />
-                <field name="ind_pres" required="True" />
+                <field name="country_id" invisible="1" />
+                <field
+                    name="fiscal_operation_id"
+                    attrs="{'required': [('country_id', '=', %(base.br)d)], 'invisible': [('country_id', '!=', %(base.br)d)]}"
+                />
+                <field
+                    name="ind_pres"
+                    attrs="{'required': [('country_id', '=', %(base.br)d)], 'invisible': [('country_id', '!=', %(base.br)d)]}"
+                />
             </field>
             <field name="note" position="replace">
                 <group>
@@ -143,12 +150,12 @@
                 <field
                     name="fiscal_operation_id"
                     options="{'no_create': True}"
-                    attrs="{'readonly': [('state', 'in', ('sale', 'done', 'cancel'))], 'required': [('display_type', '=', False)], 'invisible': [('country_id', '!=', %(base.br)d)]}"
+                    attrs="{'readonly': [('state', 'in', ('sale', 'done', 'cancel'))], 'required': [('display_type', '=', False), ('country_id', '=', %(base.br)d)], 'invisible': [('country_id', '!=', %(base.br)d)]}"
                 />
                 <field
                     name="fiscal_operation_line_id"
                     options="{'no_create': True}"
-                    attrs="{'readonly': [('state', 'in', ('sale', 'done', 'cancel'))],'invisible': [('country_id', '!=', %(base.br)d)]}"
+                    attrs="{'readonly': [('state', 'in', ('sale', 'done', 'cancel'))], 'invisible': [('country_id', '!=', %(base.br)d)]}"
                 />
                 <field
                     name="cfop_id"
