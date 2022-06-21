@@ -20,14 +20,10 @@ class TestUi(HttpCase):
                 "amount": 10000,
             }
         )
-        tour = (
-            "odoo.__DEBUG__.services['web_tour.tour']",
-            "l10n_br_website_sale_delivery_tour",
-        )
 
         mocked_response = {
             "zip_code": "12246250",
-            "street": " Rua do Aruana",
+            "street_name": "Rua do Aruana",
             "district": "Parque Residencial Aquarius",
             "city_id": self.env.ref("l10n_br_base.city_3549904").id,
             "state_id": self.env.ref("base.state_br_sp").id,
@@ -37,10 +33,9 @@ class TestUi(HttpCase):
             _provider_class + "._consultar_cep",
             return_value=mocked_response,
         ):
-            self.browser_js(
-                url_path="/shop",
-                code="%s.run('%s')" % tour,
-                ready="%s.tours.%s.ready" % tour,
+            self.start_tour(
+                "/shop",
+                "l10n_br_website_sale_delivery_tour",
                 login="admin",
                 timeout=5000,
             )
