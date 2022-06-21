@@ -92,13 +92,22 @@
                         class="btn-secondary"
                         attrs="{'invisible': ['|', ('state_edoc', 'not in', ('a_enviar', 'rejeitada')), ('document_electronic', '=', False)]}"
                     />
+<!--            <button-->
+<!--                        name="view_pdf"-->
+<!--                        type="object"-->
+<!--                        string="Visualizar PDF"-->
+<!--                        groups="l10n_br_fiscal.group_user"-->
+<!--                        class="btn-primary"-->
+<!--                        attrs="{'invisible': [('state_edoc', '=', 'em_digitacao')]}"-->
+<!--                    />-->
             <button
-                        name="view_pdf"
+                        name="action_open_nfse_document_from_provider"
+                        string="Visualizar PDF NFSe"
                         type="object"
-                        string="Visualizar PDF"
                         groups="l10n_br_fiscal.group_user"
                         class="btn-primary"
-                        attrs="{'invisible': [('state_edoc', '=', 'em_digitacao')]}"
+                        icon="fa-file-text"
+                        attrs="{'invisible': ['|', ('document_electronic', '=', False), ('state_edoc', 'not in', ('autorizada', 'cancelada'))]}"
                     />
             <button
                         name="view_xml"
