@@ -496,11 +496,11 @@ class TestDeliveryInverseAmount(SavepointCase):
 
         self.sale_demo._create_invoices(final=True)
 
-        self.assertEquals(self.sale_demo.state, "sale", "Error to confirm Sale Order.")
+        self.assertEqual(self.sale_demo.state, "sale", "Error to confirm Sale Order.")
 
         invoice = self.sale_demo.invoice_ids[0]
-        invoice.action_invoice_open()
-        self.assertEquals(invoice.state, "open", "Invoice should be in state Open")
+        invoice.action_post()
+        self.assertEqual(invoice.state, "posted", "Invoice should be in state Posted")
         for line in invoice.invoice_line_ids:
             other_line = invoice.invoice_line_ids.filtered(
                 lambda o_l: o_l.id != line.id
