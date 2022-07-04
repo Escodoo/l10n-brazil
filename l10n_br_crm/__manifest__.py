@@ -12,5 +12,5 @@
     "depends": ["l10n_br_base", "crm"],
     "data": ["views/crm_lead_view.xml"],
     "installable": True,
-    "auto_install": True,
+    "auto_install": False,
 }
