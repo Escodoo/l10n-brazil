@@ -23,7 +23,9 @@ class StockInvoiceOnshipping(models.TransientModel):
                     "partner_id": pick.sale_id.partner_invoice_id.id,
                 }
             )
-            if pick.sale_id.payment_term_id.id != values["payment_term_id"]:
+            if values.get(
+                "payment_term_id"
+            ) and pick.sale_id.payment_term_id.id != values.get("payment_term_id"):
                 values.update({"payment_term_id": pick.sale_id.payment_term_id.id})
             if pick.sale_id.copy_note and pick.sale_id.note:
                 # Evita enviar False quando não tem nada
