@@ -227,3 +227,23 @@ class Partner(models.Model):
             # see https://github.com/odoo/odoo/pull/71630
             if partner.street != street_value:
                 partner.street = street_value
+
+    @api.model
+    def _commercial_fields(self):
+        return super()._commercial_fields() + [
+            "company_cnpj_cpf",
+            "inscr_est",
+            "inscr_mun",
+        ]
+
+    @api.model
+    def create(self, vals):
+        if vals.get("cnpj_cpf") and vals.get("is_company"):
+            vals["company_cnpj_cpf"] = vals.get("cnpj_cpf")
+        return super().create(vals)
+
+
+    def write(self, vals):
+        if vals.get("cnpj_cpf") and self.is_company:
+            vals["company_cnpj_cpf"] = vals.get("cnpj_cpf")
+        return super().write(vals)
