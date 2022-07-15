@@ -1,5 +1,5 @@
 # generated from manifests external_dependencies
-git+https://github.com/escodoo/erpbrasil.assinatura.git@master-nfse_paulistana-workaround#egg=erpbrasil.assinatura
+-e git+https://github.com/escodoo/erpbrasil.assinatura.git@master-nfse_paulistana-workaround#egg=erpbrasil.assinatura
 erpbrasil.base
 erpbrasil.edoc
 erpbrasil.edoc.pdf
