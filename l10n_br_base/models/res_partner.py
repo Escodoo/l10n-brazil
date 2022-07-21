@@ -83,6 +83,22 @@ class Partner(models.Model):
                         _("There is already a partner record with this CPF/RG!")
                     )
 
+    @api.model
+    def create(self, vals):
+        if (
+            vals.get("cnpj_cpf")
+            and vals.get("is_company")
+            and self.country_id.code == "BR"
+        ):
+            vals["vat"] = vals.get("cnpj_cpf")
+
+        return super().create(vals)
+
+    def write(self, vals):
+        if vals.get("cnpj_cpf") and self.is_company and self.country_id.code == "BR":
+            vals["vat"] = vals.get("cnpj_cpf")
+        return super().write(vals)
+
     @api.constrains("cnpj_cpf", "country_id")
     def _check_cnpj_cpf(self):
         result = True
