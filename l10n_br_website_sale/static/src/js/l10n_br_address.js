@@ -12,22 +12,38 @@ odoo.define("l10n_br_website_sale.l10n_br_address", function (require) {
         return $.Deferred().reject("DOM doesn't contain '.checkout_autoformat'");
     }
 
-    if ($("#input_cnpj_cpf").length) {
-        var cpf_cleave = new Cleave("#input_cnpj_cpf", {
-            blocks: [2, 3, 3, 4, 2],
-            delimiters: [".", ".", "-"],
-            numericOnly: true,
-            onValueChanged: function (e) {
-                if (e.target.rawValue.length > 11) {
-                    this.properties.blocks = [2, 3, 3, 4, 2];
-                    this.properties.delimiters = [".", ".", "/", "-"];
-                } else {
-                    this.properties.blocks = [3, 3, 3, 3];
-                    this.properties.delimiters = [".", ".", "-"];
-                }
-            },
-        });
+    function formatCpfCnpj(inputValue) {
+        // Remove non-numeric characters
+        let value = inputValue.replace(/\D/g, "");
+
+        // Truncate the value to 11 digits if it's more than 11 and less than 14
+        if (value.length > 11 && value.length < 14) {
+            value = value.substring(0, 11);
+        }
+        // Truncate the value to 14 digits if it's 14 or more
+        else if (value.length >= 14) {
+            value = value.substring(0, 14);
+        }
+
+        if (value.length <= 11) {
+            // Format as CPF
+            value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+        } else {
+            // Format as CNPJ
+            value = value.replace(
+                /(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,
+                "$1.$2.$3/$4-$5"
+            );
+        }
+
+        return value;
     }
+
+    $("#input_cnpj_cpf").on("blur", function () {
+        var value = $(this).val();
+        var formattedValue = formatCpfCnpj(value);
+        $(this).val(formattedValue);
+    });
 
     var zip_cleave = new Cleave(".input-zipcode", {
         blocks: [5, 3],
