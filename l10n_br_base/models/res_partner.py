@@ -21,8 +21,6 @@ class Partner(models.Model):
     _name = "res.partner"
     _inherit = [_name, "l10n_br_base.party.mixin"]
 
-    vat = fields.Char(related="cnpj_cpf")
-
     is_accountant = fields.Boolean(string="Is accountant?")
 
     crc_code = fields.Char(string="CRC Code", size=18)
