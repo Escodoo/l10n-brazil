@@ -269,3 +269,10 @@ class Partner(models.Model):
                 }
             )
         return True
+
+    @api.model
+    def _commercial_fields(self):
+        return super()._commercial_fields() + [
+            "inscr_est",
+            "inscr_mun",
+        ]
