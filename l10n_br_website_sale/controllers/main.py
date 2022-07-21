@@ -51,7 +51,6 @@ class L10nBrWebsiteSale(WebsiteSale):
                     "city_id",
                     "zip",
                     "cnpj_cpf",
-                    "company_type",
                 ]
                 req.extend(extension)
         return req
