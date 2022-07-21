@@ -241,3 +241,31 @@ class Partner(models.Model):
             # see https://github.com/odoo/odoo/pull/71630
             if partner.street != street_value:
                 partner.street = street_value
+
+    def create_company(self):
+        self.ensure_one()
+        if self.company_name:
+            # Create parent company
+            values = dict(
+                name=self.company_name,
+                is_company=True,
+                cnpj_cpf=self.vat,
+                legal_name=self.company_name,
+                inscr_est=self.inscr_est,
+                inscr_mun=self.inscr_mun,
+                street_name=self.street_name,
+                street_number=self.street_number,
+            )
+            values.update(self._update_fields_values(self._address_fields()))
+            new_company = self.create(values)
+            # Set new company as my parent
+            self.write(
+                {
+                    "parent_id": new_company.id,
+                    "child_ids": [
+                        (1, partner_id, dict(parent_id=new_company.id))
+                        for partner_id in self.child_ids.ids
+                    ],
+                }
+            )
+        return True
