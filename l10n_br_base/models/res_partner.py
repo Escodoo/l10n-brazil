@@ -21,8 +21,6 @@ class Partner(models.Model):
     _name = "res.partner"
     _inherit = [_name, "l10n_br_base.party.mixin"]
 
-    vat = fields.Char(related="cnpj_cpf")
-
     is_accountant = fields.Boolean(string="Is accountant?")
 
     crc_code = fields.Char(string="CRC Code", size=18)
@@ -84,6 +82,22 @@ class Partner(models.Model):
                     raise ValidationError(
                         _("There is already a partner record with this CPF/RG!")
                     )
+
+    @api.model
+    def create(self, vals):
+        if (
+            vals.get("cnpj_cpf")
+            and vals.get("is_company")
+            and self.country_id.code == "BR"
+        ):
+            vals["vat"] = vals.get("cnpj_cpf")
+
+        return super().create(vals)
+
+    def write(self, vals):
+        if vals.get("cnpj_cpf") and self.is_company and self.country_id.code == "BR":
+            vals["vat"] = vals.get("cnpj_cpf")
+        return super().write(vals)
 
     @api.constrains("cnpj_cpf", "country_id")
     def _check_cnpj_cpf(self):
@@ -227,3 +241,38 @@ class Partner(models.Model):
             # see https://github.com/odoo/odoo/pull/71630
             if partner.street != street_value:
                 partner.street = street_value
+
+    def create_company(self):
+        self.ensure_one()
+        if self.company_name:
+            # Create parent company
+            values = dict(
+                name=self.company_name,
+                is_company=True,
+                cnpj_cpf=self.vat,
+                legal_name=self.company_name,
+                inscr_est=self.inscr_est,
+                inscr_mun=self.inscr_mun,
+                street_name=self.street_name,
+                street_number=self.street_number,
+            )
+            values.update(self._update_fields_values(self._address_fields()))
+            new_company = self.create(values)
+            # Set new company as my parent
+            self.write(
+                {
+                    "parent_id": new_company.id,
+                    "child_ids": [
+                        (1, partner_id, dict(parent_id=new_company.id))
+                        for partner_id in self.child_ids.ids
+                    ],
+                }
+            )
+        return True
+
+    @api.model
+    def _commercial_fields(self):
+        return super()._commercial_fields() + [
+            "inscr_est",
+            "inscr_mun",
+        ]
