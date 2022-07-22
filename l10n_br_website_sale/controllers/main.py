@@ -119,7 +119,11 @@ class L10nBrWebsiteSale(WebsiteSale):
             if "city_id" in errors:
                 errors.pop("city_id", None)
             if "cnpj_cpf" in errors:
-                errors.pop("city_id", None)
+                errors.pop("cnpj_cpf", None)
+            if "inscr_est" in errors:
+                errors.pop("inscr_est", None)
+            if "inscr_mun" in errors:
+                errors.pop("inscr_mun", None)
 
         if "city_id" in values:
             new_values["city_id"] = values["city_id"]
@@ -133,6 +137,12 @@ class L10nBrWebsiteSale(WebsiteSale):
             new_values["street_number"] = values["street_number"]
         if "district" in values:
             new_values["district"] = values["district"]
+        if "mobile" in values:
+            new_values["mobile"] = values["mobile"]
+        if "inscr_est" in values:
+            new_values["inscr_est"] = values["inscr_est"]
+        if "inscr_mun" in values:
+            new_values["inscr_mun"] = values["inscr_mun"]
         return new_values, errors, error_msg
 
     def checkout_form_validate(self, mode, all_form_values, data):
@@ -153,6 +163,13 @@ class L10nBrWebsiteSale(WebsiteSale):
 
                 if "cnpj_cpf" not in error:
                     all_form_values["cnpj_cpf"] = data["cnpj_cpf"]
+        if "vat" in data:
+            if "country_id" in data and data["country_id"] == "31":
+                if not cnpj_cpf.validar(data["vat"]):
+                    error["cnpj_cpf"] = "error"
+                    error_message.append("VAT Inválido")
+            if "vat" not in error:
+                all_form_values["vat"] = data["vat"]
 
         return error, error_message
 
