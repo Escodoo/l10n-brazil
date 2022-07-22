@@ -45,7 +45,7 @@
                                 <label
                                     class="col-form-label label-optional"
                                     for="legal_name"
-                                >Razão Social / Nome Completo</label>
+                                >Legal Name</label>
                                 <p
                                     t-if="not partner.can_edit_vat()"
                                     t-attf-class="form-control"
@@ -72,6 +72,11 @@
                                     class="col-form-label label-optional"
                                     for="cnpj_cpf"
                                 >CPF</label>
+                                <label
+                                    t-if="user_id.partner_id.is_company == True"
+                                    class="col-form-label label-optional"
+                                    for="cnpj_cpf"
+                                >CNPJ/VAT</label>
                                 <input
                                     type="text"
                                     name="cnpj_cpf"
@@ -102,12 +107,14 @@
                                 />
                             </div>
                             <div
+                                t-if="user_id.partner_id.is_company == False"
                                 t-attf-class="input-cnpj-cpf form-group #{error.get('vat') and 'o_has_error' or ''} col-xl-6"
                             >
                                 <label
                                     class="col-form-label label-optional"
                                     for="vat"
                                 >CNPJ/VAT</label>
+
                                 <input
                                     type="text"
                                     name="vat"
@@ -266,7 +273,7 @@
                                 <label
                                     class="col-form-label"
                                     for="district"
-                                >Bairro</label>
+                                >District</label>
                                 <input
                                     type="text"
                                     name="district"
@@ -281,7 +288,7 @@
                                 <label
                                     class="col-form-label"
                                     for="street2"
-                                >Complemento</label>
+                                >Street2</label>
                                 <input
                                     type="text"
                                     name="street2"
@@ -321,7 +328,7 @@
                                 <label
                                     class="col-form-label label-optional"
                                     for="state_id"
-                                >Cidade</label>
+                                >City</label>
                                 <select
                                     name="city_id"
                                     t-attf-class="form-control #{error.get('city_id') and 'is-invalid' or ''}"
