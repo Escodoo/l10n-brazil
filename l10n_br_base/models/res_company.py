@@ -42,12 +42,10 @@ class Company(models.Model):
         for company in self:
             company.partner_id.cnpj_cpf = company.cnpj_cpf
 
-    def _inverse_state(self):
+    def _inverse_state_tax_number(self):
         """Write the l10n_br specific functional fields."""
         for company in self:
-            company.partner_id.write(
-                {"state_id": company.state_id.id, "inscr_est": company.inscr_est}
-            )
+            company.partner_id.inscr_est = company.inscr_est
 
     def _inverse_state_tax_number_ids(self):
         """Write the l10n_br specific functional fields."""
@@ -61,6 +59,11 @@ class Company(models.Model):
         """Write the l10n_br specific functional fields."""
         for company in self:
             company.partner_id.inscr_mun = company.inscr_mun
+
+    def _inverse_state(self):
+        """Write the l10n_br specific functional fields."""
+        for company in self:
+            company.partner_id.state_id = company.state_id
 
     def _inverse_city_id(self):
         """Write the l10n_br specific functional fields."""
@@ -97,7 +100,7 @@ class Company(models.Model):
 
     inscr_est = fields.Char(
         compute="_compute_address",
-        inverse="_inverse_state",
+        inverse="_inverse_state_tax_number",
     )
 
     state_tax_number_ids = fields.One2many(
