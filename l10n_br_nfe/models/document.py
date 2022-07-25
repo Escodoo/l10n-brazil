@@ -514,6 +514,51 @@ class NFe(spec_models.StackedModel):
         related="company_id.technical_support_id",
     )
 
+    ##########################
+    # NF-e tag: autXML
+    # Compute Methods
+    ##########################
+
+    @api.depends("company_id")
+    def _compute_nfe40_autXML(self):
+        for doc in self:
+            autorized_persons = doc.env["nfe.40.autxml"]
+            company = doc.company_id
+            if company.accountant_id and company.nfe_authorize_accountant_download_xml:
+                if company.accountant_id.is_company:
+                    autorized_person_vals = {
+                        "nfe40_autXML_infNFe_id": doc.id,
+                        "nfe40_choice8": "nfe40_CNPJ"
+                        if company.accountant_id.is_company
+                        else "nfe40_CPF",
+                        "nfe40_CNPJ": company.accountant_id.cnpj_cpf,
+                    }
+                autorized_persons += autorized_persons.create(autorized_person_vals)
+            if (
+                company.technical_support_id
+                and company.nfe_authorize_technical_download_xml
+            ):
+                if company.technical_support_id.is_company:
+                    autorized_person_vals = {
+                        "nfe40_autXML_infNFe_id": doc.id,
+                        "nfe40_choice8": "nfe40_CNPJ"
+                        if company.technical_support_id.is_company
+                        else "nfe40_CPF",
+                        "nfe40_CNPJ": company.technical_support_id.cnpj_cpf,
+                    }
+                autorized_persons += autorized_persons.create(autorized_person_vals)
+
+            doc.nfe40_autXML = [(6, 0, autorized_persons.ids)] or False
+
+    ##########################
+    # NF-e tag: autXML
+    ##########################
+
+    nfe40_autXML = fields.One2many(
+        compute="_compute_nfe40_autXML",
+        store=True,
+    )
+
     ################################
     # Framework Spec model's methods
     ################################
