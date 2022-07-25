@@ -514,6 +514,43 @@ class NFe(spec_models.StackedModel):
         related="company_id.technical_support_id",
     )
 
+    ##########################
+    # NF-e tag: autXML
+    # Compute Methods
+    ##########################
+
+    @api.depends("company_id")
+    def _compute_nfe40_autXML(self):
+        for doc in self:
+            accountant = doc.company_id.accountant_id
+            if accountant:
+                if accountant.is_company:
+                    autorized_person_vals = {
+                        "nfe40_autXML_infNFe_id": doc.id,
+                        "nfe40_choice8": "nfe40_CNPJ",
+                        "nfe40_CNPJ": accountant.cnpj_cpf,
+                    }
+                else:
+                    autorized_person_vals = {
+                        "nfe40_autXML_infNFe_id": doc.id,
+                        "nfe40_choice8": "nfe40_CPF",
+                        "nfe40_CPF": accountant.cnpj_cpf,
+                    }
+                autorized_person = doc.env["nfe.40.autxml"].create(
+                    autorized_person_vals
+                )
+                doc.nfe40_autXML = [(6, 0, autorized_person.ids)]
+            else:
+                doc.nfe40_autXML = False
+
+    ##########################
+    # NF-e tag: autXML
+    ##########################
+
+    nfe40_autXML = fields.One2many(
+        compute="_compute_nfe40_autXML",
+    )
+
     ################################
     # Framework Spec model's methods
     ################################
