@@ -58,6 +58,8 @@ def get_brcobranca_bank(bank_account_id, payment_method_code):
 def get_brcobranca_api_url():
     brcobranca_api_url = os.environ.get("BRCOBRANCA_API_URL")
 
+    brcobranca_api_url = 'http://192.168.0.12:9292'
+
     if not brcobranca_api_url:
         raise UserError(
             _(
@@ -67,5 +69,6 @@ def get_brcobranca_api_url():
                 "BRCOBRANCA_API_URL=http://boleto_cnab_api:9292"
             )
         )
+
 
     return brcobranca_api_url

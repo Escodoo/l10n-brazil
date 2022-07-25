@@ -66,6 +66,17 @@ class PaymentOrder(models.Model):
     def _prepare_remessa_bradesco_400(self, remessa_values):
         remessa_values["codigo_empresa"] = int(self.payment_mode_id.code_convetion)
 
+    def _prepare_remessa_santander_400(self, remessa_values):
+        bank_account_id = self.journal_id.bank_account_id
+        remessa_values.update(
+            {
+                # Aparentemente a validação do BRCobranca nesse caso gera erro
+                # quando é feito o int(misc.punctuation_rm(bank_account_id.acc_number))
+                "codigo_transmissao": '37420382417901300024',
+                "conta_corrente": misc.punctuation_rm(bank_account_id.acc_number),
+            }
+        )
+
     def get_file_name(self, cnab_type):
         context_today = fields.Date.context_today(self)
         if cnab_type == "240":
