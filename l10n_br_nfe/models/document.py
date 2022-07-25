@@ -522,8 +522,10 @@ class NFe(spec_models.StackedModel):
     @api.depends("company_id")
     def _compute_nfe40_autXML(self):
         for doc in self:
+            autorized_persons = doc.env["nfe.40.autxml"]
             accountant = doc.company_id.accountant_id
-            if accountant:
+            technical_support = doc.company_id.technical_support_id
+            if accountant and doc.company_id.nfe_authorize_accountant_download_xml:
                 if accountant.is_company:
                     autorized_person_vals = {
                         "nfe40_autXML_infNFe_id": doc.id,
@@ -536,12 +538,28 @@ class NFe(spec_models.StackedModel):
                         "nfe40_choice8": "nfe40_CPF",
                         "nfe40_CPF": accountant.cnpj_cpf,
                     }
-                autorized_person = doc.env["nfe.40.autxml"].create(
-                    autorized_person_vals
-                )
-                doc.nfe40_autXML = [(6, 0, autorized_person.ids)]
-            else:
-                doc.nfe40_autXML = False
+                autorized_persons += autorized_persons.create(autorized_person_vals)
+
+            if (
+                technical_support
+                and doc.company_id.nfe_authorize_technical_download_xml
+            ):
+                if technical_support.is_company:
+                    autorized_person_vals = {
+                        "nfe40_autXML_infNFe_id": doc.id,
+                        "nfe40_choice8": "nfe40_CNPJ",
+                        "nfe40_CNPJ": technical_support.cnpj_cpf,
+                    }
+                else:
+                    autorized_person_vals = {
+                        "nfe40_autXML_infNFe_id": doc.id,
+                        "nfe40_choice8": "nfe40_CPF",
+                        "nfe40_CPF": technical_support.cnpj_cpf,
+                    }
+
+                autorized_persons += autorized_persons.create(autorized_person_vals)
+
+            doc.nfe40_autXML = [(6, 0, autorized_persons.ids)] or False
 
     ##########################
     # NF-e tag: autXML
