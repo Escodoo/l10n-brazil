@@ -6,7 +6,12 @@
         <field name="inherit_id" ref="contract.contract_contract_form_view" />
         <field name="arch" type="xml">
             <field name="fiscal_position_id" position="after">
-                <field name="fiscal_operation_id" />
+                <field name="country_id" invisible="1" />
+                <field
+                    name="fiscal_operation_id"
+                    options="{'no_create': True}"
+                    attrs="{'invisible': [('country_id', '!=', %(base.br)d)]}"
+                />
             </field>
             <xpath
                 expr="//field[@name='contract_line_fixed_ids']"
@@ -21,34 +26,62 @@
                     name="context"
                 >{'default_fiscal_operation_id': fiscal_operation_id, 'default_partner_id': partner_id, 'default_company_id': company_id}</attribute>
             </xpath>
-
             <xpath
                 expr="//field[@name='contract_line_fixed_ids']/tree/button"
                 position="before"
             >
-                <field name="fiscal_operation_id" readonly="1" optional="hide" />
-                <field name="fiscal_operation_line_id" readonly="1" optional="hide" />
+                <field name="country_id" invisible="1" />
+                <field name="fiscal_operation_type" invisible="1" readonly="1" />
+                <field name="fiscal_genre_code" invisible="1" />
+                <field name="tax_framework" invisible="1" />
+                <field name="tax_icms_or_issqn" invisible="1" />
+                <field name="issqn_fg_city_id" invisible="1" />
+                <field name="fiscal_price" force_save="1" invisible="1" />
+                <field name="fiscal_quantity" force_save="1" invisible="1" />
+                <field
+                    name="fiscal_operation_id"
+                    options="{'no_create': True}"
+                    attrs="{'invisible': [('country_id', '!=', %(base.br)d)]}"
+                    optional="hide"
+                />
+                <field
+                    name="fiscal_operation_line_id"
+                    options="{'no_create': True}"
+                    attrs="{'invisible': [('country_id', '!=', %(base.br)d)]}"
+                    optional="hide"
+                />
+                <field
+                    name="cfop_id"
+                    options="{'no_create': True}"
+                    attrs="{'invisible': ['|', ('tax_icms_or_issqn', '=', 'issqn'), ('country_id', '!=', %(base.br)d)]}"
+                    optional="hide"
+                />
+                <field
+                    name="service_type_id"
+                    options="{'no_create': True}"
+                    attrs="{'invisible': ['|', ('tax_icms_or_issqn', '=', 'icms'), ('country_id', '!=', %(base.br)d)]}"
+                    optional="hide"
+                />
+                <field
+                    name="city_taxation_code_id"
+                    attrs="{'invisible': ['|', ('tax_icms_or_issqn', '=', 'icms'), ('country_id', '!=', %(base.br)d)]}"
+                    options="{'no_create': True}"
+                    optional="hide"
+                />
+                <field
+                    name="cnae_id"
+                    attrs="{'invisible': ['|', ('tax_icms_or_issqn', '=', 'icms'), ('country_id', '!=', %(base.br)d)]}"
+                    options="{'no_create': True}"
+                    optional="hide"
+                />
                 <field
                     name="fiscal_tax_ids"
                     widget="many2many_tags"
-                    readonly="1"
+                    options="{'no_create': True}"
                     optional="hide"
+                    attrs="{'invisible': [('country_id', '!=', %(base.br)d)]}"
                 />
             </xpath>
-            <xpath
-                expr="//field[@name='contract_line_ids']/tree/button"
-                position="before"
-            >
-                <field name="fiscal_operation_id" readonly="1" optional="hide" />
-                <field name="fiscal_operation_line_id" readonly="1" optional="hide" />
-                <field
-                    name="fiscal_tax_ids"
-                    widget="many2many_tags"
-                    readonly="1"
-                    optional="hide"
-                />
-            </xpath>
-
         </field>
     </record>
 </odoo>
