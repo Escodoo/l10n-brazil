@@ -30,6 +30,7 @@ class ResPartner(spec_models.SpecModel):
         "nfe.40.dest",
         "nfe.40.tenderemi",
         "nfe.40.tinfresptec",
+        "nfe.40.autxml",
     ]
     _nfe_search_keys = ["nfe40_CNPJ", "nfe40_CPF", "nfe40_xNome"]
 
