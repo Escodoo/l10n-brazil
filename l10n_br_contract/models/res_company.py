@@ -19,3 +19,7 @@ class ResCompany(models.Model):
         string="Default Contract Purchase Fiscal Operation",
         required=False,
     )
+
+    contract_recalculate_taxes_before_invoice = fields.Boolean(
+        string="Recalculate taxes before invoicing", default=True
+    )
