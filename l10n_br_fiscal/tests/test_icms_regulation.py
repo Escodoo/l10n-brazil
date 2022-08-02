@@ -21,6 +21,15 @@ class TestICMSRegulation(TransactionCase):
         self.ncm_48191000_id = self.env.ref("l10n_br_fiscal.ncm_48191000")
         self.ncm_energia_id = self.env.ref("l10n_br_fiscal.ncm_27160000")
 
+    def test_icms_sc_sp_ind_final_yes_default(self):
+        tax_icms = self.find_icms_tax(
+            in_state_id=self.sc_state_id,
+            out_state_id=self.sp_state_id,
+            ncm_id=self.ncm_48191000_id,
+            ind_final=FINAL_CUSTOMER_YES,
+        )
+        self.assertEqual(tax_icms.percent_amount, 12.00)
+
     def test_icms_sc_sc_ind_final_yes_default(self):
         tax_icms = self.find_icms_tax(
             in_state_id=self.sc_state_id,
@@ -48,19 +57,28 @@ class TestICMSRegulation(TransactionCase):
         )
         self.assertEqual(tax_icms.percent_amount, 25.00)
 
-    def test_icms_sc_sp_ind_final_yes_default(self):
-        tax_icms = self.find_icms_tax(
-            in_state_id=self.sc_state_id,
-            out_state_id=self.sp_state_id,
-            ncm_id=self.ncm_48191000_id,
-            ind_final=FINAL_CUSTOMER_YES,
-        )
-        self.assertEqual(tax_icms.percent_amount, 12.00)
-
     def find_icms_tax(self, in_state_id, out_state_id, ncm_id, ind_final):
+        company_inscr_est = (
+            "497.846.721" if out_state_id.code == "SC" else self.company.inscr_est
+        )
+        partner_inscr_est = (
+            "495.723.657" if in_state_id.code == "SC" else self.partner.inscr_est
+        )
 
-        self.partner.state_id = in_state_id
-        self.company.state_id = out_state_id
+        if partner_inscr_est != self.partner.inscr_est:
+            self.partner.inscr_est = False
+            self.partner.state_id = in_state_id
+            self.partner.inscr_est = partner_inscr_est
+        else:
+            self.partner.state_id = in_state_id
+
+        if company_inscr_est != self.company.inscr_est:
+            self.company.inscr_est = False
+            self.company.state_id = out_state_id
+            self.company.inscr_est = company_inscr_est
+        else:
+            self.company.state_id = out_state_id
+
         self.product.ncm_id = ncm_id
 
         tax_icms = self.icms_regulation.map_tax_icms(
