@@ -151,15 +151,27 @@ class StockMove(models.Model):
         return result
 
     def _split(self, qty, restrict_partner_id=False):
-        new_move_id = super()._split(qty, restrict_partner_id)
+        new_move_vals = super()._split(qty, restrict_partner_id)
+
         self._onchange_commercial_quantity()
         self._onchange_fiscal_taxes()
 
-        new_move_obj = self.env["stock.move"].browse(new_move_id)
-        new_move_obj._onchange_commercial_quantity()
-        new_move_obj._onchange_fiscal_taxes()
+        for vals in new_move_vals:
+            product_id = vals.get("product_id")
+            price_unit = vals.get("price_unit")
+            quantity = vals.get("product_uom_qty")
+            uom_id = vals.get("uom_id")
+            uot_id = vals.get("uot_id")
 
-        return new_move_id
+            vals.update(
+                self._update_fiscal_quantity(
+                    product_id, price_unit, quantity, uom_id, uot_id
+                )
+            )
+
+            vals.update(self._prepare_br_fiscal_dict())
+
+        return new_move_vals
 
     @api.depends("price_unit")
     def _compute_fiscal_price(self):
