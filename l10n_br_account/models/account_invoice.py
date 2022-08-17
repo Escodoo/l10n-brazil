@@ -458,8 +458,8 @@ class AccountMove(models.Model):
         invoices = self.filtered(lambda d: d.document_type_id)
         if invoices:
             invoices.mapped("fiscal_document_id").action_document_send()
-            for invoice in invoices:
-                invoice.move_id.post(invoice=invoice)
+            # for invoice in invoices:
+            #     invoice.move_id.post(invoice=invoice)
 
     def action_document_cancel(self):
         for i in self.filtered(lambda d: d.document_type_id):
