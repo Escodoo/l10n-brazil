@@ -2,55 +2,55 @@
 <odoo>
     <data noupdate="1">
         <!-- Tipos de conta para grupos ANS -->
-        <record model="account.account.type" id="l10n_br_coa_ans.data_account_type_cost_deduction">
+        <record model="account.account.type" id="l10n_br_coa.data_account_type_cost_deduction">
             <field name="name">Custo Dedutível</field>
             <field name="type">other</field>
             <field name="internal_group">expense</field>
             <field name="include_initial_balance" eval="False" />
         </record>
-        <record model="account.account.type" id="l10n_br_coa_ans.data_account_type_current_assets_goodwill">
+        <record model="account.account.type" id="l10n_br_coa.data_account_type_current_assets_goodwill">
             <field name="name">Ativo / Goodwill</field>
             <field name="type">other</field>
             <field name="internal_group">asset</field>
             <field name="include_initial_balance" eval="True" />
         </record>
-        <record model="account.account.type" id="l10n_br_coa_ans.data_account_type_current_assets_added_value">
+        <record model="account.account.type" id="l10n_br_coa.data_account_type_current_non_assets_added_value">
             <field name="name">Ativo / Mais valia</field>
             <field name="type">other</field>
             <field name="internal_group">asset</field>
             <field name="include_initial_balance" eval="True" />
         </record>
-        <record model="account.account.type" id="l10n_br_coa_ans.data_account_type_current_assets_reserve">
+        <record model="account.account.type" id="l10n_br_coa.data_account_type_current_assets_reserve">
             <field name="name">Ativo / Circulante / Provisões</field>
             <field name="type">other</field>
             <field name="internal_group">asset</field>
             <field name="include_initial_balance" eval="True" />
         </record>
-        <record model="account.account.type" id="l10n_br_coa_ans.data_account_type_non_current_assets_reserve">
+        <record model="account.account.type" id="l10n_br_coa.data_account_type_non_current_assets_reserve">
             <field name="name">Ativo / Não Circulante / Provisões</field>
             <field name="type">other</field>
             <field name="internal_group">asset</field>
             <field name="include_initial_balance" eval="True" />
         </record>
-        <record model="account.account.type" id="l10n_br_coa_ans.data_account_type_current_assets_investments">
+        <record model="account.account.type" id="l10n_br_coa.data_account_type_current_assets_investments">
             <field name="name">Ativo / Circulante / Investimentos</field>
             <field name="type">other</field>
             <field name="internal_group">asset</field>
             <field name="include_initial_balance" eval="True" />
         </record>						
-        <record model="account.account.type" id="l10n_br_coa_ans.data_account_type_non_current_liabilities_fiscal">
+        <record model="account.account.type" id="l10n_br_coa.data_account_type_non_current_liabilities_fiscal">
             <field name="name">Passivo / Não Circulante / Obrigações Fiscais</field>
             <field name="type">other</field>
             <field name="internal_group">liability</field>
             <field name="include_initial_balance" eval="True" />
         </record>					
-        <record model="account.account.type" id="l10n_br_coa_ans.data_account_type_non_current_liabilities_reserve">
+        <record model="account.account.type" id="l10n_br_coa.data_account_type_non_current_liabilities_reserve">
             <field name="name">Passivo / Não Circulante / Provisões</field>
             <field name="type">other</field>
             <field name="internal_group">liability</field>
             <field name="include_initial_balance" eval="True" />
         </record>				
-       <record model="account.account.type" id="l10n_br_coa_ans.data_account_type_equity_adjustment">
+       <record model="account.account.type" id="l10n_br_coa.data_account_type_equity_adjustment">
             <field name="name">Patrimônio Líquido / Ajustes</field>
             <field name="type">other</field>
             <field name="internal_group">equity</field>
