@@ -8,7 +8,7 @@
             <field name="internal_group">expense</field>
             <field name="include_initial_balance" eval="False" />
         </record>
-        <record model="account.account.type" id="l10n_br_coa.data_account_type_current_assets_goodwill">
+        <record model="account.account.type" id="l10n_br_coa.data_account_type_non_current_assets_goodwill">
             <field name="name">Ativo / Goodwill</field>
             <field name="type">other</field>
             <field name="internal_group">asset</field>
