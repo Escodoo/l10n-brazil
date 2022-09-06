@@ -217,36 +217,36 @@ account_template_ans_126119051,126119051,Imposto Sobre Serviços - ISS,,l10n_br_
 account_template_ans_126119088,126119088,Outros Créditos Tributários e Previdenciários,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Outros Créditos Tributários e Previdenciários
 account_template_ans_127119011,127119011,Estoques,,l10n_br_coa.data_account_type_current_assets_stock,,l10n_br_coa_ans_chart_template,,Estoques
 account_template_ans_127119012,127119012,Almoxarifado,,l10n_br_coa.data_account_type_current_assets_stock,,l10n_br_coa_ans_chart_template,,Estoques
-account_template_ans_127219011,127219011,Imóveis a Venda,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Bens a Venda
-account_template_ans_127219012,127219012,Outros Bens a Venda,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Bens a Venda
-account_template_ans_127319011,127319011,Dependências no País,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Dependências no País
-account_template_ans_127419011,127419011,Adiantamentos a Funcionários,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Adiantamentos
-account_template_ans_127419012,127419012,Adiantamentos a Prestadores de Serviços Assistenciais,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Adiantamentos
-account_template_ans_127419013,127419013,Adiantamentos a Fornecedores,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Adiantamentos
-account_template_ans_127419018,127419018,Outros Adiantamentos,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Adiantamentos
+account_template_ans_127219011,127219011,Imóveis a Venda,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Bens a Venda
+account_template_ans_127219012,127219012,Outros Bens a Venda,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Bens a Venda
+account_template_ans_127319011,127319011,Dependências no País,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Dependências no País
+account_template_ans_127419011,127419011,Adiantamentos a Funcionários,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Adiantamentos
+account_template_ans_127419012,127419012,Adiantamentos a Prestadores de Serviços Assistenciais,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Adiantamentos
+account_template_ans_127419013,127419013,Adiantamentos a Fornecedores,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Adiantamentos
+account_template_ans_127419018,127419018,Outros Adiantamentos,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Adiantamentos
 account_template_ans_127419019,127419019,(-) Provisão para Perdas Sobre Créditos,,l10n_br_coa.data_account_type_current_assets_reserve,,l10n_br_coa_ans_chart_template,,Adiantamentos
-account_template_ans_127619011,127619011,Empréstimos,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Empréstimos e Depósitos Compulsórios
-account_template_ans_127619012,127619012,Depósitos,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Empréstimos e Depósitos Compulsórios
+account_template_ans_127619011,127619011,Empréstimos,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Empréstimos e Depósitos Compulsórios
+account_template_ans_127619012,127619012,Depósitos,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Empréstimos e Depósitos Compulsórios
 account_template_ans_127619019,127619019,(-) Provisão para Perdas Sobre Créditos,,l10n_br_coa.data_account_type_current_assets_reserve,,l10n_br_coa_ans_chart_template,,Empréstimos e Depósitos Compulsórios
-account_template_ans_127719011,127719011,Notas Promissórias,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Títulos a Receber
-account_template_ans_127719012,127719012,Cheques e Ordens a Receber,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Títulos a Receber
-account_template_ans_127719018,127719018,Outros Títulos a Receber,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Títulos a Receber
+account_template_ans_127719011,127719011,Notas Promissórias,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Títulos a Receber
+account_template_ans_127719012,127719012,Cheques e Ordens a Receber,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Títulos a Receber
+account_template_ans_127719018,127719018,Outros Títulos a Receber,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Títulos a Receber
 account_template_ans_127719019,127719019,(-) Provisão para Perdas Sobre Créditos,,l10n_br_coa.data_account_type_current_assets_reserve,,l10n_br_coa_ans_chart_template,,Títulos a Receber
-account_template_ans_127729011,127729011,Direitos Resultantes da Venda de Carteira de Beneficiários de Planos de Saúde,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Direitos Resultantes da Venda de Carteira
+account_template_ans_127729011,127729011,Direitos Resultantes da Venda de Carteira de Beneficiários de Planos de Saúde,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Direitos Resultantes da Venda de Carteira
 account_template_ans_127729019,127729019,(-) Provisão para Perdas Sobre Créditos,,l10n_br_coa.data_account_type_current_assets_reserve,,l10n_br_coa_ans_chart_template,,Direitos Resultantes da Venda de Carteira
-account_template_ans_127739011,127739011,Créditos a Receber de Outras Atividades Operacionais,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Administradora de Benefícios - Outros Créditos Operacionais
-account_template_ans_127739012,127739012,Faturas a Receber de Prestação de Serviços,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Administradora de Benefícios - Outros Créditos Operacionais
-account_template_ans_127819011,127819011,Aluguéis a Receber,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Outros Bens e Títulos a Receber
-account_template_ans_127819012,127819012,Participação em Lucros a Receber,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Outros Bens e Títulos a Receber
-account_template_ans_127819013,127819013,Dividendos e Juros sobre Capital Próprio a Receber,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Outros Bens e Títulos a Receber
-account_template_ans_127819014,127819014,Direitos Resultantes da Venda de Imóveis,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Outros Bens e Títulos a Receber
-account_template_ans_127819018,127819018,Outros Créditos ou Bens a Receber,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Outros Bens e Títulos a Receber
+account_template_ans_127739011,127739011,Créditos a Receber de Outras Atividades Operacionais,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Administradora de Benefícios - Outros Créditos Operacionais
+account_template_ans_127739012,127739012,Faturas a Receber de Prestação de Serviços,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Administradora de Benefícios - Outros Créditos Operacionais
+account_template_ans_127819011,127819011,Aluguéis a Receber,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Outros Bens e Títulos a Receber
+account_template_ans_127819012,127819012,Participação em Lucros a Receber,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Outros Bens e Títulos a Receber
+account_template_ans_127819013,127819013,Dividendos e Juros sobre Capital Próprio a Receber,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Outros Bens e Títulos a Receber
+account_template_ans_127819014,127819014,Direitos Resultantes da Venda de Imóveis,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Outros Bens e Títulos a Receber
+account_template_ans_127819018,127819018,Outros Créditos ou Bens a Receber,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Outros Bens e Títulos a Receber
 account_template_ans_127819019,127819019,(-) Provisão para Perdas Sobre Créditos,,l10n_br_coa.data_account_type_current_assets_reserve,,l10n_br_coa_ans_chart_template,,Outros Bens e Títulos a Receber
-account_template_ans_128119011,128119011,Despesas Administrativas,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Despesas Administrativas
-account_template_ans_128219011,128219011,Despesas Patrimoniais,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Despesas Patrimoniais
-account_template_ans_128319011,128319011,Despesas Operacionais Antecipadas,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Despesas Operacionais Antecipadas
-account_template_ans_128919011,128919011,Outras Despesas Antecipadas,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Outras Despesas Antecipadas
-account_template_ans_129119011,129119011,Créditos a receber de Cooperados,,l10n_br_coa.data_account_type_non_current_assets_receivable,,l10n_br_coa_ans_chart_template,,Créditos a receber de Cooperados
+account_template_ans_128119011,128119011,Despesas Administrativas,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Despesas Administrativas
+account_template_ans_128219011,128219011,Despesas Patrimoniais,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Despesas Patrimoniais
+account_template_ans_128319011,128319011,Despesas Operacionais Antecipadas,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Despesas Operacionais Antecipadas
+account_template_ans_128919011,128919011,Outras Despesas Antecipadas,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Outras Despesas Antecipadas
+account_template_ans_129119011,129119011,Créditos a receber de Cooperados,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Créditos a receber de Cooperados
 account_template_ans_129119019,129119019,(-) Provisão para Perdas Sobre Créditos,,l10n_br_coa.data_account_type_current_assets_reserve,,l10n_br_coa_ans_chart_template,,Créditos a receber de Cooperados
 account_template_ans_131119011,131119011,Valor Original,,l10n_br_coa.data_account_type_non_current_investments,,l10n_br_coa_ans_chart_template,,Depósitos Bancários a Prazo - CDB/RDB
 account_template_ans_131119012,131119012,Ajuste ao Valor de Mercado,,l10n_br_coa.data_account_type_non_current_investments,,l10n_br_coa_ans_chart_template,,Depósitos Bancários a Prazo - CDB/RDB
@@ -353,45 +353,45 @@ account_template_ans_131819012,131819012,(-) Ajuste a Valor Presente,,l10n_br_co
 account_template_ans_131819019,131819019,(-) Provisão para Perdas Sobre Créditos,,l10n_br_coa.data_account_type_non_current_assets_reserve,,l10n_br_coa_ans_chart_template,,Outros Créditos a Receber a Longo Prazo
 account_template_ans_131829031,131829031,Despesas Operacionais Antecipadas de Longo Prazo,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Despesas Operacionais Antecipadas de Longo Prazo
 account_template_ans_131919011,131919011,Passivo Tributário a Receber de Cooperados,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Passivo Tributário a Receber de Cooperados
-account_template_ans_132119011,132119011,Valor Patrimonial,,account.data_account_type_equity,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Controladas
+account_template_ans_132119011,132119011,Valor Patrimonial,,l10n_br_coa.data_account_type_current_assets_other_credits,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Controladas
 account_template_ans_132119012,132119012,Mais valia de ativos,,l10n_br_coa.data_account_type_current_assets_added_value,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Controladas
-account_template_ans_132119013,132119013,Goodwill,,l10n_br_coa.data_account_type_current_assets_goodwill,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Controladas
+account_template_ans_132119013,132119013,Goodwill,,l10n_br_coa.data_account_type_non_current_assets_goodwill,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Controladas
 account_template_ans_132119019,132119019,(-) Provisão para Desvalorização,,l10n_br_coa.data_account_type_non_current_assets_reserve,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Controladas
 account_template_ans_132119021,132119021,Valor Patrimonial,,l10n_br_coa.data_account_type_non_current_investments,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Coligadas
 account_template_ans_132119022,132119022,Mais valia de ativos,,l10n_br_coa.data_account_type_current_assets_added_value,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Coligadas
-account_template_ans_132119023,132119023,Goodwill,,l10n_br_coa.data_account_type_current_assets_goodwill,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Coligadas
+account_template_ans_132119023,132119023,Goodwill,,l10n_br_coa.data_account_type_non_current_assets_goodwill,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Coligadas
 account_template_ans_132119029,132119029,(-) Provisão para Desvalorização,,l10n_br_coa.data_account_type_non_current_assets_reserve,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Coligadas
 account_template_ans_132129011,132129011,Valor Patrimonial,,l10n_br_coa.data_account_type_non_current_investments,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Controladas
 account_template_ans_132129012,132129012,Ágio mais valia de ativos,,l10n_br_coa.data_account_type_current_assets_added_value,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Controladas
-account_template_ans_132129013,132129013,Goodwill,,l10n_br_coa.data_account_type_current_assets_goodwill,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Controladas
+account_template_ans_132129013,132129013,Goodwill,,l10n_br_coa.data_account_type_non_current_assets_goodwill,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Controladas
 account_template_ans_132129019,132129019,(-) Provisão para Desvalorização,,l10n_br_coa.data_account_type_non_current_assets_reserve,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Controladas
 account_template_ans_132129021,132129021,Valor Patrimonial,,l10n_br_coa.data_account_type_non_current_investments,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Coligadas
 account_template_ans_132129022,132129022,Ágio mais valia de ativos,,l10n_br_coa.data_account_type_current_assets_added_value,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Coligadas
-account_template_ans_132129023,132129023,Goodwill,,l10n_br_coa.data_account_type_current_assets_goodwill,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Coligadas
+account_template_ans_132129023,132129023,Goodwill,,l10n_br_coa.data_account_type_non_current_assets_goodwill,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Coligadas
 account_template_ans_132129029,132129029,(-) Provisão para Desvalorização,,l10n_br_coa.data_account_type_non_current_assets_reserve,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Coligadas
 account_template_ans_132139011,132139011,Valor Patrimonial,,l10n_br_coa.data_account_type_non_current_investments,,l10n_br_coa_ans_chart_template,,Ações/Quotas de Empresas - Controladas
 account_template_ans_132139012,132139012,Ágio mais valia de ativos,,l10n_br_coa.data_account_type_current_assets_added_value,,l10n_br_coa_ans_chart_template,,Ações/Quotas de Empresas - Controladas
-account_template_ans_132139013,132139013,Goodwill,,l10n_br_coa.data_account_type_current_assets_goodwill,,l10n_br_coa_ans_chart_template,,Ações/Quotas de Empresas - Controladas
+account_template_ans_132139013,132139013,Goodwill,,l10n_br_coa.data_account_type_non_current_assets_goodwill,,l10n_br_coa_ans_chart_template,,Ações/Quotas de Empresas - Controladas
 account_template_ans_132139019,132139019,(-) Provisão para Desvalorização,,l10n_br_coa.data_account_type_non_current_assets_reserve,,l10n_br_coa_ans_chart_template,,Ações/Quotas de Empresas - Controladas
 account_template_ans_132139021,132139021,Valor Patrimonial,,l10n_br_coa.data_account_type_non_current_investments,,l10n_br_coa_ans_chart_template,,Ações/Quotas de Empresas - Coligadas
 account_template_ans_132139022,132139022,Ágio mais valia de ativos,,l10n_br_coa.data_account_type_current_assets_added_value,,l10n_br_coa_ans_chart_template,,Ações/Quotas de Empresas - Coligadas
-account_template_ans_132139023,132139023,Goodwill,,l10n_br_coa.data_account_type_current_assets_goodwill,,l10n_br_coa_ans_chart_template,,Ações/Quotas de Empresas - Coligadas
+account_template_ans_132139023,132139023,Goodwill,,l10n_br_coa.data_account_type_non_current_assets_goodwill,,l10n_br_coa_ans_chart_template,,Ações/Quotas de Empresas - Coligadas
 account_template_ans_132139029,132139029,(-) Provisão para Desvalorização,,l10n_br_coa.data_account_type_non_current_assets_reserve,,l10n_br_coa_ans_chart_template,,Ações/Quotas de Empresas - Coligadas
 account_template_ans_132149011,132149011,Valor Patrimonial,,l10n_br_coa.data_account_type_non_current_investments,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Controladas
 account_template_ans_132149012,132149012,Mais valia de ativos,,l10n_br_coa.data_account_type_current_assets_added_value,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Controladas
-account_template_ans_132149013,132149013,Goodwill,,l10n_br_coa.data_account_type_current_assets_goodwill,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Controladas
+account_template_ans_132149013,132149013,Goodwill,,l10n_br_coa.data_account_type_non_current_assets_goodwill,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Controladas
 account_template_ans_132149019,132149019,(-) Provisão para Desvalorização,,l10n_br_coa.data_account_type_non_current_assets_reserve,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Controladas
 account_template_ans_132149021,132149021,Valor Patrimonial,,l10n_br_coa.data_account_type_non_current_investments,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Coligadas
 account_template_ans_132149022,132149022,Mais valia de ativos,,l10n_br_coa.data_account_type_current_assets_added_value,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Coligadas
-account_template_ans_132149023,132149023,Goodwill,,l10n_br_coa.data_account_type_current_assets_goodwill,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Coligadas
+account_template_ans_132149023,132149023,Goodwill,,l10n_br_coa.data_account_type_non_current_assets_goodwill,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Coligadas
 account_template_ans_132149029,132149029,(-) Provisão para Desvalorização,,l10n_br_coa.data_account_type_non_current_assets_reserve,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Coligadas
 account_template_ans_132159011,132159011,Valor Patrimonial,,l10n_br_coa.data_account_type_non_current_investments,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Controladas
 account_template_ans_132159012,132159012,Mais valia de ativos,,l10n_br_coa.data_account_type_current_assets_added_value,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Controladas
-account_template_ans_132159013,132159013,Goodwill,,l10n_br_coa.data_account_type_current_assets_goodwill,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Controladas
+account_template_ans_132159013,132159013,Goodwill,,l10n_br_coa.data_account_type_non_current_assets_goodwill,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Controladas
 account_template_ans_132159019,132159019,(-) Provisão para Desvalorização,,l10n_br_coa.data_account_type_non_current_assets_reserve,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Controladas
 account_template_ans_132159021,132159021,Valor Patrimonial,,l10n_br_coa.data_account_type_non_current_investments,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Coligadas
 account_template_ans_132159022,132159022,Mais valia de ativos,,l10n_br_coa.data_account_type_current_assets_added_value,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Coligadas
-account_template_ans_132159023,132159023,Goodwill,,l10n_br_coa.data_account_type_current_assets_goodwill,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Coligadas
+account_template_ans_132159023,132159023,Goodwill,,l10n_br_coa.data_account_type_non_current_assets_goodwill,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Coligadas
 account_template_ans_132159029,132159029,(-) Provisão para Desvalorização,,l10n_br_coa.data_account_type_non_current_assets_reserve,,l10n_br_coa_ans_chart_template,,Ações / Quotas de Empresas - Coligadas
 account_template_ans_132219011,132219011,Participação em Operadoras,,l10n_br_coa.data_account_type_non_current_investments,,l10n_br_coa_ans_chart_template,,Participações em Operadoras e Rede Assistencial
 account_template_ans_132219012,132219012,Participação em Rede Assistencial Não Hospitalar,,l10n_br_coa.data_account_type_non_current_investments,,l10n_br_coa_ans_chart_template,,Participações em Operadoras e Rede Assistencial
@@ -522,7 +522,7 @@ account_template_ans_134119012,134119012,Sistema de Computação,,l10n_br_coa.da
 account_template_ans_134119013,134119013,Marcas Comerciais,,l10n_br_coa.data_account_type_intangible_assets,,l10n_br_coa_ans_chart_template,,Custo de Aquisição
 account_template_ans_134119014,134119014,Gastos com Promoção e Prevenção à Saúde,,l10n_br_coa.data_account_type_intangible_assets,,l10n_br_coa_ans_chart_template,,Custo de Aquisição
 account_template_ans_134119015,134119015,Mais valia de ativos de investimentos incorporados,,l10n_br_coa.data_account_type_current_assets_added_value,,l10n_br_coa_ans_chart_template,,Custo de Aquisição
-account_template_ans_134119016,134119016,Goodwill de investimentos incorporados,,l10n_br_coa.data_account_type_current_assets_goodwill,,l10n_br_coa_ans_chart_template,,Custo de Aquisição
+account_template_ans_134119016,134119016,Goodwill de investimentos incorporados,,l10n_br_coa.data_account_type_non_current_assets_goodwill,,l10n_br_coa_ans_chart_template,,Custo de Aquisição
 account_template_ans_134119019,134119019,Outros Ativos Intangíveis,,l10n_br_coa.data_account_type_intangible_assets,,l10n_br_coa_ans_chart_template,,Custo de Aquisição
 account_template_ans_134119021,134119021,(-) Aquisição de Carteira de Plano de Assistência à Saúde,,l10n_br_coa.data_account_type_fixed_assets_amortization,,l10n_br_coa_ans_chart_template,,(-) Provisão para Perda por Redução ao Valor Recuperável
 account_template_ans_134119022,134119022,(-) Sistema de Computação,,l10n_br_coa.data_account_type_fixed_assets_amortization,,l10n_br_coa_ans_chart_template,,(-) Provisão para Perda por Redução ao Valor Recuperável
@@ -537,7 +537,7 @@ account_template_ans_134119039,134119039,(-) Amortização de Outros Ativos Inta
 account_template_ans_134129011,134129011,Sistema de Computação,,l10n_br_coa.data_account_type_intangible_assets,,l10n_br_coa_ans_chart_template,,Custo de Aquisição
 account_template_ans_134129012,134129012,Marcas Comerciais,,l10n_br_coa.data_account_type_intangible_assets,,l10n_br_coa_ans_chart_template,,Custo de Aquisição
 account_template_ans_134129015,134129015,Mais valia de ativos de investimentos incorporados,,l10n_br_coa.data_account_type_current_assets_added_value,,l10n_br_coa_ans_chart_template,,Custo de Aquisição
-account_template_ans_134129016,134129016,Goodwill de investimentos incorporados,,l10n_br_coa.data_account_type_current_assets_goodwill,,l10n_br_coa_ans_chart_template,,Custo de Aquisição
+account_template_ans_134129016,134129016,Goodwill de investimentos incorporados,,l10n_br_coa.data_account_type_non_current_assets_goodwill,,l10n_br_coa_ans_chart_template,,Custo de Aquisição
 account_template_ans_134129019,134129019,Outros Ativos Intangíveis,,l10n_br_coa.data_account_type_intangible_assets,,l10n_br_coa_ans_chart_template,,Custo de Aquisição
 account_template_ans_134129021,134129021,(-) Sistema de Computação,,l10n_br_coa.data_account_type_fixed_assets_amortization,,l10n_br_coa_ans_chart_template,,(-) Provisão para Perda por Redução ao Valor Recuperável
 account_template_ans_134129022,134129022,(-) Marcas Comerciais,,l10n_br_coa.data_account_type_fixed_assets_amortization,,l10n_br_coa_ans_chart_template,,(-) Provisão para Perda por Redução ao Valor Recuperável
@@ -715,18 +715,18 @@ account_template_ans_218119014,218119014,Férias,,l10n_br_coa.data_account_type_
 account_template_ans_218119015,218119015,Décimo Terceiro Salário,,l10n_br_coa.data_account_type_current_liabilities_labor,,l10n_br_coa_ans_chart_template,,Obrigações com Pessoal
 account_template_ans_218119018,218119018,Outras Obrigações com Pessoal,,l10n_br_coa.data_account_type_current_liabilities_labor,,l10n_br_coa_ans_chart_template,,Obrigações com Pessoal
 account_template_ans_218219011,218219011,Fornecedores,,account.data_account_type_payable,1,l10n_br_coa_ans_chart_template,,Fornecedores
-account_template_ans_218319011,218319011,Dependências no País,,account.data_account_type_non_current_liabilities,,l10n_br_coa_ans_chart_template,,Dependências no País
-account_template_ans_218419011,218419011,Programas Assistenciais e Culturais aos Participantes,,account.data_account_type_non_current_liabilities,,l10n_br_coa_ans_chart_template,,Programas Assistenciais e Culturais aos Participantes
-account_template_ans_218519011,218519011,Depósitos de Beneficiários de Planos de Assistência à Saúde e de Terceiros,,account.data_account_type_non_current_liabilities,,l10n_br_coa_ans_chart_template,,Depósitos de Beneficiários e de Terceiros
-account_template_ans_218619011,218619011,Débitos com Aquisição de Carteira de Beneficiários de Planos de Saúde,,account.data_account_type_non_current_liabilities,,l10n_br_coa_ans_chart_template,,Débitos com Aquisição de Carteira
-account_template_ans_218719011,218719011,Passivo de Arrendamentos - Valor Presente,,account.data_account_type_non_current_liabilities,,l10n_br_coa_ans_chart_template,,Passivo de Arrendamentos - Valor Presente
-account_template_ans_218819011,218819011,Multas administrativas da ANS não parceladas,,account.data_account_type_non_current_liabilities,,l10n_br_coa_ans_chart_template,,Mutas administrativas a pagar
-account_template_ans_218819012,218819012,Multas administrativas da ANS parceladas,,account.data_account_type_non_current_liabilities,,l10n_br_coa_ans_chart_template,,Mutas administrativas a pagar
-account_template_ans_218819019,218819019,Multas administrativas diversas,,account.data_account_type_non_current_liabilities,,l10n_br_coa_ans_chart_template,,Mutas administrativas a pagar
-account_template_ans_218889081,218889081,Arrendamentos a Pagar,,account.data_account_type_non_current_liabilities,,l10n_br_coa_ans_chart_template,,Outros Débitos a Pagar
-account_template_ans_218889082,218889082,Dividendos e Juros sobre Capital Próprio a Pagar,,account.data_account_type_non_current_liabilities,,l10n_br_coa_ans_chart_template,,Outros Débitos a Pagar
-account_template_ans_218889088,218889088,Outros Débitos a Pagar,,account.data_account_type_non_current_liabilities,,l10n_br_coa_ans_chart_template,,Outros Débitos a Pagar
-account_template_ans_219119011,219119011,Débitos a Pagar a Cooperados,,account.data_account_type_non_current_liabilities,,l10n_br_coa_ans_chart_template,,Conta-Corrente de Cooperados
+account_template_ans_218319011,218319011,Dependências no País,,l10n_br_coa.data_account_type_current_liabilities,,l10n_br_coa_ans_chart_template,,Dependências no País
+account_template_ans_218419011,218419011,Programas Assistenciais e Culturais aos Participantes,,l10n_br_coa.data_account_type_current_liabilities,,l10n_br_coa_ans_chart_template,,Programas Assistenciais e Culturais aos Participantes
+account_template_ans_218519011,218519011,Depósitos de Beneficiários de Planos de Assistência à Saúde e de Terceiros,,l10n_br_coa.data_account_type_current_liabilities,,l10n_br_coa_ans_chart_template,,Depósitos de Beneficiários e de Terceiros
+account_template_ans_218619011,218619011,Débitos com Aquisição de Carteira de Beneficiários de Planos de Saúde,,l10n_br_coa.data_account_type_current_liabilities,,l10n_br_coa_ans_chart_template,,Débitos com Aquisição de Carteira
+account_template_ans_218719011,218719011,Passivo de Arrendamentos - Valor Presente,,l10n_br_coa.data_account_type_current_liabilities,,l10n_br_coa_ans_chart_template,,Passivo de Arrendamentos - Valor Presente
+account_template_ans_218819011,218819011,Multas administrativas da ANS não parceladas,,l10n_br_coa.data_account_type_current_liabilities,,l10n_br_coa_ans_chart_template,,Mutas administrativas a pagar
+account_template_ans_218819012,218819012,Multas administrativas da ANS parceladas,,l10n_br_coa.data_account_type_current_liabilities,,l10n_br_coa_ans_chart_template,,Mutas administrativas a pagar
+account_template_ans_218819019,218819019,Multas administrativas diversas,,l10n_br_coa.data_account_type_current_liabilities,,l10n_br_coa_ans_chart_template,,Mutas administrativas a pagar
+account_template_ans_218889081,218889081,Arrendamentos a Pagar,,l10n_br_coa.data_account_type_current_liabilities,,l10n_br_coa_ans_chart_template,,Outros Débitos a Pagar
+account_template_ans_218889082,218889082,Dividendos e Juros sobre Capital Próprio a Pagar,,l10n_br_coa.data_account_type_current_liabilities,,l10n_br_coa_ans_chart_template,,Outros Débitos a Pagar
+account_template_ans_218889088,218889088,Outros Débitos a Pagar,,l10n_br_coa.data_account_type_current_liabilities,,l10n_br_coa_ans_chart_template,,Outros Débitos a Pagar
+account_template_ans_219119011,219119011,Débitos a Pagar a Cooperados,,l10n_br_coa.data_account_type_current_liabilities,,l10n_br_coa_ans_chart_template,,Conta-Corrente de Cooperados
 account_template_ans_231111011,231111011,Provisão de Prêmio/Contraprestação Não Ganha - Planos Individuais/Familiares,,l10n_br_coa.data_account_type_non_current_liabilities_reserve,,l10n_br_coa_ans_chart_template,,Provisão de Prêmios/Contraprestações
 account_template_ans_231111012,231111012,Provisão de Prêmio/Contraprestação Não Ganha - Planos Coletivos,,l10n_br_coa.data_account_type_non_current_liabilities_reserve,,l10n_br_coa_ans_chart_template,,Provisão de Prêmios/Contraprestações
 account_template_ans_231111013,231111013,Provisão de Insuficiência de Prêmios/Contraprestações,,l10n_br_coa.data_account_type_non_current_liabilities_reserve,,l10n_br_coa_ans_chart_template,,Provisão de Prêmios/Contraprestações
