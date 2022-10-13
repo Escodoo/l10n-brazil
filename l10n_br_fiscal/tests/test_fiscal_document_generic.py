@@ -1099,7 +1099,7 @@ class TestFiscalDocumentGeneric(SavepointCase):
 
         # Teste definindo os valores Por Total
         # Por padrão a definição dos campos está por Linha
-        self.nfe_same_state.company_id.delivery_costs = "total"
+        self.nfe_same_state.delivery_costs = "total"
 
         # Caso que os Campos na Linha tem valor
         self.nfe_same_state.amount_freight_value = 10.0
