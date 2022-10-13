@@ -93,7 +93,7 @@ class SaleOrderLine(models.Model):
     # Usado para tornar Somente Leitura os campos dos custos
     # de entrega quando a definição for por Total
     delivery_costs = fields.Selection(
-        related="company_id.delivery_costs",
+        related="order_id.delivery_costs",
     )
 
     # Fields compute need parameter compute_sudo
