@@ -16,7 +16,7 @@
         "l10n_br_delivery",
         "l10n_br_website_sale",
     ],
-    "data": ["views/website_sale_delivery_templates.xml", "views/assets.xml"],
+    "data": ["views/assets.xml"],
     "demo": [],
     "category": "Localization",
     "installable": True,
