@@ -521,7 +521,7 @@ class InvoicingPickingTest(SavepointCase):
         self._change_user_company(self.company)
 
         # Por padrão a definição dos campos está por Linha
-        self.stock_picking_sp.company_id.delivery_costs = "line"
+        self.stock_picking_sp.delivery_costs = "line"
         # Teste definindo os valores Por Linha
         for line in self.stock_picking_sp.move_ids_without_package:
             line.price_unit = 100.0
@@ -562,7 +562,7 @@ class InvoicingPickingTest(SavepointCase):
 
         # Teste definindo os valores Por Total
         # Por padrão a definição dos campos está por Linha
-        self.stock_picking_sp.company_id.delivery_costs = "total"
+        self.stock_picking_sp.delivery_costs = "total"
 
         # Caso que os Campos na Linha tem valor
         self.stock_picking_sp.amount_freight_value = 9.0
@@ -594,7 +594,7 @@ class InvoicingPickingTest(SavepointCase):
             line.insurance_value = 0.0
             line.other_value = 0.0
 
-        self.stock_picking_sp.company_id.delivery_costs = "total"
+        self.stock_picking_sp.delivery_costs = "total"
 
         self.stock_picking_sp.amount_freight_value = 30.0
         self.stock_picking_sp.amount_insurance_value = 30.0
