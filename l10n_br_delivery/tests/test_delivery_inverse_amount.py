@@ -36,7 +36,7 @@ class TestDeliveryInverseAmount(SavepointCase):
                 line.product_id = cls.env.ref("product.product_delivery_02")
 
         # Alteração para permitir do teste
-        cls.sale_order_line_id.company_id.delivery_costs = "total"
+        cls.sale_order_total_id.delivery_costs = "total"
         # Change freight, insurance and other costs amount by Total values
         with Form(cls.sale_order_total_id) as so:
             so.amount_freight_value = 100.0
@@ -44,7 +44,7 @@ class TestDeliveryInverseAmount(SavepointCase):
             so.amount_other_value = 100.0
 
         # Alteração para permitir do teste
-        cls.sale_order_line_id.company_id.delivery_costs = "line"
+        cls.sale_order_line_id.delivery_costs = "line"
         # Change freight, insurance and other costs amount by Lines values
         with Form(cls.sale_order_line_id) as so:
             with so.order_line.edit(0) as line:
@@ -57,7 +57,7 @@ class TestDeliveryInverseAmount(SavepointCase):
                 line.other_value = 10.00
 
         # TODO ?: alterando para permitir edição do campo e não falhar o teste
-        cls.sale_order_line_id.company_id.delivery_costs = "total"
+        cls.sale_order_line_id.delivery_costs = "total"
         with Form(cls.sale_order_line_id) as so:
             so.amount_freight_value = 100.0
             so.amount_insurance_value = 100.0
@@ -347,7 +347,7 @@ class TestDeliveryInverseAmount(SavepointCase):
         de Frete, Seguro e Outros Custos, esses valores nas linhas devem ser
         independentes.
         """
-        self.sale_demo.company_id.delivery_costs = "line"
+        self.sale_demo.delivery_costs = "line"
         self.sale_demo.action_confirm()
 
         self.assertEqual(

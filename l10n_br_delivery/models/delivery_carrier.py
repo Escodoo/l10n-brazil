@@ -35,7 +35,7 @@ class Carrier(models.Model):
         #  com dados de demo e testes.
         # Se o Valor Total de Frete estiver preenchido ele tem
         # preferencia sobre o valor Calculado.
-        if order.amount_freight_value > 0.0:
+        if order.amount_freight_value > 0.0 and not order.website_id:
             res["price"] = order.amount_freight_value
 
         return res
