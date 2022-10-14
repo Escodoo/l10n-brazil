@@ -386,7 +386,7 @@ class L10nBrPurchaseBaseTest(SavepointCase):
         """
 
         # Por padrão a definição dos campos está por Linha
-        self.po_products.company_id.delivery_costs = "line"
+        self.po_products.delivery_costs = "line"
         # Teste definindo os valores Por Linha
         for line in self.po_products.order_line:
             line.price_unit = 100.0
@@ -414,7 +414,7 @@ class L10nBrPurchaseBaseTest(SavepointCase):
 
         # Teste definindo os valores Por Total
         # Por padrão a definição dos campos está por Linha
-        self.po_products.company_id.delivery_costs = "total"
+        self.po_products.delivery_costs = "total"
 
         # Caso que os Campos na Linha tem valor
         self.po_products.amount_freight_value = 10.0
@@ -446,7 +446,7 @@ class L10nBrPurchaseBaseTest(SavepointCase):
             line.insurance_value = 0.0
             line.other_value = 0.0
 
-        self.po_products.company_id.delivery_costs = "total"
+        self.po_products.delivery_costs = "total"
 
         self.po_products.amount_freight_value = 20.0
         self.po_products.amount_insurance_value = 20.0
