@@ -10,9 +10,10 @@ nfselib.paulistana
 num2words
 phonenumbers
 pycep_correios
+pyyaml
 unidecode
-vcrpy
 workalendar
-xmlsec
 xmldiff
+xmlsec
+vcrpy
 endesive
