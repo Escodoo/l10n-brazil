@@ -1,11 +1,12 @@
 # generated from manifests external_dependencies
 email_validator
-erpbrasil.assinatura
+-e git+https://github.com/escodoo/erpbrasil.assinatura.git@master-nfse_paulistana-workaround#egg=erpbrasil.assinatura
 erpbrasil.base
 erpbrasil.edoc
 erpbrasil.edoc.pdf
 erpbrasil.transmissao
 nfelib
+nfselib.paulistana
 num2words
 odoo_test_helper
 phonenumbers
@@ -14,4 +15,6 @@ pyyaml
 unidecode
 vcrpy
 workalendar
+xmlsec
 xmldiff
+endesive
