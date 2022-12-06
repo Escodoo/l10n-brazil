@@ -476,20 +476,21 @@ class AccountMove(models.Model):
 
         # Hack: apagando linhas inseridas no lancamento para suportar as alteraçoes
         # na 14.0
-        for line in self.line_ids:
-            if line.name in ["[FREIGHT]", "[INSURANCE]", "[OTHER]"]:
-                self.with_context(
-                    check_move_validity=False,
-                    skip_account_move_synchronization=True,
-                    force_delete=True,
-                ).write(
-                    {
-                        "line_ids": [(2, line.id)],
-                        "to_check": False,
-                    }
-                )
+        for rec in self:
+            for line in rec.line_ids:
+                if line.name in ["[FREIGHT]", "[INSURANCE]", "[OTHER]"]:
+                    rec.with_context(
+                        check_move_validity=False,
+                        skip_account_move_synchronization=True,
+                        force_delete=True,
+                    ).write(
+                        {
+                            "line_ids": [(2, line.id)],
+                            "to_check": False,
+                        }
+                    )
 
-        self.with_context(check_move_validity=False)._onchange_currency()
+            rec.with_context(check_move_validity=False)._onchange_currency()
 
         return result
 
