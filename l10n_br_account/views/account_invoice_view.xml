@@ -154,7 +154,7 @@
                 <attribute name="invisible">1</attribute>
             </xpath>
             <field name="amount_untaxed" position="after">
-                <field string="(-) Discount" name="amount_discount_value" />
+                <field string="(-) Discount" name="amount_discount_value" attrs="{'invisible': [('document_type_id', '=', False)]}"/>
             </field>
             <field name="amount_tax" position="after">
                 <field string="(-) Tax Withholding" name="amount_tax_withholding" />
@@ -256,7 +256,7 @@
                 <attribute name="invisible">1</attribute>
             </xpath>
             <field name="amount_untaxed" position="after">
-                <field string="(-) Discount" name="amount_discount_value" />
+                <field string="(-) Discount" name="amount_discount_value" attrs="{'invisible': [('document_type_id', '=', False)]}"/>
             </field>
             <field name="amount_tax" position="after">
                 <field string="(-) Tax Withholding" name="amount_tax_withholding" />
