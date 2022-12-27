@@ -66,18 +66,21 @@ class Comment(models.Model):
         self, name, args=None, operator="ilike", limit=100, name_get_uid=None
     ):
         args = args or []
-        domain = []
-        if name:
-            domain = [
-                "|",
+        if operator == "ilike" and not (name or "").strip():
+            domain = []
+        else:
+            criteria_operator = (
+                ["|"]
+                if operator not in expression.NEGATIVE_TERM_OPERATORS
+                else ["&", "!"]
+            )
+            domain = criteria_operator + [
+                ("comment", "=ilike", name + "%"),
                 ("name", operator, name),
-                ("comment", "ilike", "%" + name + "%"),
             ]
-        recs = self._search(
+        return self._search(
             expression.AND([domain, args]), limit=limit, access_rights_uid=name_get_uid
         )
-
-        return self.browse(recs).name_get()
 
     def name_get(self):
         def truncate_name(name):
