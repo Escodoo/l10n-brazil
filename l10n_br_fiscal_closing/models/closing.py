@@ -182,20 +182,43 @@ class FiscalClosing(models.Model):
 
     def _create_tempfile_path(self, document):
         fsc_op_type = {"out": "Saída", "in": "Entrada", "all": "Todos"}
-        document_path = "/".join(
-            [
-                misc.punctuation_rm(document.company_cnpj_cpf),
-                document.document_date.strftime("%m-%Y"),
-                PATH_MODELO[document.document_type_id.code],
-                fsc_op_type.get(document.fiscal_operation_type),
-                (document.document_serie or "").zfill(3)
-                + (
-                    "-" + misc.punctuation_rm(str(document.document_number)).zfill(9)
-                    if self.group_folder
-                    else ""
-                ),
-            ]
-        )
+
+        if document.issuer == "partner":
+            document_path = "/".join(
+                [
+                    misc.punctuation_rm(document.company_cnpj_cpf),
+                    document.document_date.strftime("%m-%Y"),
+                    document.issuer,
+                    misc.punctuation_rm(document.partner_cnpj_cpf),
+                    PATH_MODELO[document.document_type_id.code],
+                    fsc_op_type.get(document.fiscal_operation_type),
+                    (document.document_serie or "").zfill(3)
+                    + (
+                        "-"
+                        + misc.punctuation_rm(str(document.document_number)).zfill(9)
+                        if self.group_folder
+                        else ""
+                    ),
+                ]
+            )
+        if document.issuer == "company":
+            document_path = "/".join(
+                [
+                    misc.punctuation_rm(document.company_cnpj_cpf),
+                    document.document_date.strftime("%m-%Y"),
+                    document.issuer,
+                    PATH_MODELO[document.document_type_id.code],
+                    fsc_op_type.get(document.fiscal_operation_type),
+                    (document.document_serie or "").zfill(3)
+                    + (
+                        "-"
+                        + misc.punctuation_rm(str(document.document_number)).zfill(9)
+                        if self.group_folder
+                        else ""
+                    ),
+                ]
+            )
+
         return document_path
 
     def _date_range(self):

@@ -139,6 +139,9 @@ class DocumentEletronic(models.AbstractModel):
         copy=False,
     )
 
+    partner_document_pdf = fields.Binary(string="Document PDF")
+    partner_document_xml = fields.Binary(string="Document XML")
+
     @api.depends("status_code", "status_name")
     def _compute_status_description(self):
         for record in self:

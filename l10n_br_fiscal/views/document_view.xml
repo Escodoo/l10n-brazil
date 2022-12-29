@@ -390,6 +390,14 @@
                         <field name="send_file_id" />
                         <field name="authorization_file_id" />
                         <field name="file_report_id" />
+                        <field
+                                        name="partner_document_pdf"
+                                        attrs="{'invisible': [('issuer', '!=', 'partner')]}"
+                                    />
+                        <field
+                                        name="partner_document_xml"
+                                        attrs="{'invisible': [('issuer', '!=', 'partner')]}"
+                                    />
                     </group>
                     <group
                                     name="cancel"
