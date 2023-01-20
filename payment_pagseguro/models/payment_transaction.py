@@ -33,7 +33,7 @@ class PaymentTransactionPagseguro(models.Model):
 
         Uses encrypted credit card.
         """
-        api_url_charge = "https://%s/charges" % (
+        api_url_charge = "https://%s/orders" % (
             self.acquirer_id._get_pagseguro_api_url()
         )
 
