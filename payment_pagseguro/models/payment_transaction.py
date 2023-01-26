@@ -176,6 +176,9 @@ class PaymentTransactionPagseguro(models.Model):
             )
             return True
 
+        if tree.get("error_messages"):
+            return False
+
         if tree.get("charges", {})[0].get("payment_response"):
             code = tree.get("charges", {})[0].get("payment_response").get("code")
             if code == "20000":
@@ -237,7 +240,8 @@ class PaymentTransactionPagseguro(models.Model):
             "customer": {
                 "name": self.partner_name,
                 "email": self.partner_email,
-                "tax_id": punctuation_rm(self.partner_id.vat),
+                "tax_id": punctuation_rm(self.partner_id.vat)
+                or punctuation_rm(self.partner_id.cnpj_cpf),
                 "phones": [
                     {
                         "country": "55",
@@ -259,13 +263,13 @@ class PaymentTransactionPagseguro(models.Model):
             "shipping": {
                 "address": {
                     "street": self.partner_id.street,
-                    "number": self.partner_id.street_number,
-                    "complement": self.partner_id.street2,
+                    "number": self.partner_id.street_number or "S/N",
+                    "complement": self.partner_id.street2 or "N/A",
                     "locality": self.partner_id.district,
                     "city": self.partner_id.district,
                     "region_code": self.partner_id.state_id.code,
                     "country": "BRA",
-                    "postal_code": self.partner_zip,
+                    "postal_code": punctuation_rm(self.partner_zip),
                 }
             },
             "charges": [
