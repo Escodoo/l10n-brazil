@@ -20,6 +20,8 @@ class Partner(models.Model):
     _name = "res.partner"
     _inherit = [_name, "l10n_br_base.party.mixin"]
 
+    vat = fields.Char(compute="_compute_vat_from_cnpj_cpf", store=True)
+
     is_accountant = fields.Boolean(string="Is accountant?")
 
     crc_code = fields.Char(string="CRC Code", size=18)
@@ -94,21 +96,13 @@ class Partner(models.Model):
                         _("There is already a partner record with this CPF/RG!")
                     )
 
-    @api.model
-    def create(self, vals):
-        if (
-            vals.get("cnpj_cpf")
-            and vals.get("is_company")
-            and self.country_id.code == "BR"
-        ):
-            vals["vat"] = vals.get("cnpj_cpf")
-
-        return super().create(vals)
-
-    def write(self, vals):
-        if vals.get("cnpj_cpf") and self.is_company and self.country_id.code == "BR":
-            vals["vat"] = vals.get("cnpj_cpf")
-        return super().write(vals)
+    @api.depends("cnpj_cpf", "is_company", "parent_id", "commercial_partner_id")
+    def _compute_vat_from_cnpj_cpf(self):
+        for partner in self:
+            if partner.commercial_partner_id.cnpj_cpf or partner.cnpj_cpf:
+                partner.vat = partner.commercial_partner_id.cnpj_cpf
+            else:
+                partner.vat = False
 
     @api.constrains("cnpj_cpf", "country_id")
     def _check_cnpj_cpf(self):
