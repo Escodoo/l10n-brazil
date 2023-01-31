@@ -66,9 +66,5 @@ class SaleOrder(models.Model):
         self.ensure_one()
         result = super()._compute_amount_total_without_delivery()
         if self.company_id.country_id.code == "BR":
-            result = self.env["delivery.carrier"]._compute_currency(
-                self,
-                self.amount_total - self.amount_freight_value,
-                "pricelist_to_company",
-            )
+            result = self.amount_total - self.amount_freight_value
         return result

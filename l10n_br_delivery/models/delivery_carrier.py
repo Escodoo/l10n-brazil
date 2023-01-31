@@ -48,6 +48,13 @@ class Carrier(models.Model):
         if order.company_id.country_id.code == "BR":
             total = (order.amount_total or 0.0) - order.amount_freight_value
 
-        total = self._compute_currency(order, total, "pricelist_to_company")
+        # total = self._compute_currency(order, total, "pricelist_to_company")
+        # cliente com versão desatualizada do Odoo
+        total = order.currency_id._convert(
+            total,
+            order.company_id.currency_id,
+            order.company_id,
+            order.date_order or fields.Date.today(),
+        )
 
         return self._get_price_from_picking(total, weight, volume, quantity)
