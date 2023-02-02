@@ -181,6 +181,7 @@ class PaymentTransactionPagseguro(models.Model):
 
         if tree.get("charges", {})[0].get("payment_response"):
             code = tree.get("charges", {})[0].get("payment_response").get("code")
+            message = tree.get("charges", {})[0].get("payment_response").get("message")
             if code == "20000":
                 self.log_transaction(reference=tree.get("id"), message="")
 
@@ -196,6 +197,12 @@ class PaymentTransactionPagseguro(models.Model):
 
             # setting transaction to authorized - must match Pagseguro
             # payment using the case without automatic capture
+
+            if code != "20000":
+                self.log_transaction(reference=tree.get("id"), message=message)
+                self._validate_tree_message(tree)
+                return False
+
             self._set_transaction_authorized()
             self.execute_callback()
             if self.payment_token_id:
@@ -210,8 +217,8 @@ class PaymentTransactionPagseguro(models.Model):
         return False
 
     def _validate_tree_message(self, tree):
-        if tree.get("message"):
-            error = tree.get("message")
+        if tree.get("charges", {})[0].get("payment_response").get("code") != "20000":
+            error = tree.get("charges", {})[0].get("payment_response").get("message")
             _logger.warning(error)
             self.sudo().write(
                 {
@@ -235,6 +242,15 @@ class PaymentTransactionPagseguro(models.Model):
         # currency = self.acquirer_id.company_id.currency_id.name
         # if currency != "BRL":
         #     raise UserError(_("Only BRL currency is allowed."))
+
+        # "phones": [
+        #     {
+        #         "country": "55",
+        #         "area": "16",
+        #         "number": "999999999",
+        #         "type": "MOBILE",
+        #     }
+        # ],
         CHARGE_PARAMS = {
             "reference_id": self.sale_order_ids[0].name,
             "customer": {
@@ -242,14 +258,6 @@ class PaymentTransactionPagseguro(models.Model):
                 "email": self.partner_email,
                 "tax_id": punctuation_rm(self.partner_id.vat)
                 or punctuation_rm(self.partner_id.cnpj_cpf),
-                "phones": [
-                    {
-                        "country": "55",
-                        "area": "11",
-                        "number": "999999999",
-                        "type": "MOBILE",
-                    }
-                ],
             },
             "items": [
                 {
@@ -309,8 +317,8 @@ class PaymentTransactionPagseguro(models.Model):
     def pprint_filtered_response(response):
         # Returns response removing payment's sensitive information
         output_response = response.copy()
-        output_response.pop("charges", None)
-        output_response.pop("links", None)
-        output_response.pop("notification_urls", None)
+        # output_response.pop("charges", None)
+        # output_response.pop("links", None)
+        # output_response.pop("notification_urls", None)
 
         return pprint.pformat(output_response)
