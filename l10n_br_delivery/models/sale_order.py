@@ -42,6 +42,12 @@ class SaleOrder(models.Model):
                 order.delivery_costs = "line"
         return True
 
+    def _remove_delivery_line(self):
+        super()._remove_delivery_line()
+        for order in self:
+            if order.company_id.country_id.code == "BR":
+                order.amount_freight_value = 0
+
     def _compute_amount_gross_weight(self):
         for record in self:
             amount_gross_weight = 0.0
@@ -55,3 +61,14 @@ class SaleOrder(models.Model):
             for line in record.order_line:
                 amount_volume += line.product_qty * line.product_id.volume
             record.amount_volume = amount_volume
+
+    def _compute_amount_total_without_delivery(self):
+        self.ensure_one()
+        result = super()._compute_amount_total_without_delivery()
+        if self.company_id.country_id.code == "BR":
+            result = self.env["delivery.carrier"]._compute_currency(
+                self,
+                self.amount_total - self.amount_freight_value,
+                "pricelist_to_company",
+            )
+        return result
