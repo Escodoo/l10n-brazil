@@ -217,6 +217,18 @@ class DocumentEletronic(models.AbstractModel):
         atualiza o status do documento"""
         return
 
+    def action_open_nfse_document_from_provider(self):
+        self.ensure_one()
+        nfse = self.document_number or '481'
+        inscricao = self.company_inscr_mun
+        verificacao = self.move_ids[0].verify_code or 'WZ4RQEZ2'
+        url = "https://nfe.prefeitura.sp.gov.br/contribuinte/notaprint.aspx?nf=%s&inscricao=%s&verificacao=%s" % (nfse, inscricao, verificacao)
+        return {
+            'type': 'ir.actions.act_url',
+            'url': url,
+            'target': 'new',
+        }
+
     @api.constrains("issuer")
     def _check_issuer(self):
         for record in self.filtered(lambda d: d.document_electronic):
