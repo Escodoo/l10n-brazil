@@ -22,3 +22,14 @@ class AccountTaxGroup(models.Model):
             ],
             limit=1,
         )
+
+
+class AccountGroup(models.Model):
+    _inherit = "account.group"
+
+    def write(self, vals):
+        if "code_prefix_start" in vals:
+            vals.pop("code_prefix_start")
+        if "code_prefix_end" in vals:
+            vals.pop("code_prefix_end")
+        return super(AccountGroup, self).write(vals)
