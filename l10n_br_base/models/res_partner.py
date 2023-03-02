@@ -20,7 +20,7 @@ class Partner(models.Model):
     _name = "res.partner"
     _inherit = [_name, "l10n_br_base.party.mixin"]
 
-    vat = fields.Char(related="cnpj_cpf")
+    vat = fields.Char(compute="_compute_vat_from_cnpj_cpf", store=True)
 
     is_accountant = fields.Boolean(string="Is accountant?")
 
@@ -95,6 +95,12 @@ class Partner(models.Model):
                     raise ValidationError(
                         _("There is already a partner record with this CPF/RG!")
                     )
+
+    @api.depends("cnpj_cpf", "is_company", "parent_id", "commercial_partner_id")
+    def _compute_vat_from_cnpj_cpf(self):
+        for partner in self:
+            if partner.commercial_partner_id.cnpj_cpf:
+                partner.vat = partner.commercial_partner_id.cnpj_cpf
 
     @api.constrains("cnpj_cpf", "country_id")
     def _check_cnpj_cpf(self):
