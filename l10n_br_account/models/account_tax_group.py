@@ -3,6 +3,10 @@
 
 from odoo import fields, models
 
+from odoo.addons.account.models.account_account import (
+    AccountGroup as AccountGroupHerdado,
+)
+
 
 class AccountTaxGroup(models.Model):
     _inherit = "account.tax.group"
@@ -22,3 +26,10 @@ class AccountTaxGroup(models.Model):
             ],
             limit=1,
         )
+
+
+class AccountGroup(models.Model):
+    _inherit = "account.group"
+
+    def write(self, vals):
+        return super(AccountGroupHerdado, self).write(vals)
