@@ -15,15 +15,19 @@ class L10nBrPortal(CustomerPortal):
         "city_id",
         "district",
         "street_number",
-        "legal_name",
         "cnpj_cpf",
         "zipcode",
-        "inscr_est",
         "street_name",
     ]
     OPTIONAL_BILLING_FIELDS = list(
         set(CustomerPortal.OPTIONAL_BILLING_FIELDS) - {"state_id"}
-    ) + ["inscr_mun", "street2", "mobile"]
+    ) + [
+        "legal_name",
+        "inscr_est",
+        "inscr_mun",
+        "street2",
+        "mobile",
+    ]
 
     def _prepare_portal_layout_values(self):
         values = super(L10nBrPortal, self)._prepare_portal_layout_values()
