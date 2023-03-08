@@ -3,6 +3,10 @@
 
 from odoo import fields, models
 
+from odoo.addons.account.models.account_account import (
+    AccountGroup as AccountGroupHerdado,
+)
+
 
 class AccountTaxGroup(models.Model):
     _inherit = "account.tax.group"
@@ -28,8 +32,4 @@ class AccountGroup(models.Model):
     _inherit = "account.group"
 
     def write(self, vals):
-        if "code_prefix_start" in vals:
-            vals.pop("code_prefix_start")
-        if "code_prefix_end" in vals:
-            vals.pop("code_prefix_end")
-        return super(AccountGroup, self).write(vals)
+        return super(AccountGroupHerdado, self).write(vals)
