@@ -84,8 +84,8 @@
                     <field
                                             name="issqn_value"
                                             force_save="1"
-                                            attrs="{'readonly': [('issqn_tax_id', '!=', False)]}"
                                         />
+                      <!-- attrs="{'readonly': [('issqn_tax_id', '!=', False)]}" -->
                   </group>
                   <group>
                     <field
