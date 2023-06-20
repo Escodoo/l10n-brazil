@@ -138,6 +138,14 @@ class Document(models.Model):
                 record.make_pdf()
         return result
 
+    def prepare_line_service_description(self):
+        description = str(self.fiscal_line_ids[0].name[:2000] or "") + (
+            "|%s|" % self.fiscal_line_ids[0].additional_data.replace("\n", "|")
+            if self.fiscal_line_ids[0].additional_data
+            else ""
+        )
+        return description
+
     def _prepare_dados_servico(self):
         # TODO: Migration 14.0: Acredito que fiscal_line_ids
         #  deveria ser igual invoice_line_ids
@@ -223,7 +231,7 @@ class Document(models.Model):
                 0
             ].issqn_fg_city_id.ibge_code
             or "",
-            "discriminacao": str(self.fiscal_line_ids[0].name[:2000] or ""),
+            "discriminacao": self.prepare_line_service_description(),
             "codigo_cnae": misc.punctuation_rm(self.fiscal_line_ids[0].cnae_id.code)
             or None,
             "valor_desconto_incondicionado": valor_desconto_incondicionado,
