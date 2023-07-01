@@ -5,7 +5,8 @@ erpbrasil.base>=2.3.0
 erpbrasil.edoc
 erpbrasil.edoc.pdf
 erpbrasil.transmissao
-nfelib
+nfelib>=2.0.0
+nfselib.ginfes
 nfselib.paulistana
 num2words
 phonenumbers
@@ -14,3 +15,4 @@ pyyaml
 satcomum
 unidecode
 workalendar
+xmldiff

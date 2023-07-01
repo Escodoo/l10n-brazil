@@ -1,12 +1,18 @@
 # Copyright 2022 KMEE
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
+import logging
+import os
 import time  # You can't send multiple requests at the same time in trial version
+
+import vcr
 
 from odoo.exceptions import ValidationError
 from odoo.tests import tagged
 
 from .common import TestCnpjCommon
+
+_logger = logging.getLogger(__name__)
 
 
 @tagged("post_install", "-at_install")
@@ -19,11 +25,16 @@ class TestTestSerPro(TestCnpjCommon):
         self.set_param("serpro_trial", True)
         self.set_param("serpro_schema", "basica")
 
+    @vcr.use_cassette(
+        os.path.dirname(__file__) + "/fixtures/test_serpro_basica.yaml",
+        match_on=["method", "scheme", "host", "port", "path", "query", "body"],
+        ignore_localhost=True,
+    )
     def test_serpro_basica(self):
         dummy_basica = self.model.create(
             {"name": "Dummy Basica", "cnpj_cpf": "34.238.864/0001-68"}
         )
-
+        time.sleep(3)
         dummy_basica._onchange_cnpj_cpf()
         dummy_basica.search_cnpj()
 
@@ -45,6 +56,11 @@ class TestTestSerPro(TestCnpjCommon):
         self.assertEqual(dummy_basica.equity_capital, 0)
         self.assertEqual(dummy_basica.cnae_main_id.code, "6204-0/00")
 
+    @vcr.use_cassette(
+        os.path.dirname(__file__) + "/fixtures/test_serpro_not_found.yaml",
+        match_on=["method", "scheme", "host", "port", "path", "query", "body"],
+        ignore_localhost=True,
+    )
     def test_serpro_not_found(self):
         # Na versão Trial só há alguns registros de CNPJ cadastrados
         invalid = self.model.create(
@@ -52,7 +68,7 @@ class TestTestSerPro(TestCnpjCommon):
         )
         invalid._onchange_cnpj_cpf()
 
-        time.sleep(2)  # Pause
+        time.sleep(3)  # Pause
         with self.assertRaises(ValidationError):
             invalid.search_cnpj()
 
@@ -95,6 +111,11 @@ class TestTestSerPro(TestCnpjCommon):
 
         self.assertEqual(socios, expected_socios)
 
+    @vcr.use_cassette(
+        os.path.dirname(__file__) + "/fixtures/test_serpro_empresa.yaml",
+        match_on=["method", "scheme", "host", "port", "path", "query", "body"],
+        ignore_localhost=True,
+    )
     def test_serpro_empresa(self):
         self.model.search([("cnpj_cpf", "=", "34.238.864/0001-68")]).write(
             {"active": False}
@@ -105,7 +126,7 @@ class TestTestSerPro(TestCnpjCommon):
             {"name": "Dummy Empresa", "cnpj_cpf": "34.238.864/0001-68"}
         )
 
-        time.sleep(2)  # Pause
+        time.sleep(3)  # Pause
         dummy_empresa._onchange_cnpj_cpf()
         dummy_empresa.search_cnpj()
 
@@ -119,6 +140,11 @@ class TestTestSerPro(TestCnpjCommon):
 
         self.assert_socios(dummy_empresa, expected_cnpjs)
 
+    @vcr.use_cassette(
+        os.path.dirname(__file__) + "/fixtures/test_serpro_qsa.yaml",
+        match_on=["method", "scheme", "host", "port", "path", "query", "body"],
+        ignore_localhost=True,
+    )
     def test_serpro_qsa(self):
         self.model.search([("cnpj_cpf", "=", "34.238.864/0001-68")]).write(
             {"active": False}
@@ -129,7 +155,7 @@ class TestTestSerPro(TestCnpjCommon):
             {"name": "Dummy QSA", "cnpj_cpf": "34.238.864/0001-68"}
         )
 
-        time.sleep(2)  # Pause
+        time.sleep(3)  # Pause
         dummy_qsa._onchange_cnpj_cpf()
         dummy_qsa.search_cnpj()
 
