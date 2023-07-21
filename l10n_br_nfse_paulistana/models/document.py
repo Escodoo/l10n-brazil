@@ -294,6 +294,8 @@ class Document(models.Model):
         # assinatura += ''.zfill(14)
         # assinatura += 'N'
 
+        if assinatura:
+            assinatura.encode()
         return assinatura
 
     def _map_taxation_rps(self, operation_nature):
