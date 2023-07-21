@@ -175,8 +175,13 @@ class Document(models.Model):
                 tpRPS, "InscricaoMunicipalTomador", dados_tomador["inscricao_municipal"]
             ),
             InscricaoEstadualTomador=self.convert_type_nfselib(
-                tpRPS, "InscricaoEstadualTomador", dados_tomador["inscricao_estadual"]
-            ),
+                tpRPS,
+                "InscricaoMunicipalTomador",
+                dados_tomador["inscricao_municipal"],
+            )
+            if dados_tomador["codigo_municipio"]
+            == int("%s" % (self.company_id.partner_id.city_id.ibge_code))
+            else None,
             RazaoSocialTomador=self.convert_type_nfselib(
                 tpRPS, "RazaoSocialTomador", dados_tomador["razao_social"]
             ),
