@@ -220,10 +220,12 @@ class Document(models.Model):
                 ),
             ),
             ValorCargaTributaria=self.convert_type_nfselib(
-                tpRPS, "ValorCargaTributaria", dados_lote_rps["carga_tributaria"]
+                tpRPS,
+                "ValorCargaTributaria",
+                dados_lote_rps["carga_tributaria_estimada"],
             ),
             FonteCargaTributaria=self.convert_type_nfselib(
-                tpRPS, "FonteCargaTributaria", dados_lote_rps["total_recebido"]
+                tpRPS, "FonteCargaTributaria", "IBPT"
             ),
             MunicipioPrestacao=self.convert_type_nfselib(
                 CabecalhoType,
@@ -278,7 +280,7 @@ class Document(models.Model):
         ).strftime("%Y%m%d")
         assinatura += self._map_taxation_rps(dados_lote_rps["natureza_operacao"])
         assinatura += "N"  # Corrigir - Verificar status do RPS
-        assinatura += "N"
+        assinatura += "S" if dados_servico["iss_retido"] == "1" else "N"
         assinatura += (
             ("%.2f" % dados_lote_rps["total_recebido"]).replace(".", "").zfill(15)
         )
@@ -292,7 +294,7 @@ class Document(models.Model):
         # assinatura += ''.zfill(14)
         # assinatura += 'N'
 
-        return assinatura
+        return assinatura.encode()
 
     def _map_taxation_rps(self, operation_nature):
         # FIXME: Lidar com diferença de tributado em São Paulo ou não
