@@ -24,6 +24,20 @@ class SaleOrder(models.Model):
     # TODO: Verificar na migração se isso foi alterado
     incoterm_id = fields.Many2one(related="incoterm")
 
+    shipment_forwarding_partner_id = fields.Many2one(
+        comodel_name="res.partner",
+        help="The shipment forwarding partner that is doing the delivery service.",
+        string="Shipment Forwarding Transporter",
+    )
+
+    shipment_forwarding_incoterm_id = fields.Many2one(
+        comodel_name="account.incoterms",
+        string="Shipment Forwarding Incoterm",
+        help="International Commercial Terms are a series of"
+        " predefined commercial terms used in international"
+        " transactions.",
+    )
+
     @api.depends("order_line")
     def _compute_delivery_state(self):
         for order in self:

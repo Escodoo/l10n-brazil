@@ -33,8 +33,15 @@
                         <field name='delivery_message' force_save="1" />
                     </div>
                 </div>
+                <label for="shipment_forwarding_partner_id" />
+                <div>
+                    <field name="shipment_forwarding_partner_id" class="oe_inline"/>
+                </div>
+                <label for="shipment_forwarding_incoterm_id" />
+                <div>
+                    <field name="shipment_forwarding_incoterm_id" widget="selection" groups="sale_stock.group_display_incoterm"/>
+                </div>
             </xpath>
-
         </field>
     </record>
 

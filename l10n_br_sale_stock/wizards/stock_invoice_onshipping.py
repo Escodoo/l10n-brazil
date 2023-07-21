@@ -42,6 +42,18 @@ class StockInvoiceOnshipping(models.TransientModel):
                         + " TERMOS E CONDIÇÕES: {}".format(pick.sale_id.note),
                     }
                 )
+            if pick.sale_id.shipment_forwarding_partner_id:
+                manual_customer_additional_data = ""
+
+                if values.get("manual_customer_additional_data"):
+                    manual_customer_additional_data = values.get("manual_customer_additional_data")
+
+                values.update(
+                        {
+                            "manual_customer_additional_data": manual_customer_additional_data
+                                                               + " Redespacho",
+                        }
+                    )
 
         return invoice, values
 
