@@ -17,7 +17,6 @@
         "views/sale_blanket_order.xml",
     ],
     "demo": [
-        "demo/sale_blanket_order_line.xml",
-        "demo/sale_blanket_order.xml",
+        "demo/l10n_br_sale_blanket_order.xml",
     ],
 }
