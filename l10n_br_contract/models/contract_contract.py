@@ -115,7 +115,7 @@ class ContractContract(models.Model):
         """
         invoices_values = super()._prepare_recurring_invoices_values(date_ref=date_ref)
 
-        if not isinstance(invoices_values, list):
+        if invoices_values and not isinstance(invoices_values, list):
             invoices_values = [invoices_values]
 
         inv_vals = []
