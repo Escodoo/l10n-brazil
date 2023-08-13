@@ -3,6 +3,7 @@
 
 {
     "name": "SPED Base",
+<<<<<<< HEAD
     "summary": """
         Framework abstrato pro SPED""",
     "version": "14.0.1.0.0",
@@ -12,6 +13,15 @@
     "depends": ["l10n_br_fiscal"],
     "maintainers": ["rvalyi"],
     "development_status": "Alpha",
+=======
+    "description": """
+        Framework abstrato pro SPED""",
+    "version": "14.0.1.0.0",
+    "license": "AGPL-3",
+    "author": "Akretion",
+    "website": "www.akretion.com",
+    "depends": ["base"],
+>>>>>>> 6102b03a04 ([REF] new SPED modules layout)
     "data": [
         "views/sped_base.xml",
     ],
