@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Copyright 2023 - TODAY, Marcel Savegnago <marcel.savegnago@escodoo.com.br>
+     License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl). -->
+<odoo>
+
+<!--    <record model="ir.ui.view" id="sale_blanket_order_line_form_view">-->
+<!--        <field name="name">sale.blanket.order.line.form (in l10n_br_sale_blanket_order)</field>-->
+<!--        <field name="model">sale.blanket.order.line</field>-->
+<!--        <field name="inherit_id" ref="TODO othermodule.form_view"/>-->
+<!--        <field name="arch" type="xml">-->
+<!--            &lt;!&ndash; TODO &ndash;&gt;-->
+<!--        </field>-->
+<!--    </record>-->
+
+<!--    <record model="ir.ui.view" id="sale_blanket_order_line_search_view">-->
+<!--        <field name="name">sale.blanket.order.line.search (in l10n_br_sale_blanket_order)</field>-->
+<!--        <field name="model">sale.blanket.order.line</field>-->
+<!--        <field name="inherit_id" ref="TODO othermodule.search_view"/>-->
+<!--        <field name="arch" type="xml">-->
+<!--            &lt;!&ndash; TODO &ndash;&gt;-->
+<!--        </field>-->
+<!--    </record>-->
+
+<!--    <record model="ir.ui.view" id="sale_blanket_order_line_tree_view">-->
+<!--        <field name="name">sale.blanket.order.line.tree (in l10n_br_sale_blanket_order)</field>-->
+<!--        <field name="model">sale.blanket.order.line</field>-->
+<!--        <field name="inherit_id" ref="TODO othermodule.tree_view"/>-->
+<!--        <field name="arch" type="xml">-->
+<!--            &lt;!&ndash; TODO &ndash;&gt;-->
+<!--        </field>-->
+<!--    </record>-->
+
+</odoo>
