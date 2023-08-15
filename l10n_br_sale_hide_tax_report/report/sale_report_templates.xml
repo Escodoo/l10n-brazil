@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <template
+        id="report_saleorder_document_l10n_br_sale_custom"
+        inherit_id="l10n_br_sale.report_saleorder_document_l10n_br_sale"
+        priority="100"
+    >
+        <!-- HIDDEN AMOUNT UNTAXED LABEL -->
+        <xpath
+            expr="//div[@name='total']/div/table/tr[@style='']/td[@name='td_amount_untaxed_label']"
+            position="attributes"
+        >
+            <attribute name="class">d-none</attribute>
+        </xpath>
+        <!-- HIDDEN AMOUNT UNTAXED -->
+        <xpath
+            expr="//div[@name='total']/div/table/tr[@style='']/td[@name='td_amount_untaxed']"
+            position="attributes"
+        >
+            <attribute name="class">d-none</attribute>
+        </xpath>
+        <!-- HIDDEN AMOUNT TAX LABEL -->
+        <xpath
+            expr="//div[@name='total']/div/table/tr[@style='']/td[@name='td_amount_tax_label']"
+            position="attributes"
+        >
+            <attribute name="class">d-none</attribute>
+        </xpath>
+        <!-- HIDDEN AMOUNT TAX -->
+        <xpath
+            expr="//div[@name='total']/div/table/tr[@style='']/td[@name='td_amount_tax']"
+            position="attributes"
+        >
+            <attribute name="class">d-none</attribute>
+        </xpath>
+        <!-- HIDDEN AMOUNT BY GROUP (IPI, COFFINS, ETC) -->
+        <xpath
+            expr="//div[@name='total']/div/table//td[@name='td_amount_by_group_label']"
+            position="attributes"
+        >
+            <attribute name="class">d-none</attribute>
+        </xpath>
+        <!-- HIDDEN AMOUNT BY GROUP (IPI, COFFINS, ETC) -->
+        <xpath
+            expr="//div[@name='total']/div/table//td[@name='td_amount_by_group']"
+            position="attributes"
+        >
+            <attribute name="class">d-none</attribute>
+        </xpath>
+        <!-- HIDDE COLUMN TH_TAXES -->
+        <xpath
+            expr="//table[@class='table table-sm o_main_table']/thead//th[@name='th_taxes']"
+            position="attributes"
+        >
+            <attribute name="class">d-none</attribute>
+        </xpath>
+        <!-- HIDDE COLUMN TD_TAXES -->
+        <xpath
+            expr="//table[@class='table table-sm o_main_table']/tbody//td[@name='td_taxes']"
+            position="attributes"
+        >
+            <attribute name="class">d-none</attribute>
+        </xpath>
+        <!-- HIDDEN SPAN LINE.PRICE_SUBTOTAL (NO INCLUDE TAXES) -->
+        <xpath
+            expr="//table[@class='table table-sm o_main_table']/tbody//span[@t-field='line.price_subtotal']"
+            position="attributes"
+        >
+            <attribute name="class">d-none</attribute>
+        </xpath>
+        <!-- REMOVE GROUPS IN LINE.PRICE_TOTAL (INCLUDE TAXES) -->
+        <xpath
+            expr="//table[@class='table table-sm o_main_table']/tbody//span[@t-field='line.price_total']"
+            position="attributes"
+        >
+            <attribute name="groups" />
+        </xpath>
+    </template>
+</odoo>
