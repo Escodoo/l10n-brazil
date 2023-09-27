@@ -96,9 +96,13 @@ class Partner(models.Model):
                         _("There is already a partner record with this CPF/RG!")
                     )
 
-    @api.depends("cnpj_cpf", "is_company", "parent_id", "commercial_partner_id")
+    @api.depends(
+        "cnpj_cpf", "is_company", "parent_id", "parent_id.vat", "commercial_partner_id"
+    )
     def _compute_vat_from_cnpj_cpf(self):
         for partner in self:
+            if partner.company_name:
+                return
             if partner.commercial_partner_id.cnpj_cpf:
                 partner.vat = partner.commercial_partner_id.cnpj_cpf
 
@@ -204,3 +208,16 @@ class Partner(models.Model):
                 rec.show_l10n_br = False
             else:
                 rec.show_l10n_br = True
+
+    def create_company(self):
+        self.ensure_one()
+        inscr_est = self.inscr_est
+        inscr_mun = self.inscr_mun
+        res = super().create_company()
+        if res:
+            parent = self.parent_id
+            if parent.country_id.code == "BR":
+                parent.cnpj_cpf = parent.vat
+                parent.inscr_est = inscr_est
+                parent.inscr_mun = inscr_mun
+        return res

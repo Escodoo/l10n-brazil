@@ -27,6 +27,7 @@ class L10nBrPortal(CustomerPortal):
         "inscr_mun",
         "street2",
         "mobile",
+        "rg",
     ]
 
     def _prepare_portal_layout_values(self):
