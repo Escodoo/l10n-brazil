@@ -14,5 +14,5 @@ class ResCompany(models.Model):
     )
 
     token_focusnfe = fields.Char(
-        string="FocusNFe Homologação Token",
+        string="FocusNFe Token",
     )
