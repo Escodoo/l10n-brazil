@@ -1,17 +1,10 @@
 # Copyright 2023 KMEE INFORMATICA LTDA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-import base64
-import gzip
 import json
 import logging
-from datetime import datetime
-from os import environ
-from pathlib import Path
 
 import requests
-from erpbrasil.assinatura import certificado as cert
-from erpbrasil.assinatura.certificado import ArquivoCertificado
 from nfelib.nfse.bindings.v1_0.dps_v1_00 import Dps
 from nfelib.nfse.bindings.v1_0.tipos_complexos_v1_00 import (
     Tccserv,
@@ -49,16 +42,17 @@ from odoo.addons.l10n_br_nfse.models.document import filter_processador_edoc_nfs
 _logger = logging.getLogger(__name__)
 
 NFSE_URL = {
-    "1": 'https://api.focusnfe.com.br',
-    "2": 'https://homologacao.focusnfe.com.br'
+    "1": "https://api.focusnfe.com.br",
+    "2": "https://homologacao.focusnfe.com.br",
 }
 
 API_ENDPOINT = {
-    'envio': '/v2/nfse?ref=',
-    'status': '/v2/nfse/',
-    'resposta': '/v2/nfse/',
-    'cancelamento': '/v2/nfse/',
+    "envio": "/v2/nfse?ref=",
+    "status": "/v2/nfse/",
+    "resposta": "/v2/nfse/",
+    "cancelamento": "/v2/nfse/",
 }
+
 
 class NFSeFocus(object):
     def __init__(self, tpAmb, token_focusnfe, company):
@@ -74,7 +68,7 @@ class NFSeFocus(object):
         ns_map = {None: "http://www.sped.fazenda.gov.br/nfse"}
         return serializer.render(obj=edoc, ns_map=ns_map)
 
-    def processar_documento(self, edoc):       
+    def processar_documento(self, edoc):
         nfse = {}
         nfse["prestador"] = {}
         nfse["servico"] = {}
@@ -83,49 +77,61 @@ class NFSeFocus(object):
 
         nfse["razao_social"] = self.company.name
         nfse["data_emissao"] = edoc.infDPS.dhEmi
-        nfse["incentivador_cultural"] =  self.company.cultural_sponsor
+        nfse["incentivador_cultural"] = self.company.cultural_sponsor
         nfse["natureza_operacao"] = "1"
         # Verificar esse campo
-        nfse["optante_simples_nacional"] = "true"
+        nfse["optante_simples_nacional"] = "false"
         nfse["status"] = "1"
         nfse["prestador"]["cnpj"] = edoc.infDPS.prest.CNPJ
         nfse["prestador"]["inscricao_municipal"] = edoc.infDPS.prest.IM
         nfse["prestador"]["codigo_municipio"] = self.company.city_id.ibge_code
         # Verificar esses campos
-        nfse["servico"]["aliquota"] = "2.92"
-        nfse["servico"]["base_calculo"] = "1.00"
+        nfse["servico"]["aliquota"] = "3.00"
+        nfse["servico"]["base_calculo"] = "100.00"
         nfse["servico"]["discriminacao"] = "SERVICOS E MAO DE OBRA"
         nfse["servico"]["iss_retido"] = "0"
-        nfse["servico"]["item_lista_servico"] = "1412"
-        nfse["servico"]["valor_iss"] = "11.68"
-        nfse["servico"]["valor_liquido"] = "1.00"
-        nfse["servico"]["valor_servicos"] = "1.00"
+        nfse["servico"]["item_lista_servico"] = "1401"
+        nfse["servico"]["valor_iss"] = "3.00"
+        nfse["servico"]["valor_liquido"] = "100.00"
+        nfse["servico"]["valor_servicos"] = "100.00"
+        nfse["servico"]["codigo_tributario_municipio"] = "331472000"
         nfse["tomador"]["cnpj"] = edoc.infDPS.toma.CNPJ
         nfse["tomador"]["razao_social"] = "Parkinson da silva coelho JR"
         nfse["tomador"]["endereco"]["bairro"] = edoc.infDPS.toma.end.xBairro
         nfse["tomador"]["endereco"]["cep"] = edoc.infDPS.toma.end.endNac.CEP
-        nfse["tomador"]["endereco"]["codigo_municipio"] = edoc.infDPS.toma.end.endNac.cMun
+        nfse["tomador"]["endereco"][
+            "codigo_municipio"
+        ] = edoc.infDPS.toma.end.endNac.cMun
         nfse["tomador"]["endereco"]["logradouro"] = edoc.infDPS.toma.end.xLgr
         nfse["tomador"]["endereco"]["numero"] = edoc.infDPS.toma.end.nro
         nfse["tomador"]["endereco"]["uf"] = "MG"
-        
+
         payload = json.dumps(nfse)
-        ref = {"ref":"12345"}
-        return self._post(NFSE_URL[self.tpAmb] + API_ENDPOINT['envio'], payload, ref)
+        ref = {"ref": "12345"}
+        return self._post(NFSE_URL[self.tpAmb] + API_ENDPOINT["envio"], payload, ref)
 
     def _post(self, url, payload, ref):
-        headers = {"Content-Type": "application/json"}
-        response = requests.post(url, params=ref, data=payload, auth=(self.token_focusnfe,""))
+        # headers = {"Content-Type": "application/json"}
+        response = requests.post(
+            url, params=ref, data=payload, auth=(self.token_focusnfe, "")
+        )
 
-        if response.status_code == 201 or response.status_code == 200 or response.status_code == 202:
+        if (
+            response.status_code == 201
+            or response.status_code == 200
+            or response.status_code == 202
+            or response.status_code == 422
+        ):
             return response
         else:
             raise UserError(_("%s - %s" % (response.status_code, response.text)))
+
 
 def filter_focusnfe(record):
     if record.company_id.provedor_nfse == "focusnfe":
         return True
     return False
+
 
 class Document(models.Model):
     _inherit = "l10n_br_fiscal.document"
@@ -196,7 +202,6 @@ class Document(models.Model):
                 xBairro=dados["bairro"],
             ),
         )
-
 
     def _serialize_nacional_rps(self, dados_lote_rps, dados_servico):
         return TcinfDps(
@@ -301,7 +306,11 @@ class Document(models.Model):
         return dps
 
     def _processador_nfse_focus(self):
-        return NFSeFocus(tpAmb=self.nfse_environment, token_focusnfe=self.company_id.token_focusnfe, company=self.company_id)
+        return NFSeFocus(
+            tpAmb=self.nfse_environment,
+            token_focusnfe=self.company_id.token_focusnfe,
+            company=self.company_id,
+        )
 
     def _document_export(self, pretty_print=True):
         result = super(FiscalDocument, self)._document_export()
@@ -328,7 +337,6 @@ class Document(models.Model):
                 record.authorization_event_id = event_id
                 record.make_pdf()
         return result
-
 
     def cancel_document_nacional(self):
         pass
@@ -387,32 +395,43 @@ class Document(models.Model):
             for edoc in record.serialize():
                 response = processador.processar_documento(edoc)
                 json = response.json()
-                vals = {
-                    "document_number": json["idDps"],
-                    "authorization_date": json["dataHoraProcessamento"],
-                }
-                # TODO?  vals["verify_code"] = comp.Nfse.InfNfse.CodigoVerificacao
 
-                decoded_data = base64.b64decode(json["nfseXmlGZipB64"])
-                decompressed_data = gzip.decompress(decoded_data)
-                nfse_xml = decompressed_data.decode()
-                record.authorization_event_id.set_done(
-                    status_code=response.status_code,
-                    response="FIXME não tem?",  # FIXME
-                    protocol_date=datetime.strptime(
-                        vals["authorization_date"], "%Y-%m-%dT%H:%M:%S.%fZ"
-                    ),
-                    protocol_number="FIXME não tem",  # FIXME
-                    file_response_xml=nfse_xml,
-                )
-                # TODO is it normal to do that in a record.serialize loop?
-                record._change_state(SITUACAO_EDOC_AUTORIZADA)
+                try:
+                    code = json["codigo"]
+                except Exception:
+                    code = ""
+
+                if code == "nfe_autorizada":
+                    record._change_state(SITUACAO_EDOC_AUTORIZADA)
+                else:
+                    return
+
+                # vals = {
+                #     "document_number": json["ref"],
+                #     "authorization_date": json["dataHoraProcessamento"],
+                # }
+
+                # # TODO?  vals["verify_code"] = comp.Nfse.InfNfse.CodigoVerificacao
+
+                # decoded_data = base64.b64decode(json["nfseXmlGZipB64"])
+                # decompressed_data = gzip.decompress(decoded_data)
+                # nfse_xml = decompressed_data.decode()
+                # record.authorization_event_id.set_done(
+                #     status_code=response.status_code,
+                #     response="FIXME não tem?",  # FIXME
+                #     protocol_date=datetime.strptime(
+                #         vals["authorization_date"], "%Y-%m-%dT%H:%M:%S.%fZ"
+                #     ),
+                #     protocol_number="FIXME não tem",  # FIXME
+                #     file_response_xml=nfse_xml,
+                # )
+                # # TODO is it normal to do that in a record.serialize loop?
+                # record._change_state(SITUACAO_EDOC_AUTORIZADA)
 
     def _exec_before_SITUACAO_EDOC_CANCELADA(self, old_state, new_state):
         pass
         # super()._exec_before_SITUACAO_EDOC_CANCELADA(old_state, new_state)
         # return self.cancel_document_nacional()
-
 
     # def _serialize_focusnfe_dados_servico(self):
     #     self.fiscal_line_ids.ensure_one()
