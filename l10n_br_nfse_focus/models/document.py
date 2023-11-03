@@ -80,23 +80,23 @@ class NFSeFocus(object):
         nfse["incentivador_cultural"] = self.company.cultural_sponsor
         nfse["natureza_operacao"] = "1"
         # Verificar esse campo
-        nfse["optante_simples_nacional"] = "false"
+        nfse["optante_simples_nacional"] = edoc.infDPS.prest.regTrib.opSimpNac
         nfse["status"] = "1"
         nfse["prestador"]["cnpj"] = edoc.infDPS.prest.CNPJ
         nfse["prestador"]["inscricao_municipal"] = edoc.infDPS.prest.IM
         nfse["prestador"]["codigo_municipio"] = self.company.city_id.ibge_code
         # Verificar esses campos
-        nfse["servico"]["aliquota"] = "3.00"
-        nfse["servico"]["base_calculo"] = "100.00"
-        nfse["servico"]["discriminacao"] = "SERVICOS E MAO DE OBRA"
+        nfse["servico"]["aliquota"] = edoc.infDPS.valores.trib.totTrib.pTotTribSN
+        nfse["servico"]["base_calculo"] = edoc.infDPS.valores.vServPrest.vServ
+        nfse["servico"]["discriminacao"] = edoc.infDPS.serv.cServ.xDescServ
         nfse["servico"]["iss_retido"] = "0"
         nfse["servico"]["item_lista_servico"] = "1401"
         nfse["servico"]["valor_iss"] = "3.00"
-        nfse["servico"]["valor_liquido"] = "100.00"
-        nfse["servico"]["valor_servicos"] = "100.00"
-        nfse["servico"]["codigo_tributario_municipio"] = "331472000"
+        nfse["servico"]["valor_liquido"] = edoc.infDPS.valores.vServPrest.vServ
+        nfse["servico"]["valor_servicos"] = edoc.infDPS.valores.vServPrest.vServ
+        nfse["servico"]["codigo_tributario_municipio"] = edoc.infDPS.serv.cServ.cTribMun
         nfse["tomador"]["cnpj"] = edoc.infDPS.toma.CNPJ
-        nfse["tomador"]["razao_social"] = "Parkinson da silva coelho JR"
+        nfse["tomador"]["razao_social"] = edoc.infDPS.toma.xNome or "A Definir"
         nfse["tomador"]["endereco"]["bairro"] = edoc.infDPS.toma.end.xBairro
         nfse["tomador"]["endereco"]["cep"] = edoc.infDPS.toma.end.endNac.CEP
         nfse["tomador"]["endereco"][
@@ -107,7 +107,7 @@ class NFSeFocus(object):
         nfse["tomador"]["endereco"]["uf"] = "MG"
 
         payload = json.dumps(nfse)
-        ref = {"ref": "12345"}
+        ref = {"ref": "12349"}
         return self._post(NFSE_URL[self.tpAmb] + API_ENDPOINT["envio"], payload, ref)
 
     def _post(self, url, payload, ref):
@@ -120,7 +120,7 @@ class NFSeFocus(object):
             response.status_code == 201
             or response.status_code == 200
             or response.status_code == 202
-            or response.status_code == 422
+            or response.status_code == 4200
         ):
             return response
         else:
@@ -160,11 +160,11 @@ class Document(models.Model):
         for record in self.filtered(filter_processador_edoc_nfse).filtered(
             filter_focusnfe
         ):
-            edocs.append(record.serialize_nfse_nacional())
+            edocs.append(record.serialize_nfse_focus())
         return edocs
 
-    def _serialize_nacional_dados_servico(self):
-        self.fiscal_line_ids.ensure_one()
+    def _serialize_focus_dados_servico(self):
+        # self.fiscal_line_ids.ensure_one()
         dados = self._prepare_dados_servico()
         return Tcserv(
             #           locPrest=  # TODO
@@ -185,7 +185,7 @@ class Document(models.Model):
             #   ),
         )
 
-    def _serialize_nacional_dados_tomador(self):
+    def _serialize_focus_dados_tomador(self):
         dados = self._prepare_dados_tomador()
         return TcinfoPessoa(
             CNPJ=dados["cnpj"],
@@ -203,7 +203,7 @@ class Document(models.Model):
             ),
         )
 
-    def _serialize_nacional_rps(self, dados_lote_rps, dados_servico):
+    def _serialize_focus_rps(self, dados_lote_rps, dados_servico):
         return TcinfDps(
             tpAmb=self.nfse_environment,
             Id=dados_lote_rps["id"],
@@ -234,8 +234,8 @@ class Document(models.Model):
                     regEspTrib=dados_lote_rps["regime_especial_tributacao"],
                 ),
             ),
-            serv=self._serialize_nacional_dados_servico(),
-            toma=self._serialize_nacional_dados_tomador(),
+            serv=self._serialize_focus_dados_servico(),
+            toma=self._serialize_focus_dados_tomador(),
             valores=TcinfoValores(
                 vServPrest=TcvservPrest(
                     vServ=dados_servico["valor_servicos"],
@@ -298,11 +298,11 @@ class Document(models.Model):
             ),
         )
 
-    def serialize_nfse_nacional(self):
-        #        lote_rps = EnviarLoteRpsEnvio(LoteRps=self._serialize_nacional_lote_rps())
+    def serialize_nfse_focus(self):
+        #        lote_rps = EnviarLoteRpsEnvio(LoteRps=self._serialize_focus_lote_rps())
         dados_lote_rps = self._prepare_lote_rps()
         dados_servico = self._prepare_dados_servico()
-        dps = Dps(infDPS=self._serialize_nacional_rps(dados_lote_rps, dados_servico))
+        dps = Dps(infDPS=self._serialize_focus_rps(dados_lote_rps, dados_servico))
         return dps
 
     def _processador_nfse_focus(self):
@@ -338,7 +338,7 @@ class Document(models.Model):
                 record.make_pdf()
         return result
 
-    def cancel_document_nacional(self):
+    def cancel_document_focus(self):
         pass
         # # TODO
         # for record in self.filtered(filter_processador_edoc_nfse).filtered(
@@ -431,7 +431,7 @@ class Document(models.Model):
     def _exec_before_SITUACAO_EDOC_CANCELADA(self, old_state, new_state):
         pass
         # super()._exec_before_SITUACAO_EDOC_CANCELADA(old_state, new_state)
-        # return self.cancel_document_nacional()
+        # return self.cancel_document_focus()
 
     # def _serialize_focusnfe_dados_servico(self):
     #     self.fiscal_line_ids.ensure_one()
