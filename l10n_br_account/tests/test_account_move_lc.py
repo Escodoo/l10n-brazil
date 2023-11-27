@@ -135,7 +135,6 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "debit": 0.0,
             "credit": 843.5,
             "date_maturity": False,
-            "tax_exigible": True,
         }
 
         self.tax_line_vals_cofins = {
@@ -160,7 +159,6 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "debit": 0.0,
             "credit": 30.0,
             "date_maturity": False,
-            "tax_exigible": True,
         }
 
         self.tax_line_vals_icms = {
@@ -185,7 +183,6 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "debit": 0.0,
             "credit": 120.0,
             "date_maturity": False,
-            "tax_exigible": True,
         }
 
         self.tax_line_vals_ipi = {
@@ -217,7 +214,6 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "debit": 0.0,
             "credit": 50.0,
             "date_maturity": False,
-            "tax_exigible": True,
         }
 
         self.tax_line_vals_pis = {
@@ -242,7 +238,6 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "debit": 0.0,
             "credit": 6.5,
             "date_maturity": False,
-            "tax_exigible": True,
         }
 
         self.term_line_vals_1 = {
@@ -263,7 +258,6 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "debit": 1050.0,
             "credit": 0.0,
             "date_maturity": fields.Date.from_string("2019-01-01"),
-            "tax_exigible": True,
         }
 
         self.move_vals = {
@@ -324,7 +318,6 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "debit": 0.0,
             "credit": 0.0,
             "date_maturity": False,
-            "tax_exigible": True,
         }
 
         self.tax_line_vals_cofins = {
@@ -349,7 +342,6 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "debit": 0.0,
             "credit": 30.0,
             "date_maturity": False,
-            "tax_exigible": True,
         }
 
         self.tax_line_vals_icms = {
@@ -374,7 +366,6 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "debit": 0.0,
             "credit": 120.0,
             "date_maturity": False,
-            "tax_exigible": True,
         }
 
         self.tax_line_vals_ipi = {
@@ -406,7 +397,6 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "debit": 0.0,
             "credit": 50.0,
             "date_maturity": False,
-            "tax_exigible": True,
         }
 
         self.tax_line_vals_pis = {
@@ -431,7 +421,6 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "debit": 0.0,
             "credit": 6.5,
             "date_maturity": False,
-            "tax_exigible": True,
         }
 
         self.term_line_vals_1 = {
@@ -452,7 +441,6 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "debit": 206.5,
             "credit": 0.0,
             "date_maturity": fields.Date.from_string("2019-01-01"),
-            "tax_exigible": True,
         }
 
         self.move_vals = {
@@ -516,7 +504,6 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "debit": 1050.0,
             "credit": 0.0,
             "date_maturity": False,
-            "tax_exigible": True,
         }
 
         self.tax_line_vals_cofins = {
@@ -541,7 +528,6 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "debit": 30.0,
             "credit": 0.0,
             "date_maturity": False,
-            "tax_exigible": True,
         }
 
         self.tax_line_vals_cofins_comp = {
@@ -568,7 +554,6 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "debit": 0.0,
             "credit": 30.0,
             "date_maturity": False,
-            "tax_exigible": True,
         }
 
         self.tax_line_vals_icms = {
@@ -593,7 +578,6 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "debit": 120.0,
             "credit": 0.0,
             "date_maturity": False,
-            "tax_exigible": True,
         }
 
         self.tax_line_vals_icms_comp = {
@@ -618,7 +602,6 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "debit": 0.0,
             "credit": 120.0,
             "date_maturity": False,
-            "tax_exigible": True,
         }
 
         self.tax_line_vals_ipi = {
@@ -643,7 +626,6 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "debit": 50.0,
             "credit": 0.0,
             "date_maturity": False,
-            "tax_exigible": True,
         }
 
         self.tax_line_vals_ipi_comp = {
@@ -668,7 +650,6 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "debit": 0.0,
             "credit": 50.0,
             "date_maturity": False,
-            "tax_exigible": True,
         }
 
         self.tax_line_vals_pis = {
@@ -693,7 +674,6 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "debit": 6.5,
             "credit": 0.0,
             "date_maturity": False,
-            "tax_exigible": True,
         }
 
         self.tax_line_vals_pis_comp = {
@@ -718,7 +698,6 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "debit": 0.0,
             "credit": 6.5,
             "date_maturity": False,
-            "tax_exigible": True,
         }
 
         self.term_line_vals_1 = {
@@ -739,7 +718,6 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "debit": 0.0,
             "credit": 1050.0,
             "date_maturity": fields.Date.from_string("2019-01-01"),
-            "tax_exigible": True,
         }
 
         self.move_vals = {
