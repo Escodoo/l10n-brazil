@@ -69,7 +69,7 @@ class PurchaseOrder(models.Model):
             )
 
             sub_arch, sub_fields = view.postprocess_and_fields(
-                sub_form_node, "purchase.order.line", False
+                sub_form_node, "purchase.order.line"
             )
 
             order_view["fields"]["order_line"]["views"]["form"] = {

@@ -114,7 +114,29 @@
                       </group>
                   </page>
               </xpath>
-              <xpath expr="//field[@name='amount_untaxed']" position="after">
+              <xpath
+                expr="//field[@name='order_line']/form//field[@name='price_unit']"
+                position="after"
+            >
+                  <field
+                    name="discount_value"
+                    widget="monetary"
+                    options="{'currency_field': 'currency_id'}"
+                />
+              </xpath>
+              <xpath expr="//field[@name='tax_totals_json']" position="before">
+                  <field
+                    name="amount_price_gross"
+                    widget="monetary"
+                    options="{'currency_field': 'currency_id'}"
+                />
+                  <field
+                    name="amount_discount_value"
+                    widget="monetary"
+                    options="{'currency_field': 'currency_id'}"
+                />
+              </xpath>
+              <xpath expr="//field[@name='tax_totals_json']" position="after">
                   <field name="delivery_costs" invisible="1" />
                   <field
                     name="amount_freight_value"
@@ -133,28 +155,6 @@
                     widget='monetary'
                     options="{'currency_field': 'currency_id'}"
                     attrs="{'readonly': [('delivery_costs', '=', 'line')]}"
-                />
-              </xpath>
-              <xpath
-                expr="//field[@name='order_line']/form//field[@name='price_unit']"
-                position="after"
-            >
-                  <field
-                    name="discount_value"
-                    widget="monetary"
-                    options="{'currency_field': 'currency_id'}"
-                />
-              </xpath>
-              <xpath expr="//field[@name='amount_untaxed']" position="before">
-                  <field
-                    name="amount_price_gross"
-                    widget="monetary"
-                    options="{'currency_field': 'currency_id'}"
-                />
-                  <field
-                    name="amount_discount_value"
-                    widget="monetary"
-                    options="{'currency_field': 'currency_id'}"
                 />
               </xpath>
           </field>

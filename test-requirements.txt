@@ -1,0 +1,2 @@
+odoo-addon-l10n_br_fiscal @ git+https://github.com/OCA/l10n-brazil.git@refs/pull/2803/head#subdirectory=setup/l10n_br_fiscal
+odoo-addon-l10n_br_account @ git+https://github.com/OCA/l10n-brazil.git@refs/pull/2806/head#subdirectory=setup/l10n_br_account
