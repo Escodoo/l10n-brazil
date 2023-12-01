@@ -20,7 +20,12 @@
         <field name="inherit_id" ref="sale.view_order_form" />
         <field name="priority">99</field>
         <field name="arch" type="xml">
-            <field name="amount_untaxed" position="before">
+            <field name="tax_totals_json" position="before">
+                <field
+                    name="amount_untaxed"
+                    widget='monetary'
+                    options="{'currency_field': 'currency_id'}"
+                />
                 <field
                     name="amount_price_gross"
                     widget='monetary'
@@ -32,11 +37,6 @@
                     widget='monetary'
                     options="{'currency_field': 'currency_id'}"
                 />
-            </field>
-            <group name="sale_shipping" position="inside">
-                <field name="force_compute_delivery_costs_by_total" />
-            </group>
-            <field name="amount_untaxed" position="after">
                 <field name="delivery_costs" invisible="1" />
                 <field
                     name="amount_freight_value"
@@ -57,13 +57,16 @@
                     attrs="{'readonly': [('delivery_costs', '=', 'line'),('force_compute_delivery_costs_by_total', '=', False)]}"
                 />
             </field>
-            <field name="amount_total" position="after">
+            <field name="tax_totals_json" position="after">
                 <field
                     name="amount_financial_total"
                     widget='monetary'
                     options="{'currency_field': 'currency_id'}"
                 />
             </field>
+            <group name="sale_shipping" position="inside">
+                <field name="force_compute_delivery_costs_by_total" />
+            </group>
             <field name="validity_date" position="after">
                 <field name="fiscal_operation_id" required="True" />
                 <field name="ind_final" required="True" />
