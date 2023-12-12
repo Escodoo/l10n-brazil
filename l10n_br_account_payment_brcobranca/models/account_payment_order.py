@@ -26,6 +26,16 @@ _logger = logging.getLogger(__name__)
 class PaymentOrder(models.Model):
     _inherit = "account.payment.order"
 
+    def _prepare_remessa_santander_400(self, remessa_values):
+        remessa_values.update(
+            {
+                "codigo_transmissao": int(self.payment_mode_id.code_convetion),
+                "conta_corrente": misc.punctuation_rm(
+                    self.journal_id.bank_account_id.acc_number
+                ),
+            }
+        )
+
     def _prepare_remessa_banco_brasil_400(self, remessa_values):
         remessa_values.update(
             {
