@@ -13,3 +13,4 @@ l10n_br_fiscal_closing origin/14.0
 l10n_br_hr Escodoo/15.0-mig-l10n_br_hr
 l10n_br_mis_report origin/14.0
 l10n_br_nfse kmee/16.0-mig-l10n_br_nfse
+l10n_br_nfse_paulistana origin/14.0
