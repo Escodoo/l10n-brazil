@@ -8,3 +8,4 @@ l10n_br_coa origin/16.0
 l10n_br_coa_generic origin/16.0
 l10n_br_contract kmee/16.0-mig-l10n_br_contract
 l10n_br_crm origin/16.0
+l10n_br_fiscal_certificate origin/14.0
