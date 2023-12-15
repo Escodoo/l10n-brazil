@@ -18,3 +18,4 @@ l10n_br_portal kmee/16.0-mig-l10n_br_portal
 l10n_br_purchase akretion/15.0-mig-l10n_br_purchase
 l10n_br_resource origin/16.0
 l10n_br_sale akretion/15.0-mig-l10n_br_sale
+l10n_br_zip origin/16.0
