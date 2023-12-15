@@ -2,3 +2,4 @@ l10n_br_fiscal akretion/16.0-mig-l10n_br_fiscal
 l10n_br_account akretion/15.0-mig-l10n_br_account
 l10n_br_account_due_list origin/16.0
 l10n_br_account_payment_order origin/14.0
+l10n_br_base origin/16.0
