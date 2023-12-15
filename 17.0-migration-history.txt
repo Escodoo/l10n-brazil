@@ -4,3 +4,4 @@ l10n_br_account_due_list origin/16.0
 l10n_br_account_payment_order origin/14.0
 l10n_br_base origin/16.0
 l10n_br_cnab_structure origin/14.0
+l10n_br_coa origin/16.0
