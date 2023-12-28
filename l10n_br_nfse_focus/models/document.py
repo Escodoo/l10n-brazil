@@ -243,7 +243,10 @@ class Document(models.Model):
                             NFSE_URL[processador.tpAmb]
                             + json["caminho_xml_nota_fiscal"]
                         ).content.decode("utf-8")
-                        pdf_content = requests.get(json["url_danfse"]).content
+                        pdf_content = (
+                            requests.get(json["url"]).content
+                            or requests.get(json["url_danfse"]).content
+                        )
 
                         record.make_pdf_focus(pdf_content)
 
@@ -313,6 +316,14 @@ class Document(models.Model):
                         protocol_number="",
                         file_response_xml="",
                     )
+
+                    status_rps = processador.consulta_nfse_rps(ref, 0)
+                    status_json = status_rps.json()
+                    pdf_content = (
+                        requests.get(status_json["url"]).content
+                        or requests.get(status_json["url_danfse"]).content
+                    )
+                    record.make_pdf_focus(pdf_content)
 
                     return response
 
