@@ -68,28 +68,28 @@ class NFSeFocus(object):
             },
             "servico": {
                 "aliquota": service.get("aliquota"),
-                "base_calculo": service.get("base_calculo"),
+                "base_calculo": round(service.get("base_calculo", 0), 2),
                 "discriminacao": service.get("discriminacao"),
                 "iss_retido": service.get("iss_retido"),
                 "codigo_municipio": service.get("municipio_prestacao_servico"),
                 "item_lista_servico": service.get("item_lista_servico"),
                 "codigo_cnae": service.get("codigo_tributacao_municipio"),
-                "valor_iss": service.get("valor_iss", 0),
-                "valor_iss_retido": service.get("valor_iss_retido", 0),
-                "valor_pis": service.get("valor_pis_retido", 0),
-                "valor_cofins": service.get("valor_cofins_retido", 0),
-                "valor_inss": service.get("valor_inss_retido", 0),
-                "valor_ir": service.get("valor_ir_retido", 0),
-                "valor_csll": service.get("valor_csll_retido", 0),
-                "valor_deducoes": service.get("valor_deducoes", 0),
+                "valor_iss": round(service.get("valor_iss", 0), 2),
+                "valor_iss_retido": round(service.get("valor_iss_retido", 0), 2),
+                "valor_pis": round(service.get("valor_pis_retido", 0), 2),
+                "valor_cofins": round(service.get("valor_cofins_retido", 0), 2),
+                "valor_inss": round(service.get("valor_inss_retido", 0), 2),
+                "valor_ir": round(service.get("valor_ir_retido", 0), 2),
+                "valor_csll": round(service.get("valor_csll_retido", 0), 2),
+                "valor_deducoes": round(service.get("valor_deducoes", 0), 2),
                 "fonte_total_tributos": "IBPT",
-                "desconto_incondicionado": service.get(
-                    "valor_desconto_incondicionado", 0
+                "desconto_incondicionado": round(
+                    service.get("valor_desconto_incondicionado", 0), 2
                 ),
                 "desconto_condicionado": 0,
-                "outras_retencoes": service.get("outras_retencoes", 0),
-                "valor_servicos": service.get("valor_servicos"),
-                "valor_liquido": service.get("valor_liquido_nfse"),
+                "outras_retencoes": round(service.get("outras_retencoes", 0), 2),
+                "valor_servicos": round(service.get("valor_servicos", 0), 2),
+                "valor_liquido": round(service.get("valor_liquido_nfse", 0), 2),
                 "codigo_tributario_municipio": service.get(
                     "codigo_tributacao_municipio"
                 ),
