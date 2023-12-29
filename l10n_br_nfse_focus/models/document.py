@@ -72,8 +72,10 @@ class NFSeFocus(object):
                 "discriminacao": service.get("discriminacao"),
                 "iss_retido": service.get("iss_retido"),
                 "codigo_municipio": service.get("municipio_prestacao_servico"),
-                "item_lista_servico": service.get("item_lista_servico"),
-                "codigo_cnae": service.get("codigo_tributacao_municipio"),
+                "item_lista_servico": service.get(
+                    self.company.focusnfe_service_type_value
+                ),
+                "codigo_cnae": service.get(self.company.focusnfe_cnae_code_value),
                 "valor_iss": round(service.get("valor_iss", 0), 2),
                 "valor_iss_retido": round(service.get("valor_iss_retido", 0), 2),
                 "valor_pis": round(service.get("valor_pis_retido", 0), 2),
