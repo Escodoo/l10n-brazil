@@ -97,6 +97,7 @@ class NFSeFocus(object):
             "tomador": {
                 "cnpj": tomador.get("cnpj") or tomador.get("cpf"),
                 "razao_social": tomador.get("razao_social"),
+                "email": tomador.get("email"),
                 "endereco": {
                     "bairro": tomador.get("bairro"),
                     "cep": tomador.get("cep"),
