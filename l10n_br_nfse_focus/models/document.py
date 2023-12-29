@@ -333,7 +333,7 @@ class Document(models.Model):
                 else:
                     raise UserError(_("%s - %s" % (response.status_code, status)))
             else:
-                raise UserError(_("%s - %s" % (response.status_code, status)))
+                raise UserError(_("%s - %s" % (response.status_code, json["mensagem"])))
 
     def _eletronic_document_send(self):
         super()._eletronic_document_send()
