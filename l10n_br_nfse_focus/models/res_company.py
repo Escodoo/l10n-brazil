@@ -29,3 +29,21 @@ class ResCompany(models.Model):
             if self.nfse_environment == "1"
             else self.focusnfe_homologation_token
         )
+
+    focusnfe_nfse_service_type_value = fields.Selection(
+        [
+            ("item_lista_servico", "Service Type"),
+            ("codigo_tributacao_municipio", "City Taxation Code"),
+        ],
+        string="NFSE Service Type Value",
+        default="item_lista_servico",
+    )
+
+    focusnfe_nfse_cnae_code_value = fields.Selection(
+        [
+            ("codigo_cnae", "CNAE Code"),
+            ("codigo_tributacao_municipio", "City Taxation Code"),
+        ],
+        string="NFSE CNAE Code Value",
+        default="codigo_cnae",
+    )
