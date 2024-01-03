@@ -29,7 +29,7 @@
                 <group
                     name="pix"
                     string="Brazilian Instant Payment Keys (PIX)"
-                    attrs="{'invisible': [('company_country_id', '!=', %(base.br)d)]}"
+                    invisible="company_country_id != %(base.br)d"
                 >
                     <field name="company_country_id" invisible="1" />
                     <field name="transactional_acc_type" />

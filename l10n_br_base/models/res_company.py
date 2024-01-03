@@ -143,15 +143,6 @@ class Company(models.Model):
         inverse="_inverse_suframa",
     )
 
-    @api.model
-    def _fields_view_get(
-        self, view_id=None, view_type="form", toolbar=False, submenu=False
-    ):
-        res = super()._fields_view_get(view_id, view_type, toolbar, submenu)
-        if view_type == "form":
-            res["arch"] = self._fields_view_get_address(res["arch"])
-        return res
-
     def write(self, values):
         try:
             result = super().write(values)

@@ -6,7 +6,7 @@ import logging
 _logger = logging.getLogger(__name__)
 
 
-def pre_init_hook(cr):
+def pre_init_hook(env):
     """
     The objective of this hook is to ensure the Brazil country is
     translated as "Brasil" in pt_BR to get the NFe tests pass

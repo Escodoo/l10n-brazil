@@ -7,8 +7,8 @@ from odoo import models
 class FormatAddressMixin(models.AbstractModel):
     _inherit = "format.address.mixin"
 
-    def _fields_view_get_address(self, arch):
+    def _view_get_address(self, arch):
         address_view_id = self.env.company.country_id.address_view_id.sudo()
         if address_view_id.model != self._name:
-            address_view_id.model = None
-        return super()._fields_view_get_address(arch)
+            address_view_id.model = False
+        return super()._view_get_address(arch)

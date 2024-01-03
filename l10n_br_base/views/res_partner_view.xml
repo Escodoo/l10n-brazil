@@ -44,12 +44,12 @@
                         <label
                             for="legal_name"
                             string="Full Name"
-                            attrs="{'invisible': [('is_company','=', True)]}"
+                            invisible="is_company"
                         />
                         <label
                             for="legal_name"
                             string="Legal Name"
-                            attrs="{'invisible': [('is_company','!=', True)]}"
+                            invisible="not is_company"
                         />
                     </div>
                     <field colspan="2" name="legal_name" nolabel="1" />
@@ -57,12 +57,12 @@
                         <label
                             for="cnpj_cpf"
                             string="CPF"
-                            attrs="{'invisible': [('is_company','=', True)]}"
+                            invisible="is_company"
                         />
                         <label
                             for="cnpj_cpf"
                             string="CNPJ/Vat Number"
-                            attrs="{'invisible': [('is_company','!=', True)]}"
+                            invisible="not is_company"
                         />
                     </div>
                     <field colspan="2" name="cnpj_cpf" nolabel="1" />
@@ -70,14 +70,14 @@
                         <label
                             for="rg"
                             string="RG"
-                            attrs="{'invisible': [('is_company','=', True)]}"
+                            invisible="is_company"
                         />
                     </div>
                     <field
                         name="rg"
                         colspan="4"
                         nolabel="1"
-                        attrs="{'invisible': [('is_company','=', True)]}"
+                        invisible="is_company"
                     />
                     <div class="oe_edit_only" name="inscr_est">
                         <label for="inscr_est" name="inscr_est" string="IE" />
@@ -92,15 +92,15 @@
                             <field name="cei_code" />
                             <field
                                 name="inscr_mun"
-                                attrs="{'invisible': [('is_company','!=', True)]}"
+                                invisible="not is_company"
                             />
                             <field
                                 name="suframa"
-                                attrs="{'invisible': [('is_company','!=', True)]}"
+                                invisible="not is_company"
                             />
                             <field
                                 name="state_tax_number_ids"
-                                attrs="{'invisible': [('is_company','!=', True)]}"
+                                invisible="not is_company"
                             >
                                 <tree editable="bottom">
                                     <field name="partner_id" invisible="1" />
@@ -119,11 +119,11 @@
                             <field name="is_accountant" />
                             <field
                                 name="crc_code"
-                                attrs="{'invisible': [('is_accountant','!=', True)]}"
+                                invisible="not is_accountant"
                             />
                             <field
                                 name="crc_state_id"
-                                attrs="{'invisible': [('is_accountant','!=', True)]}"
+                                invisible="not is_accountant"
                                 domain="[('country_id', '=', %(base.br)d)]"
                             />
                             <field name="rntrc_code" />
