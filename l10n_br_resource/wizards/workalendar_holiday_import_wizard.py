@@ -32,7 +32,7 @@ class WorkalendarHolidayImport(models.TransientModel):
                 wiz.interval_type
             ](wiz.interval_number)
 
-    start_date = fields.Date(default=fields.Date.today, readonly=1)
+    start_date = fields.Date(default=fields.Date.today, readonly=True)
     end_date = fields.Date(compute="_compute_end_date")
     interval_number = fields.Integer(string="Interval", default=1)
     interval_type = fields.Selection(
@@ -60,41 +60,27 @@ class WorkalendarHolidayImport(models.TransientModel):
 
     def get_calendar_for_country(self):
         country = self.env.ref("base.br")
-        if not self.env["resource.calendar"].search_count(
-            [("country_id", "=", country.id)]
-        ):
-            calendar = self.env["resource.calendar"].create(
-                {
-                    "name": "Calendar " + country.name,
-                    "country_id": country.id
-                    # '':u'N',
-                }
-            )
-            return calendar
-        else:
-            return self.env["resource.calendar"].search(
-                [("country_id", "=", country.id)]
-            )[0]
+        return self.env["resource.calendar"].search(
+            [("country_id", "=", country.id)], limit=1
+        ) or self.env["resource.calendar"].create(
+            {
+                "name": "Calendar " + country.name,
+                "country_id": country.id
+            }
+        )
 
     def get_calendar_for_state(self, holiday):
         state = self.get_state_from_calendar(holiday)
-        if not self.env["resource.calendar"].search_count(
-            [("state_id", "=", state.id)]
-        ):
-            parent_id = self.get_calendar_for_country()
-            calendar_id = self.env["resource.calendar"].create(
-                {
-                    "name": "Calendar " + state.name,
-                    "state_id": state.id,
-                    "country_id": self.get_country_from_calendar(holiday).id,
-                    "parent_id": parent_id.id,
-                }
-            )
-            return calendar_id
-        else:
-            return self.env["resource.calendar"].search([("state_id", "=", state.id)])[
-                0
-            ]
+        return self.env["resource.calendar"].search(
+            [("state_id", "=", state.id)], limit=1
+        ) or self.env["resource.calendar"].create(
+            {
+                "name": "Calendar " + state.name,
+                "state_id": state.id,
+                "country_id": self.get_country_from_calendar(holiday).id,
+                "parent_id": self.get_calendar_for_country().id,
+            }
+        )
 
     def get_calendar_for_city(self, holiday):
         if not self.env["res.city"].search_count(
