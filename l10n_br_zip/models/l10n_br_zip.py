@@ -6,19 +6,10 @@ import logging
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
-_logger = logging.getLogger(__name__)
-
-try:
-    from erpbrasil.base import misc
-except ImportError:
-    _logger.error("Library erpbrasil.base not installed!")
+from erpbrasil.base import misc
+from brazilcep import WebService, get_address_from_cep
 
 _logger = logging.getLogger(__name__)
-
-try:
-    from brazilcep import WebService, get_address_from_cep
-except ImportError:
-    _logger.warning("Python Library brazilcep not installed !")
 
 
 class L10nBrZip(models.Model):
@@ -127,12 +118,11 @@ class L10nBrZip(models.Model):
             cep_ws_providers = {
                 "apicep": WebService.APICEP,
                 "viacep": WebService.VIACEP,
-                "correios": WebService.CORREIOS,
             }
             cep_ws_provide = str(
                 self.env["ir.config_parameter"]
                 .sudo()
-                .get_param("l10n_zip.cep_ws_provider", default="correios")
+                .get_param("l10n_zip.cep_ws_provider", default="viacep")
             )
             cep = get_address_from_cep(
                 zip_str, webservice=cep_ws_providers.get(cep_ws_provide)
