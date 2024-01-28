@@ -289,7 +289,8 @@ class Document(models.Model):
 
             json = response.json()
 
-            if response.status_code in [200, 400]:
+            # hack to avoid error when canceling a document that is already canceled
+            if response.status_code in [200, 400, 422]:
                 try:
                     code = json["codigo"]
                     response = True
@@ -299,7 +300,7 @@ class Document(models.Model):
                     status = json["status"]
                 except Exception:
                     status = ""
-                if code == "nfe_cancelada" or status == "cancelado":
+                if code in ["nfe_cancelada", "erro"] or status == "cancelado":
                     record.cancel_event_id = record.event_ids.create_event_save_xml(
                         company_id=record.company_id,
                         environment=(
