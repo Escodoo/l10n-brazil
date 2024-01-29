@@ -195,6 +195,17 @@ class TestPaymentOrder(SavepointCase):
             "teste_remessa_sicredi240.REM",
         )
 
+    def test_banco_santander_cnab_400(self):
+        """Teste Boleto e Remessa Banco Santander - CNAB 400"""
+        invoice_bb_cnab_400 = self.env.ref(
+            "l10n_br_account_payment_order.demo_invoice_payment_order_santander_cnab400"
+        )
+        self._run_boleto_remessa(
+            invoice_bb_cnab_400,
+            "boleto_teste_santander400.pdf",
+            "teste_remessa_santander400.REM",
+        )
+
     def test_banco_ailos_cnab_240(self):
         """Teste Boleto e Remessa Banco AILOS - CNAB 240"""
         invoice_ailos_cnab_240 = self.env.ref(

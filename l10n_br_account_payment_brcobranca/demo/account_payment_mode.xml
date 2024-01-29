@@ -97,4 +97,12 @@
         <field name="cnab_processor">brcobranca</field>
     </record>
 
+    <!-- Payment Mode Cobrança Banco do Brasil 400 -->
+    <record
+        id="l10n_br_account_payment_order.payment_mode_cobranca_santander400"
+        model="account.payment.mode"
+    >
+        <field name="cnab_processor">brcobranca</field>
+    </record>
+
 </odoo>
