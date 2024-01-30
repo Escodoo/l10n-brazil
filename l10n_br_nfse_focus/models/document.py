@@ -60,6 +60,11 @@ class NFSeFocus(object):
         service = edoc[1]["service"]
         tomador = edoc[2]["tomador"]
 
+        if tomador.get("cpf"):
+            identificacao_tomador = {"cpf": tomador.get("cpf")}
+        else:
+            identificacao_tomador = {"cnpj": tomador.get("cnpj")}
+
         nfse = {
             "prestador": {
                 "cnpj": rps.get("cnpj"),
@@ -97,7 +102,7 @@ class NFSeFocus(object):
                 ),
             },
             "tomador": {
-                "cnpj": tomador.get("cnpj") or tomador.get("cpf"),
+                **identificacao_tomador,
                 "razao_social": tomador.get("razao_social"),
                 "email": tomador.get("email"),
                 "endereco": {
