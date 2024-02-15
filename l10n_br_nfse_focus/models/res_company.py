@@ -22,14 +22,6 @@ class ResCompany(models.Model):
         string="FocusNFe Homologation Token",
     )
 
-    def get_focusnfe_token(self):
-        self.ensure_one()
-        return (
-            self.focusnfe_production_token
-            if self.nfse_environment == "1"
-            else self.focusnfe_homologation_token
-        )
-
     focusnfe_nfse_service_type_value = fields.Selection(
         [
             ("item_lista_servico", "Service Type"),
@@ -47,3 +39,26 @@ class ResCompany(models.Model):
         string="NFSE CNAE Code Value",
         default="codigo_cnae",
     )
+
+    def get_focusnfe_token(self):
+        """
+        Retrieves the appropriate FocusNFe API token for the current NFSe environment setting.
+        This method decides between the production and homologation (test) tokens based on the
+        'nfse_environment' field of the record.
+
+        Preconditions:
+        - The method must be called on a single record (ensure_one is used to enforce this).
+
+        Returns:
+        - str: The FocusNFe token. It returns the production token if 'nfse_environment'
+        is set to "1", otherwise, it returns the homologation token.
+
+        Raises:
+        - ValueError: If called on a recordset containing more than one record.
+        """
+        self.ensure_one()
+        return (
+            self.focusnfe_production_token
+            if self.nfse_environment == "1"
+            else self.focusnfe_homologation_token
+        )
