@@ -1,6 +1,12 @@
+# Copyright 2023 - TODAY, Kaynnan Lemes <kaynnan.lemes@escodoo.com.br>
+# Copyright 2023 - TODAY, Marcel Savegnago <marcel.savegnago@escodoo.com.br>
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
+
 import os
 from datetime import datetime
-from unittest.mock import call, patch
+from unittest.mock import MagicMock, patch
+
+from requests import HTTPError
 
 from odoo.exceptions import UserError
 from odoo.tests import common
@@ -20,63 +26,111 @@ from ..models.document import (
     API_ENDPOINT,
     NFSE_URL,
     Document,
-    NFSeFocus,
     filter_focusnfe,
     filter_oca_nfse,
 )
 
 MOCK_PATH = "odoo.addons.l10n_br_nfse_focus"
 
-PAYLOAD = [
+PAYLOAD = []
+PAYLOAD.append(
     {
         "rps": {
-            "data_emissao": "2023-11-20T18:30:00",
-            "incentivador_cultural": False,
-            "natureza_operacao": "1",
-            "optante_simples_nacional": True,
-            "status": "1",
             "cnpj": "12345678901234",
             "inscricao_municipal": "12345",
-            "codigo_municipio": "1234567",
-            "id": "abc123",
+            "id": "rps132",
+            "numero": "132",
+            "serie": "2",
+            "tipo": "1",
+            "data_emissao": "2024-02-20T17:01:47",
+            "date_in_out": "2024-02-20T17:01:57",
+            "natureza_operacao": "1",
+            "regime_especial_tributacao": "1",
+            "optante_simples_nacional": "1",
+            "incentivador_cultural": "2",
+            "status": "1",
+            "rps_substitiuido": False,
+            "intermediario_servico": False,
+            "codigo_obra": "",
+            "art": "",
+            "carga_tributaria": 0.0,
+            "total_recebido": 100.0,
+            "carga_tributaria_estimada": 0.0,
         }
     },
+)
+PAYLOAD.append(
     {
         "service": {
-            "aliquota": 3,
-            "discriminacao": "Nota fiscal referente a serviços prestados",
-            "iss_retido": "false",
-            "item_lista_servico": "0107",
-            "codigo_tributario_municipio": "620910000",
-            "valor_servicos": 1.0,
+            "valor_servicos": 100.0,
+            "valor_deducoes": 0.0,
+            "valor_pis": 0.65,
+            "valor_pis_retido": 0.65,
+            "valor_cofins": 3.0,
+            "valor_cofins_retido": 3.0,
+            "valor_inss": 0.0,
+            "valor_inss_retido": 0.0,
+            "valor_ir": 1.5,
+            "valor_ir_retido": 1.5,
+            "valor_csll": 1.0,
+            "valor_csll_retido": 1.0,
+            "iss_retido": "1",
+            "valor_iss": 0.0,
+            "valor_iss_retido": 4.0,
+            "outras_retencoes": 0.0,
+            "base_calculo": 100.0,
+            "aliquota": 0.04,
+            "valor_liquido_nfse": 89.85,
+            "item_lista_servico": "1712",
+            "codigo_tributacao_municipio": "171202211",
+            "municipio_prestacao_servico": "",
+            "discriminacao": "[ODOO_DEV] Customized Odoo Development",
+            "codigo_cnae": False,
+            "valor_desconto_incondicionado": 0.0,
+            "codigo_municipio": "3505708",
         }
-    },
+    }
+)
+PAYLOAD.append(
     {
-        "tomador": {
+        "recipient": {
             "cnpj": "07504505000132",
-            "razao_social": "Acras Tecnologia da Informação LTDA",
+            "cpf": False,
             "email": "contato@focusnfe.com.br",
-            "endereco": {
-                "logradouro": "Rua Dias da Rocha Filho",
-                "numero": "999",
-                "complemento": "Prédio 04 - Sala 34C",
-                "bairro": "Alto da XV",
-                "codigo_municipio": "4106902",
-                "uf": "PR",
-                "cep": "80045165",
-            },
+            "inscricao_municipal": False,
+            "inscricao_estadual": False,
+            "razao_social": "Acras Tecnologia da Informação LTDA",
+            "endereco": "Rua Dias da Rocha Filho",
+            "numero": "999",
+            "bairro": "Alto da XV",
+            "codigo_municipio": "4106902",
+            "descricao_municipio": "São José dos Pinhais",
+            "uf": "PR",
+            "municipio": "Curitiba",
+            "cep": "83050580",
+            "complemento": "Prédio 04 - Sala 34C",
         }
-    },
-    {
-        "prestador": {
-            "cnpj": "18765499000199",
-            "inscricao_municipal": "12345",
-            "codigo_municipio": "3516200",
-        }
-    },
-]
+    }
+)
 
-PAYLOAD_REF = "00012345"
+PAYLOAD_REF = "rps132"
+
+
+class MockResponse:
+    def __init__(self, status_code, json_data):
+        self.status_code = status_code
+        self._json_data = json_data
+
+    def json(self):
+        return self._json_data
+
+    @property
+    def text(self):
+        return str(self._json_data)
+
+    def raise_for_status(self):
+        if 400 <= self.status_code < 600:
+            raise HTTPError(f"{self.status_code} HTTP error")
 
 
 class TestL10nBrNfseFocus(common.TransactionCase):
@@ -90,6 +144,7 @@ class TestL10nBrNfseFocus(common.TransactionCase):
         self.nfse_demo = self.env.ref("l10n_br_fiscal.demo_nfse_same_state")
         self.nfse_demo.document_number = "0001"
         self.nfse_demo.rps_number = "0002"
+        self.nfse_focus = self.env["focusnfe.nfse"]
 
     def test_filter_oca_nfse(self):
         record = self.nfse_demo
@@ -117,94 +172,92 @@ class TestL10nBrNfseFocus(common.TransactionCase):
 
         self.assertEqual(record.company_id.provedor_nfse, "focusnfe")
 
-    @patch("odoo.addons.l10n_br_nfse_focus.models.document.requests.post")
+    @patch("odoo.addons.l10n_br_nfse_focus.models.document.requests.request")
     def test_processar_documento(self, mock_post):
-        nfse_focus = NFSeFocus(self.tpAmb, self.token, self.company)
-
         mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = {"status": "simulado"}
 
-        result = nfse_focus.processar_documento(PAYLOAD)
+        result = self.nfse_focus.process_focus_nfse_document(
+            PAYLOAD, PAYLOAD_REF, self.company, self.tpAmb
+        )
 
         self.assertEqual(result.status_code, 200)
         self.assertEqual(result.json(), {"status": "simulado"})
 
-    @patch("odoo.addons.l10n_br_nfse_focus.models.document.requests.post")
-    def test_post(self, mock_post):
-        nfse_focus = NFSeFocus(self.tpAmb, self.token, self.company)
+    @patch("odoo.addons.l10n_br_nfse_focus.models.document.requests.request")
+    def test_make_focus_nfse_http_request_generic(self, mock_request):
+        # Configuração do mock para simular diferentes respostas HTTP
+        mock_request.side_effect = (
+            lambda method, url, data, params, auth: mock_response_based_on_method(
+                method, data
+            )
+        )
+
+        # Função auxiliar para simular respostas com base no método HTTP
+        def mock_response_based_on_method(method, data):
+            if method == "POST":
+                return MockResponse(200, {"status": "success"})
+            elif method == "GET":
+                return MockResponse(
+                    200, {"status": "success", "data": {"nfse_info": "…"}}
+                )
+            elif method == "DELETE":
+                return MockResponse(204, {"status": "success"})
+            else:
+                return MockResponse(500, "Internal server error")
+
+        # POST Method Tests
         URL = NFSE_URL[self.tpAmb] + API_ENDPOINT["envio"]
+        result_post = self.nfse_focus._make_focus_nfse_http_request(
+            "POST", URL, self.token, PAYLOAD, PAYLOAD_REF
+        )
+        self.assertEqual(result_post.status_code, 200)
+        self.assertEqual(result_post.json(), {"status": "success"})
 
-        # Response 200
-        mock_post.return_value.status_code = 200
-        mock_post.return_value.json.return_value = {"status": "success"}
-        result = nfse_focus._post(URL, PAYLOAD_REF, PAYLOAD)
-        self.assertEqual(result.status_code, 200)
-        self.assertEqual(result.json(), {"status": "success"})
+        # GET Method Tests
+        URL = NFSE_URL[self.tpAmb] + API_ENDPOINT["status"]
+        result_get = self.nfse_focus._make_focus_nfse_http_request(
+            "GET", URL, self.token, PAYLOAD, PAYLOAD_REF
+        )
+        self.assertEqual(result_get.status_code, 200)
+        self.assertEqual(
+            result_get.json(), {"status": "success", "data": {"nfse_info": "…"}}
+        )
 
-        # Response 201
-        mock_post.return_value.status_code = 201
-        mock_post.return_value.json.return_value = {"status": "created"}
-        result = nfse_focus._post(URL, PAYLOAD_REF, PAYLOAD)
-        self.assertEqual(result.status_code, 201)
-        self.assertEqual(result.json(), {"status": "created"})
+        # DELETE Method Tests
+        URL = NFSE_URL[self.tpAmb] + API_ENDPOINT["cancelamento"]
+        result_delete = self.nfse_focus._make_focus_nfse_http_request(
+            "DELETE", URL, self.token, PAYLOAD, PAYLOAD_REF
+        )
+        self.assertEqual(result_delete.status_code, 204)
+        self.assertEqual(result_delete.json(), {"status": "success"})
 
-        # Response 202
-        mock_post.return_value.status_code = 202
-        mock_post.return_value.json.return_value = {"status": "accepted"}
-        result = nfse_focus._post(URL, PAYLOAD_REF, PAYLOAD)
-        self.assertEqual(result.status_code, 202)
-        self.assertEqual(result.json(), {"status": "accepted"})
-
-        # Response 422
-        mock_post.return_value.status_code = 422
-        mock_post.return_value.json.return_value = {"errors": ["Invalid data"]}
-        result = nfse_focus._post(URL, PAYLOAD_REF, PAYLOAD)
-        self.assertEqual(result.status_code, 422)
-        self.assertEqual(result.json(), {"errors": ["Invalid data"]})
-
-        # Response 500
-        mock_post.return_value.status_code = 500
-        mock_post.return_value.text = "Internal server error"
-        with self.assertRaises(UserError) as error:
-            nfse_focus._post(URL, PAYLOAD_REF, PAYLOAD)
-        self.assertEqual(str(error.exception), "500 - Internal server error")
-
-    @patch("odoo.addons.l10n_br_nfse_focus.models.document.requests.get")
+    @patch("odoo.addons.l10n_br_nfse_focus.models.document.requests.request")
     def test_consulta_nfse_rps(self, mock_get):
-        nfse_focus = NFSeFocus(self.tpAmb, self.token, self.company)
-
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.return_value = {
             "status": "success",
             "data": {"nfse_info": "…"},
         }
-        result = nfse_focus.consulta_nfse_rps(PAYLOAD_REF, {"completa": "sim"})
+        result = self.nfse_focus.query_focus_nfse_by_rps(
+            PAYLOAD_REF, 0, self.company, self.tpAmb
+        )
 
         self.assertEqual(result.status_code, 200)
         self.assertEqual(
             result.json(), {"status": "success", "data": {"nfse_info": "…"}}
         )
 
-    @patch("odoo.addons.l10n_br_nfse_focus.models.document.requests.get")
-    def test_get(self, mock_get):
-        nfse_focus = NFSeFocus(self.tpAmb, self.token, self.company)
-
-        mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = {"data": "…"}
-        result = nfse_focus._get(NFSE_URL[self.tpAmb], {"completa": "sim"})
-
-        self.assertEqual(result.status_code, 200)
-
-    @patch("odoo.addons.l10n_br_nfse_focus.models.document.requests.delete")
+    @patch("odoo.addons.l10n_br_nfse_focus.models.document.requests.request")
     def test_cancela_documento(self, mock_delete):
-        nfse_focus = NFSeFocus(self.tpAmb, self.token, self.company)
-
         mock_delete.return_value.status_code = 204
-        result = nfse_focus.cancela_documento(PAYLOAD_REF, "Teste de cancelamento")
+        result = self.nfse_focus.cancel_focus_nfse_document(
+            PAYLOAD_REF, "Teste de cancelamento", self.company, self.tpAmb
+        )
 
         self.assertEqual(result.status_code, 204)
 
-    def test_make_pdf_focus(self):
+    def test_make_focus_nfse_pdf(self):
         record = self.nfse_demo
         record.processador_edoc = PROCESSADOR_OCA
         record.document_type_id.code = MODELO_FISCAL_NFSE
@@ -216,7 +269,7 @@ class TestL10nBrNfseFocus(common.TransactionCase):
         with open(pdf_path, "rb") as file:
             content = file.read()
 
-        record.make_pdf_focus(content)
+        record.make_focus_nfse_pdf(content)
 
         self.assertTrue(record.document_number)
 
@@ -229,7 +282,7 @@ class TestL10nBrNfseFocus(common.TransactionCase):
         self.assertEqual(record.file_report_id.type, "binary")
 
         record.document_number = None
-        record.make_pdf_focus(content)
+        record.make_focus_nfse_pdf(content)
 
         self.assertFalse(record.document_number)
         self.assertEqual(
@@ -252,7 +305,7 @@ class TestL10nBrNfseFocus(common.TransactionCase):
             "odoo.addons.l10n_br_nfse.models.document.Document.make_pdf"
         ) as mock_super_make_pdf:
 
-            record.make_pdf_focus(content)
+            record.make_focus_nfse_pdf(content)
 
         mock_super_make_pdf.assert_called_once()
 
@@ -264,64 +317,6 @@ class TestL10nBrNfseFocus(common.TransactionCase):
 
         mock_serialize.assert_called_once_with(edocs)
         self.assertEqual(result, edocs)
-
-    @patch("odoo.addons.l10n_br_nfse.models.document.Document._prepare_lote_rps")
-    @patch("odoo.addons.l10n_br_nfse.models.document.Document._prepare_dados_servico")
-    @patch("odoo.addons.l10n_br_nfse.models.document.Document._prepare_dados_tomador")
-    @patch("odoo.addons.l10n_br_nfse_focus.models.document.filter_oca_nfse")
-    @patch("odoo.addons.l10n_br_nfse_focus.models.document.filter_focusnfe")
-    def test_serialize_nfse_focus(
-        self,
-        mock_filter_focusnfe,
-        mock_filter_oca_nfse,
-        mock_prepare_lote_rps,
-        mock_prepare_dados_servico,
-        mock_prepare_dados_tomador,
-    ):
-        mock_filter_focusnfe.return_value = True
-        mock_filter_oca_nfse.return_value = True
-
-        document = self.nfse_demo
-
-        with patch(
-            "odoo.addons.l10n_br_nfse.models.document.Document._prepare_lote_rps"
-        ) as mock_lote_rps, patch(
-            "odoo.addons.l10n_br_nfse.models.document.Document._prepare_dados_servico"
-        ) as mock_dados_servico, patch(
-            "odoo.addons.l10n_br_nfse.models.document.Document._prepare_dados_tomador"
-        ) as mock_dados_tomador:
-
-            mock_lote_rps.return_value = {"lote_rps_data": "Test Data Lote RPS"}
-            mock_dados_servico.return_value = {"servico_data": "Test Data Servico"}
-            mock_dados_tomador.return_value = {"lote_rps_data": "Test Data Lote RPS"}
-
-            result = document.serialize_nfse_focus()
-
-        mock_lote_rps.assert_called_with()
-        mock_dados_servico.assert_called_with()
-        mock_dados_tomador.assert_called_with()
-
-        expected_result = [
-            {"rps": {"lote_rps_data": "Test Data Lote RPS"}},
-            {"service": {"servico_data": "Test Data Servico"}},
-            {"tomador": {"lote_rps_data": "Test Data Lote RPS"}},
-        ]
-        self.assertEqual(result, expected_result)
-
-    @patch("odoo.addons.l10n_br_nfse_focus.models.document.NFSeFocus")
-    def test_processador_nfse_focus(self, mock_nfse_focus):
-        self.nfse_demo._processador_nfse_focus()
-
-        self.assertEqual(
-            mock_nfse_focus.call_args,
-            call(
-                tpAmb="2",
-                token=self.company.get_focusnfe_token(),
-                company=self.company,
-            ),
-        )
-
-        mock_nfse_focus.assert_called_once()
 
     def test_document_export(self):
         record = self.nfse_demo
@@ -350,9 +345,9 @@ class TestL10nBrNfseFocus(common.TransactionCase):
         self.assertTrue(record.authorization_event_id)
 
     @patch(
-        "odoo.addons.l10n_br_nfse_focus.models.document.Document._processador_nfse_focus"
+        "odoo.addons.l10n_br_nfse_focus.models.document.FocusnfeNfse.query_focus_nfse_by_rps"
     )
-    def test_document_status(self, mock_processador):
+    def test_document_status(self, mock_query):
         document = self.nfse_demo
         document.processador_edoc = PROCESSADOR_OCA
         document.document_type_id.code = MODELO_FISCAL_NFSE
@@ -370,9 +365,15 @@ class TestL10nBrNfseFocus(common.TransactionCase):
         self.assertEqual(result, "Unable to retrieve the document status.")
 
     @patch(
-        "odoo.addons.l10n_br_nfse_focus.models.document.Document._processador_nfse_focus"
+        "odoo.addons.l10n_br_nfse_focus.models.document.FocusnfeNfse._make_focus_nfse_http_request"  # noqa: E501
     )
-    def test_cancel_document_focus(self, mock_processador):
+    def test_cancel_document_focus_with_error(self, mock_request):
+        # Configura o mock para lançar uma exceção UserError em resposta
+        # a uma simulação de erro HTTP 400
+        mock_request.side_effect = UserError(
+            "Error communicating with NFSe service: 400 Bad Request"
+        )
+
         document = self.nfse_demo
         document.processador_edoc = PROCESSADOR_OCA
         document.document_type_id.code = MODELO_FISCAL_NFSE
@@ -382,31 +383,43 @@ class TestL10nBrNfseFocus(common.TransactionCase):
         document.date_in_out = datetime.strptime(
             "2024-01-01T05:10:12", "%Y-%m-%dT%H:%M:%S"
         )
-
-        # Response UserError
-
-        mock_processador.reset_mock()
-
-        mock_processador.return_value.cancela_documento.return_value.status_code = [
-            200,
-            400,
-        ]
 
         with self.assertRaises(UserError) as context:
             document.cancel_document_focus()
 
-        status_code = (
-            mock_processador.return_value.cancela_documento.return_value.status_code
+        # Verifica se a mensagem de erro esperada está na exceção lançada
+        self.assertIn(
+            "Error communicating with NFSe service: 400 Bad Request",
+            str(context.exception),
         )
 
-        expected_error_message = f"{status_code} - "
-
-        self.assertIn(expected_error_message, str(context.exception))
-
     @patch(
-        "odoo.addons.l10n_br_nfse_focus.models.document.Document._processador_nfse_focus"
+        "odoo.addons.l10n_br_nfse_focus.models.document.FocusnfeNfse.process_focus_nfse_document"  # noqa: E501
     )
-    def test_eletronic_document_send(self, mock_processador):
+    def test_eletronic_document_send(self, mock_process_focus_nfse_document):
+        # Configura o mock para simular diferentes respostas
+        # Cria uma resposta mockada para o status 202
+        mock_response_202 = MagicMock()
+        mock_response_202.status_code = 202
+        mock_response_202.json.return_value = {"status": "processando_autorizacao"}
+
+        # Cria uma resposta mockada para o status 422
+        mock_response_422 = MagicMock()
+        mock_response_422.status_code = 422
+        mock_response_422.json.return_value = {"codigo": "algum_codigo_erro"}
+
+        # Cria uma resposta mockada para o status 500
+        mock_response_500 = MagicMock()
+        mock_response_500.status_code = 500
+        mock_response_500.json.return_value = {"erro": "erro interno"}
+
+        # Simula sequencialmente respostas para chamadas subsequentes
+        mock_process_focus_nfse_document.side_effect = [
+            mock_response_202,
+            mock_response_422,
+            mock_response_500,
+        ]
+
         document = self.nfse_demo
         document.processador_edoc = PROCESSADOR_OCA
         document.document_type_id.code = MODELO_FISCAL_NFSE
@@ -417,77 +430,40 @@ class TestL10nBrNfseFocus(common.TransactionCase):
             "2024-01-01T05:10:12", "%Y-%m-%dT%H:%M:%S"
         )
 
-        # Response 202 Setup
-
-        mock_processador.return_value.processar_documento.return_value.status_code = 202
-        mock_processador.return_value.processar_documento.return_value.json.return_value = {
-            "status": "processando_autorizacao"
-        }
-
-        response = mock_processador.return_value.processar_documento.return_value
-        json = (
-            mock_processador.return_value.processar_documento.return_value.json.return_value
-        )
-
-        self.assertEqual(response.status_code, 202)
-        self.assertEqual(json["status"], "processando_autorizacao")
-
-        # State not equal SITUACAO_EDOC_REJEITADA
-
-        self.assertEqual(document.state, SITUACAO_EDOC_EM_DIGITACAO)
-
+        # Testa a lógica para a resposta 202
         document._eletronic_document_send()
-
-        self.assertEqual(document.state, SITUACAO_EDOC_ENVIADA)
-
-        # State equal SITUACAO_EDOC_REJEITADA
-
-        document._change_state(SITUACAO_EDOC_REJEITADA)
-
-        self.assertEqual(document.state, SITUACAO_EDOC_REJEITADA)
-
-        document._eletronic_document_send()
-
-        self.assertEqual(document.state_edoc, SITUACAO_EDOC_ENVIADA)
-
-        # Response 422 Setup
-
-        document = self.nfse_demo
-        mock_processador.reset_mock()
-
-        mock_processador.return_value.processar_documento.return_value.status_code = 422
-
-        document._change_state(SITUACAO_EDOC_REJEITADA)
-
-        self.assertEqual(document.state, SITUACAO_EDOC_REJEITADA)
-
-        document._eletronic_document_send()
-
-        response_status_code = (
-            mock_processador.return_value.processar_documento.return_value.status_code
-        )
+        # Aqui você verifica se o estado do documento foi atualizado corretamente
+        # Isso depende de como você implementou a lógica de atualização de estado no seu método
 
         self.assertEqual(
-            mock_processador.return_value.processar_documento.call_count, 1
+            document.state,
+            SITUACAO_EDOC_ENVIADA,
+            "O estado do documento deve ser atualizado para rejeitado devido ao erro 422",
         )
-        self.assertEqual(response_status_code, 422)
-        self.assertEqual(document.state, SITUACAO_EDOC_REJEITADA)
 
-        # Response 500 Setup
-
-        document = self.nfse_demo
-        mock_processador.reset_mock()
-
-        mock_processador.return_value.processar_documento.return_value.status_code = 500
-
+        # Testa a lógica para a resposta 422
         document._eletronic_document_send()
-
-        response_status_code = (
-            mock_processador.return_value.processar_documento.return_value.status_code
+        self.assertEqual(
+            document.state,
+            SITUACAO_EDOC_REJEITADA,
+            "O estado do documento deve ser 'rejeitado' após processamento com status 422",
         )
 
-        self.assertEqual(response_status_code, 500)
-        self.assertEqual(document.state, SITUACAO_EDOC_REJEITADA)
+        # Testa o envio do documento com a resposta 500
+        document._eletronic_document_send()
+        self.assertEqual(
+            document.state,
+            SITUACAO_EDOC_REJEITADA,
+            "O estado do documento deve permanecer 'rejeitado' "
+            "após processamento com status 500",
+        )
+
+        # Verifica se o método foi chamado três vezes, uma para cada cenário de teste
+        self.assertEqual(
+            mock_process_focus_nfse_document.call_count,
+            3,
+            "O método de processamento deve ser chamado três vezes",
+        )
 
     def test_cron_document_status_focus(self):
         record = self.nfse_demo
