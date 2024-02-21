@@ -11,6 +11,7 @@ from requests import HTTPError
 from odoo.exceptions import UserError
 from odoo.tests import common
 
+# Importing constants for Brazilian fiscal documents
 from odoo.addons.l10n_br_fiscal.constants.fiscal import (
     MODELO_FISCAL_NFE,
     MODELO_FISCAL_NFSE,
@@ -21,6 +22,7 @@ from odoo.addons.l10n_br_fiscal.constants.fiscal import (
     SITUACAO_EDOC_REJEITADA,
 )
 
+# Importing necessary models and functions for NFSe processing
 from ... import l10n_br_nfse_focus
 from ..models.document import (
     API_ENDPOINT,
@@ -30,8 +32,10 @@ from ..models.document import (
     filter_oca_nfse,
 )
 
+# Mock path for testing purposes
 MOCK_PATH = "odoo.addons.l10n_br_nfse_focus"
 
+# Payload for testing NFSe (Nota Fiscal de Serviços Eletrônica) operations
 PAYLOAD = []
 PAYLOAD.append(
     {
@@ -113,281 +117,351 @@ PAYLOAD.append(
     }
 )
 
+# Reference for testing payload
 PAYLOAD_REF = "rps132"
 
 
 class MockResponse:
+    """Mock response class for simulating HTTP responses in tests."""
+
     def __init__(self, status_code, json_data):
         self.status_code = status_code
         self._json_data = json_data
 
     def json(self):
+        """Returns JSON data."""
         return self._json_data
 
     @property
     def text(self):
+        """Returns text representation of JSON data."""
         return str(self._json_data)
 
     def raise_for_status(self):
+        """Raises HTTPError for status codes 400-599."""
         if 400 <= self.status_code < 600:
             raise HTTPError(f"{self.status_code} HTTP error")
 
 
 class TestL10nBrNfseFocus(common.TransactionCase):
+    """Test class for Brazilian NFSe Focus integration."""
+
     def setUp(self):
+        """Sets up test environment."""
         super().setUp()
-        self.tpAmb = "2"
-        self.token = "123456789"
-        self.company = self.env.ref("base.main_company")
-        self.company.focusnfe_homologation_token = self.token
-        self.company.provedor_nfse = "focusnfe"
-        self.nfse_demo = self.env.ref("l10n_br_fiscal.demo_nfse_same_state")
-        self.nfse_demo.document_number = "0001"
-        self.nfse_demo.rps_number = "0002"
-        self.nfse_focus = self.env["focusnfe.nfse"]
+        self.tpAmb = "2"  # Environment type: 1 for production, 2 for test
+        self.token = "123456789"  # Example token for authentication
+        self.company = self.env.ref("base.main_company")  # Reference to main company
+        self.company.focusnfe_homologation_token = self.token  # Setting company token
+        self.company.provedor_nfse = "focusnfe"  # Setting NFSe provider to focusnfe
+        self.nfse_demo = self.env.ref(
+            "l10n_br_fiscal.demo_nfse_same_state"
+        )  # NFSe demo document
+        self.nfse_demo.document_number = "0001"  # Setting document number
+        self.nfse_demo.rps_number = "0002"  # Setting RPS number
+        self.nfse_focus = self.env["focusnfe.nfse"]  # NFSe processing model
 
     def test_filter_oca_nfse(self):
+        """Tests filtering of NFSe documents for OCA processor."""
         record = self.nfse_demo
-        record.processador_edoc = PROCESSADOR_OCA
-        record.document_type_id.code = MODELO_FISCAL_NFSE
+        record.processador_edoc = PROCESSADOR_OCA  # Setting document processor to OCA
+        record.document_type_id.code = (
+            MODELO_FISCAL_NFSE  # Setting document type to NFSe
+        )
 
-        result = filter_oca_nfse(record)
+        result = filter_oca_nfse(record)  # Applying filter
 
-        self.assertEqual(record.processador_edoc, PROCESSADOR_OCA)
-        self.assertIn(record.document_type_id.code, MODELO_FISCAL_NFSE)
-        self.assertEqual(result, True)
+        self.assertEqual(
+            record.processador_edoc, PROCESSADOR_OCA
+        )  # Asserting processor is OCA
+        self.assertIn(
+            record.document_type_id.code, MODELO_FISCAL_NFSE
+        )  # Asserting document type is NFSe
+        self.assertEqual(result, True)  # Asserting filter result is True
 
-        record.processador_edoc = None
-        record.document_type_id.code = MODELO_FISCAL_NFE
+        record.processador_edoc = None  # Resetting document processor
+        record.document_type_id.code = MODELO_FISCAL_NFE  # Setting document type to NFe
 
-        result = filter_oca_nfse(record)
+        result = filter_oca_nfse(record)  # Applying filter again
 
-        self.assertNotEqual(record.processador_edoc, PROCESSADOR_OCA)
-        self.assertNotIn(record.document_type_id.code, MODELO_FISCAL_NFSE)
-        self.assertEqual(result, False)
+        self.assertNotEqual(
+            record.processador_edoc, PROCESSADOR_OCA
+        )  # Asserting processor is not OCA
+        self.assertNotIn(
+            record.document_type_id.code, MODELO_FISCAL_NFSE
+        )  # Asserting document type is not NFSe
+        self.assertEqual(result, False)  # Asserting filter result is False
 
     def test_filter_focusnfe(self):
+        """Tests setting of NFSe provider to focusnfe for a document."""
         record = self.nfse_demo
-        filter_focusnfe(record)
+        filter_focusnfe(record)  # Applying filter
 
-        self.assertEqual(record.company_id.provedor_nfse, "focusnfe")
+        self.assertEqual(
+            record.company_id.provedor_nfse, "focusnfe"
+        )  # Asserting provider is set to focusnfe
 
     @patch("odoo.addons.l10n_br_nfse_focus.models.document.requests.request")
     def test_processar_documento(self, mock_post):
-        mock_post.return_value.status_code = 200
-        mock_post.return_value.json.return_value = {"status": "simulado"}
+        """Tests document processing with mocked POST request."""
+        mock_post.return_value.status_code = 200  # Simulating successful POST request
+        mock_post.return_value.json.return_value = {
+            "status": "simulado"
+        }  # Mocking JSON response
 
         result = self.nfse_focus.process_focus_nfse_document(
             PAYLOAD, PAYLOAD_REF, self.company, self.tpAmb
-        )
+        )  # Processing document
 
-        self.assertEqual(result.status_code, 200)
-        self.assertEqual(result.json(), {"status": "simulado"})
+        self.assertEqual(result.status_code, 200)  # Asserting successful status code
+        self.assertEqual(
+            result.json(), {"status": "simulado"}
+        )  # Asserting expected JSON response
 
     @patch("odoo.addons.l10n_br_nfse_focus.models.document.requests.request")
     def test_make_focus_nfse_http_request_generic(self, mock_request):
-        # Configuração do mock para simular diferentes respostas HTTP
+        """Tests generic HTTP request for Focus NFSe operations with mocked responses."""
+        # Configuring mock to simulate different HTTP responses based on the method
         mock_request.side_effect = (
             lambda method, url, data, params, auth: mock_response_based_on_method(
                 method, data
             )
         )
 
-        # Função auxiliar para simular respostas com base no método HTTP
+        # Auxiliary function to simulate responses based on the HTTP method
         def mock_response_based_on_method(method, data):
             if method == "POST":
-                return MockResponse(200, {"status": "success"})
+                return MockResponse(
+                    200, {"status": "success"}
+                )  # Mocking success for POST
             elif method == "GET":
                 return MockResponse(
                     200, {"status": "success", "data": {"nfse_info": "…"}}
-                )
+                )  # Mocking success with data for GET
             elif method == "DELETE":
-                return MockResponse(204, {"status": "success"})
+                return MockResponse(
+                    204, {"status": "success"}
+                )  # Mocking success for DELETE
             else:
-                return MockResponse(500, "Internal server error")
+                return MockResponse(
+                    500, "Internal server error"
+                )  # Mocking server error for other methods
 
-        # POST Method Tests
-        URL = NFSE_URL[self.tpAmb] + API_ENDPOINT["envio"]
+        # Testing POST method
+        URL = (
+            NFSE_URL[self.tpAmb] + API_ENDPOINT["envio"]
+        )  # Constructing URL for sending NFSe
         result_post = self.nfse_focus._make_focus_nfse_http_request(
             "POST", URL, self.token, PAYLOAD, PAYLOAD_REF
-        )
-        self.assertEqual(result_post.status_code, 200)
-        self.assertEqual(result_post.json(), {"status": "success"})
+        )  # Making POST request
+        self.assertEqual(result_post.status_code, 200)  # Asserting status code 200
+        self.assertEqual(
+            result_post.json(), {"status": "success"}
+        )  # Asserting JSON response
 
-        # GET Method Tests
-        URL = NFSE_URL[self.tpAmb] + API_ENDPOINT["status"]
+        # Testing GET method
+        URL = (
+            NFSE_URL[self.tpAmb] + API_ENDPOINT["status"]
+        )  # Constructing URL for checking status
         result_get = self.nfse_focus._make_focus_nfse_http_request(
             "GET", URL, self.token, PAYLOAD, PAYLOAD_REF
-        )
-        self.assertEqual(result_get.status_code, 200)
+        )  # Making GET request
+        self.assertEqual(result_get.status_code, 200)  # Asserting status code 200
         self.assertEqual(
             result_get.json(), {"status": "success", "data": {"nfse_info": "…"}}
-        )
+        )  # Asserting JSON response with data
 
-        # DELETE Method Tests
-        URL = NFSE_URL[self.tpAmb] + API_ENDPOINT["cancelamento"]
+        # Testing DELETE method
+        URL = (
+            NFSE_URL[self.tpAmb] + API_ENDPOINT["cancelamento"]
+        )  # Constructing URL for cancellation
         result_delete = self.nfse_focus._make_focus_nfse_http_request(
             "DELETE", URL, self.token, PAYLOAD, PAYLOAD_REF
-        )
-        self.assertEqual(result_delete.status_code, 204)
-        self.assertEqual(result_delete.json(), {"status": "success"})
+        )  # Making DELETE request
+        self.assertEqual(result_delete.status_code, 204)  # Asserting status code 204
+        self.assertEqual(
+            result_delete.json(), {"status": "success"}
+        )  # Asserting JSON response
 
     @patch("odoo.addons.l10n_br_nfse_focus.models.document.requests.request")
     def test_consulta_nfse_rps(self, mock_get):
-        mock_get.return_value.status_code = 200
+        """Tests NFSe query by RPS with mocked GET request."""
+        mock_get.return_value.status_code = 200  # Simulating successful GET request
         mock_get.return_value.json.return_value = {
             "status": "success",
             "data": {"nfse_info": "…"},
-        }
+        }  # Mocking JSON response
+
         result = self.nfse_focus.query_focus_nfse_by_rps(
             PAYLOAD_REF, 0, self.company, self.tpAmb
-        )
+        )  # Querying NFSe by RPS
 
-        self.assertEqual(result.status_code, 200)
+        self.assertEqual(result.status_code, 200)  # Asserting successful status code
         self.assertEqual(
             result.json(), {"status": "success", "data": {"nfse_info": "…"}}
-        )
+        )  # Asserting expected JSON response
 
     @patch("odoo.addons.l10n_br_nfse_focus.models.document.requests.request")
     def test_cancela_documento(self, mock_delete):
-        mock_delete.return_value.status_code = 204
+        """Tests document cancellation with mocked DELETE request."""
+        mock_delete.return_value.status_code = (
+            204  # Simulating successful DELETE request
+        )
         result = self.nfse_focus.cancel_focus_nfse_document(
             PAYLOAD_REF, "Teste de cancelamento", self.company, self.tpAmb
-        )
+        )  # Cancelling document
 
-        self.assertEqual(result.status_code, 204)
+        self.assertEqual(result.status_code, 204)  # Asserting status code 204
 
     def test_make_focus_nfse_pdf(self):
+        """Tests generation of NFSe PDF."""
         record = self.nfse_demo
-        record.processador_edoc = PROCESSADOR_OCA
-        record.document_type_id.code = MODELO_FISCAL_NFSE
+        record.processador_edoc = PROCESSADOR_OCA  # Setting document processor to OCA
+        record.document_type_id.code = (
+            MODELO_FISCAL_NFSE  # Setting document type to NFSe
+        )
 
+        # Reading PDF example for testing
         pdf_path = os.path.join(
             l10n_br_nfse_focus.__path__[0], "tests", "nfse", "pdf_example.pdf"
         )
 
         with open(pdf_path, "rb") as file:
-            content = file.read()
+            content = file.read()  # Reading PDF content
 
-        record.make_focus_nfse_pdf(content)
+        record.make_focus_nfse_pdf(content)  # Generating NFSe PDF
 
-        self.assertTrue(record.document_number)
-
+        self.assertTrue(record.document_number)  # Asserting document number is set
         self.assertEqual(
             record.file_report_id.name, "NFS-e-" + record.document_number + ".pdf"
-        )
-        self.assertEqual(record.file_report_id.res_model, record._name)
-        self.assertEqual(record.file_report_id.res_id, record.id)
-        self.assertEqual(record.file_report_id.mimetype, "application/pdf")
-        self.assertEqual(record.file_report_id.type, "binary")
+        )  # Asserting file name
+        self.assertEqual(
+            record.file_report_id.res_model, record._name
+        )  # Asserting model name
+        self.assertEqual(record.file_report_id.res_id, record.id)  # Asserting record ID
+        self.assertEqual(
+            record.file_report_id.mimetype, "application/pdf"
+        )  # Asserting MIME type
+        self.assertEqual(record.file_report_id.type, "binary")  # Asserting file type
 
+        # Testing with no document number
         record.document_number = None
-        record.make_focus_nfse_pdf(content)
+        record.make_focus_nfse_pdf(content)  # Generating NFSe PDF again
 
-        self.assertFalse(record.document_number)
+        self.assertFalse(record.document_number)  # Asserting no document number
         self.assertEqual(
             record.file_report_id.name, "RPS-" + record.rps_number + ".pdf"
-        )
+        )  # Asserting file name for RPS
 
-        # Not Filtered
-
+        # Testing with non-filtered conditions
         record.processador_edoc = ""
-        record.document_type_id.code = MODELO_FISCAL_NFE
-
-        pdf_path = os.path.join(
-            l10n_br_nfse_focus.__path__[0], "tests", "nfse", "pdf_example.pdf"
-        )
+        record.document_type_id.code = MODELO_FISCAL_NFE  # Setting document type to NFe
 
         with open(pdf_path, "rb") as file:
-            content = file.read()
+            content = file.read()  # Reading PDF content again
 
         with patch(
             "odoo.addons.l10n_br_nfse.models.document.Document.make_pdf"
         ) as mock_super_make_pdf:
+            record.make_focus_nfse_pdf(content)  # Attempting to generate PDF
 
-            record.make_focus_nfse_pdf(content)
-
-        mock_super_make_pdf.assert_called_once()
+        mock_super_make_pdf.assert_called_once()  # Asserting superclass method called once
 
     def test_serialize(self):
+        """Tests serialization of document data."""
         doc = self.nfse_demo
         edocs = []
         with patch.object(Document, "_serialize", return_value=edocs) as mock_serialize:
-            result = doc._serialize(edocs)
+            result = doc._serialize(edocs)  # Serializing document data
 
-        mock_serialize.assert_called_once_with(edocs)
-        self.assertEqual(result, edocs)
+        mock_serialize.assert_called_once_with(edocs)  # Asserting method called once
+        self.assertEqual(result, edocs)  # Asserting serialization result
 
     def test_document_export(self):
+        """Tests export of document data."""
         record = self.nfse_demo
-        record.processador_edoc = PROCESSADOR_OCA
-        record.document_type_id.code = MODELO_FISCAL_NFE
+        record.processador_edoc = PROCESSADOR_OCA  # Setting document processor to OCA
+        record.document_type_id.code = MODELO_FISCAL_NFE  # Setting document type to NFe
 
-        # Not Filtered
-
+        # Testing with non-filtered conditions
         record = self.nfse_demo
-        record.company_id.provedor_nfse = None
+        record.company_id.provedor_nfse = None  # Resetting NFSe provider
 
-        record._document_export()
+        record._document_export()  # Exporting document data
 
-        self.assertFalse(record.company_id.provedor_nfse)
+        self.assertFalse(
+            record.company_id.provedor_nfse
+        )  # Asserting NFSe provider not set
 
-        # Filtered
-
+        # Testing with filtered conditions
         record = self.nfse_demo
-        record.company_id.provedor_nfse = "focusnfe"
-        record.processador_edoc = PROCESSADOR_OCA
-        record.document_type_id.code = MODELO_FISCAL_NFSE
+        record.company_id.provedor_nfse = (
+            "focusnfe"  # Setting NFSe provider to focusnfe
+        )
+        record.processador_edoc = PROCESSADOR_OCA  # Setting processor to OCA
+        record.document_type_id.code = (
+            MODELO_FISCAL_NFSE  # Setting document type to NFSe
+        )
 
-        record._document_export()
+        record._document_export()  # Exporting document data again
 
-        self.assertTrue(record.company_id.provedor_nfse)
-        self.assertTrue(record.authorization_event_id)
+        self.assertTrue(
+            record.company_id.provedor_nfse
+        )  # Asserting NFSe provider is set
+        self.assertTrue(
+            record.authorization_event_id
+        )  # Asserting authorization event is set
 
     @patch(
         "odoo.addons.l10n_br_nfse_focus.models.document.FocusnfeNfse.query_focus_nfse_by_rps"
     )
     def test_document_status(self, mock_query):
+        """Tests querying document status."""
         document = self.nfse_demo
-        document.processador_edoc = PROCESSADOR_OCA
-        document.document_type_id.code = MODELO_FISCAL_NFSE
+        document.processador_edoc = PROCESSADOR_OCA  # Setting processor to OCA
+        document.document_type_id.code = (
+            MODELO_FISCAL_NFSE  # Setting document type to NFSe
+        )
         document.document_date = datetime.strptime(
             "2024-01-01T05:10:12", "%Y-%m-%dT%H:%M:%S"
-        )
+        )  # Setting document date
         document.date_in_out = datetime.strptime(
             "2024-01-01T05:10:12", "%Y-%m-%dT%H:%M:%S"
-        )
+        )  # Setting date in/out
 
-        # Response - Unable to retrieve the document status.
+        # Simulating response: Unable to retrieve the document status.
+        result = document._document_status()  # Querying document status
 
-        result = document._document_status()
-
-        self.assertEqual(result, "Unable to retrieve the document status.")
+        self.assertEqual(
+            result, "Unable to retrieve the document status."
+        )  # Asserting result message
 
     @patch(
         "odoo.addons.l10n_br_nfse_focus.models.document.FocusnfeNfse._make_focus_nfse_http_request"  # noqa: E501
     )
     def test_cancel_document_focus_with_error(self, mock_request):
-        # Configura o mock para lançar uma exceção UserError em resposta
-        # a uma simulação de erro HTTP 400
+        """Tests document cancellation with simulated error."""
+        # Configuring mock to raise a UserError in response to a simulated HTTP 400 error
         mock_request.side_effect = UserError(
             "Error communicating with NFSe service: 400 Bad Request"
         )
 
         document = self.nfse_demo
-        document.processador_edoc = PROCESSADOR_OCA
-        document.document_type_id.code = MODELO_FISCAL_NFSE
+        document.processador_edoc = PROCESSADOR_OCA  # Setting processor to OCA
+        document.document_type_id.code = (
+            MODELO_FISCAL_NFSE  # Setting document type to NFSe
+        )
         document.document_date = datetime.strptime(
             "2024-01-01T05:10:12", "%Y-%m-%dT%H:%M:%S"
-        )
+        )  # Setting document date
         document.date_in_out = datetime.strptime(
             "2024-01-01T05:10:12", "%Y-%m-%dT%H:%M:%S"
-        )
+        )  # Setting date in/out
 
         with self.assertRaises(UserError) as context:
-            document.cancel_document_focus()
+            document.cancel_document_focus()  # Attempting to cancel document
 
-        # Verifica se a mensagem de erro esperada está na exceção lançada
+        # Checking if the expected error message is in the raised exception
         self.assertIn(
             "Error communicating with NFSe service: 400 Bad Request",
             str(context.exception),
@@ -397,23 +471,24 @@ class TestL10nBrNfseFocus(common.TransactionCase):
         "odoo.addons.l10n_br_nfse_focus.models.document.FocusnfeNfse.process_focus_nfse_document"  # noqa: E501
     )
     def test_eletronic_document_send(self, mock_process_focus_nfse_document):
-        # Configura o mock para simular diferentes respostas
-        # Cria uma resposta mockada para o status 202
+        """Tests sending of electronic document with simulated responses."""
+        # Configuring mock to simulate different responses
+        # Mocking response for status 202
         mock_response_202 = MagicMock()
         mock_response_202.status_code = 202
         mock_response_202.json.return_value = {"status": "processando_autorizacao"}
 
-        # Cria uma resposta mockada para o status 422
+        # Mocking response for status 422
         mock_response_422 = MagicMock()
         mock_response_422.status_code = 422
         mock_response_422.json.return_value = {"codigo": "algum_codigo_erro"}
 
-        # Cria uma resposta mockada para o status 500
+        # Mocking response for status 500
         mock_response_500 = MagicMock()
         mock_response_500.status_code = 500
         mock_response_500.json.return_value = {"erro": "erro interno"}
 
-        # Simula sequencialmente respostas para chamadas subsequentes
+        # Simulating sequentially responses for subsequent calls
         mock_process_focus_nfse_document.side_effect = [
             mock_response_202,
             mock_response_422,
@@ -421,53 +496,56 @@ class TestL10nBrNfseFocus(common.TransactionCase):
         ]
 
         document = self.nfse_demo
-        document.processador_edoc = PROCESSADOR_OCA
-        document.document_type_id.code = MODELO_FISCAL_NFSE
+        document.processador_edoc = PROCESSADOR_OCA  # Setting processor to OCA
+        document.document_type_id.code = (
+            MODELO_FISCAL_NFSE  # Setting document type to NFSe
+        )
         document.document_date = datetime.strptime(
             "2024-01-01T05:10:12", "%Y-%m-%dT%H:%M:%S"
-        )
+        )  # Setting document date
         document.date_in_out = datetime.strptime(
             "2024-01-01T05:10:12", "%Y-%m-%dT%H:%M:%S"
-        )
+        )  # Setting date in/out
 
-        # Testa a lógica para a resposta 202
-        document._eletronic_document_send()
-        # Aqui você verifica se o estado do documento foi atualizado corretamente
-        # Isso depende de como você implementou a lógica de atualização de estado no seu método
+        # Testing logic for response 202
+        document._eletronic_document_send()  # Sending electronic document
+        # Here you would verify if the document state was correctly updated
+        # This depends on how you implemented the state update logic in your method
 
         self.assertEqual(
             document.state,
             SITUACAO_EDOC_ENVIADA,
-            "O estado do documento deve ser atualizado para rejeitado devido ao erro 422",
+            "The document state should be updated to sent due to error 422",
         )
 
-        # Testa a lógica para a resposta 422
-        document._eletronic_document_send()
+        # Testing logic for response 422
+        document._eletronic_document_send()  # Sending electronic document again
         self.assertEqual(
             document.state,
             SITUACAO_EDOC_REJEITADA,
-            "O estado do documento deve ser 'rejeitado' após processamento com status 422",
+            "The document state should be 'rejected' after processing with status 422",
         )
 
-        # Testa o envio do documento com a resposta 500
-        document._eletronic_document_send()
+        # Testing sending of the document with response 500
+        document._eletronic_document_send()  # Sending electronic document once more
         self.assertEqual(
             document.state,
             SITUACAO_EDOC_REJEITADA,
-            "O estado do documento deve permanecer 'rejeitado' "
-            "após processamento com status 500",
+            "The document state should remain 'rejected' "
+            "after processing with status 500",
         )
 
-        # Verifica se o método foi chamado três vezes, uma para cada cenário de teste
+        # Checking if the processing method was called three times, once for each test scenario
         self.assertEqual(
             mock_process_focus_nfse_document.call_count,
             3,
-            "O método de processamento deve ser chamado três vezes",
+            "The processing method should be called three times",
         )
 
     def test_cron_document_status_focus(self):
+        """Tests scheduled job for updating document status."""
         record = self.nfse_demo
-        record.state = "enviada"
+        record.state = "enviada"  # Setting document state to 'sent'
 
         with patch(
             "odoo.addons.l10n_br_nfse_focus.models.document.Document.search"
@@ -478,23 +556,30 @@ class TestL10nBrNfseFocus(common.TransactionCase):
                 with patch(
                     "odoo.addons.l10n_br_nfse_focus.models.document.Document._document_status"
                 ) as mock_document_status:
-                    mock_search.return_value = record
-                    mock_filtered.return_value = record
+                    mock_search.return_value = record  # Mocking search return
+                    mock_filtered.return_value = record  # Mocking filtered return
 
-                    record._cron_document_status_focus()
+                    record._cron_document_status_focus()  # Executing scheduled job
 
-                    self.assertTrue(mock_search)
-                    mock_search.assert_called_once_with([("state", "in", ["enviada"])])
-                    mock_document_status.assert_called_once()
+                    self.assertTrue(mock_search)  # Asserting search was executed
+                    mock_search.assert_called_once_with(
+                        [("state", "in", ["enviada"])]
+                    )  # Asserting search criteria
+                    mock_document_status.assert_called_once()  # Asserting document status check
 
     @patch(
         "odoo.addons.l10n_br_nfse_focus.models.document.Document.cancel_document_focus"
     )
     def test_exec_before_SITUACAO_EDOC_CANCELADA(self, mock_cancel_document_focus):
+        """Tests execution before setting document status to cancelled."""
         record = self.nfse_demo
-        mock_cancel_document_focus.return_value = True
+        mock_cancel_document_focus.return_value = (
+            True  # Simulating successful cancellation
+        )
         result = record._exec_before_SITUACAO_EDOC_CANCELADA(
             SITUACAO_EDOC_EM_DIGITACAO, SITUACAO_EDOC_A_ENVIAR
-        )
-        mock_cancel_document_focus.assert_called_once()
-        self.assertEqual(result, mock_cancel_document_focus.return_value)
+        )  # Executing before status change
+        mock_cancel_document_focus.assert_called_once()  # Asserting cancellation was attempted
+        self.assertEqual(
+            result, mock_cancel_document_focus.return_value
+        )  # Asserting expected result
