@@ -58,7 +58,7 @@ odoo.define("l10n_br_website_sale.l10n_br_address", function (require) {
             function () {
                 var country_id = $("select[name='country_id']") || false;
                 if (country_id) {
-                    if (country_id.val() === 31) {
+                    if (country_id.val() === "31") {
                         $("input[name='city']").parent("div").hide();
                         $("select[name='city_id']").parent("div").show();
                     } else {
