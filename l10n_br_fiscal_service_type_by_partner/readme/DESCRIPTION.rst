@@ -1,0 +1,1 @@
+The module enables partners to define a service type related to them for a specific product. This provides additional flexibility, allowing the service associated with a product to be determined by the partner, rather than solely relying on the service type defined for the product.
