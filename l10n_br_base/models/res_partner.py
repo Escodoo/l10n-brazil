@@ -60,6 +60,12 @@ class Partner(models.Model):
                 .get_param("l10n_br_base.allow_cnpj_multi_ie", default=True)
             )
 
+            disable_cpf_cnpj_validation = record.env[
+                "ir.config_parameter"
+            ].sudo().get_param(
+                "l10n_br_base.disable_cpf_cnpj_validation", default=False
+            )
+
             if record.parent_id:
                 domain += [
                     ("id", "not in", record.parent_id.ids),
@@ -70,26 +76,29 @@ class Partner(models.Model):
 
             # se encontrar CNPJ iguais
             if record.env["res.partner"].search(domain):
-                if cnpj_cpf.validar_cnpj(record.cnpj_cpf):
-                    if allow_cnpj_multi_ie == "True":
-                        for partner in record.env["res.partner"].search(domain):
-                            if (
-                                partner.inscr_est == record.inscr_est
-                                and not record.inscr_est
-                            ):
-                                raise ValidationError(
-                                    _(
-                                        "There is already a partner record with this "
-                                        "Estadual Inscription !"
-                                    )
-                                )
-                    else:
+
+                if not disable_cpf_cnpj_validation:
+                    if not cnpj_cpf.validar_cnpj(record.cnpj_cpf):
                         raise ValidationError(
-                            _("There is already a partner record with this CNPJ !")
+                            _("CPF or CNPJ Invalid!")
                         )
+
+                if allow_cnpj_multi_ie == "True":
+                    return
+                    # for partner in record.env["res.partner"].search(domain):
+                    #     if (
+                    #         partner.inscr_est == record.inscr_est
+                    #         and not record.inscr_est
+                    #     ):
+                    #         raise ValidationError(
+                    #             _(
+                    #                 "There is already a partner record with this "
+                    #                 "Estadual Inscription !"
+                    #             )
+                    #         )
                 else:
                     raise ValidationError(
-                        _("There is already a partner record with this CPF/RG!")
+                        _("There is already a partner record with this CNPJ !")
                     )
 
     @api.depends(
