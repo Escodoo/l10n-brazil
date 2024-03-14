@@ -197,4 +197,18 @@ class StockMove(models.Model):
     @api.depends("price_unit")
     def _compute_fiscal_price(self):
         for record in self:
+            if record.fiscal_operation_id and not record.fiscal_operation_line_id:
+                record._onchange_product_id_fiscal()
             record.fiscal_price = record.price_unit
+
+    def _set_as_2binvoiced(self):
+        res = super()._set_as_2binvoiced()
+        for record in self:
+            if (
+                res
+                and record.picking_id.fiscal_operation_id
+                and not record.fiscal_operation_id
+            ):
+                record.fiscal_operation_id = record.picking_id.fiscal_operation_id
+                record._onchange_product_id_fiscal()
+        return res
