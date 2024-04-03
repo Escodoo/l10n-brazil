@@ -21,3 +21,4 @@ l10n_br_sale akretion/15.0-mig-l10n_br_sale
 l10n_br_zip origin/16.0
 l10n_br_fiscal_certificate oca/16.0
 l10n_br_hr Escodoo/16.0-mig-l10n_br_hr
+l10n_br_account_payment_order kmee/16.0-mig-l10n_br_account_payment_order
