@@ -36,6 +36,7 @@ class DocumentLine(models.Model):
     currency_id = fields.Many2one(
         comodel_name="res.currency",
         related="company_id.currency_id",
+        default=None,
         string="Currency",
     )
 

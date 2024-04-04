@@ -38,19 +38,19 @@
                         name="action_invalidate"
                         type="object"
                         string="Confirmar"
-                        states="draft"
+                        invisible="state != 'draft'"
                         class="oe_highlight"
                     />
           </header>
           <group>
-              <field name="company_id" />
-              <field name="document_type_id" />
-              <field name="document_serie_id" />
+              <field name="company_id" readonly="state != 'draft'" />
+              <field name="document_type_id" readonly="state != 'draft'" />
+              <field name="document_serie_id" readonly="state != 'draft'" />
           </group>
           <group>
-              <field name="number_start" />
-              <field name="number_end" />
-              <field name="justification" />
+              <field name="number_start" readonly="state != 'draft'" />
+              <field name="number_end" readonly="state != 'draft'" />
+              <field name="justification" readonly="state != 'draft'" />
           </group>
           <notebook>
               <page string="Events">

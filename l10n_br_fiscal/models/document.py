@@ -52,6 +52,7 @@ class Document(models.Model):
         "l10n_br_fiscal.document.electronic",
         "l10n_br_fiscal.document.move.mixin",
     ]
+    _rec_name = "name"
     _description = "Fiscal Document"
     _check_company_auto = True
 
@@ -316,12 +317,6 @@ class Document(models.Model):
                 type_serie_number=type_serie_number,
             )
         return name
-
-    def name_get(self):
-        res = []
-        for record in self:
-            res.append((record.id, record._compute_document_name()))
-        return res
 
     @api.depends(
         "issuer",

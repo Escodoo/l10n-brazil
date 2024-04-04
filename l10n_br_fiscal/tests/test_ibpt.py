@@ -7,6 +7,7 @@ from os import environ
 
 from decorator import decorate
 from erpbrasil.base import misc
+from unittest import mock
 
 from odoo.tests import TransactionCase
 
@@ -138,8 +139,9 @@ class TestIbpt(TransactionCase):
             }
         )
 
-        if not cls._check_ibpt_api(company, cls.env.ref("l10n_br_fiscal.ncm_85030010")):
-            company.write({"ibpt_api": False})
+        with mock.patch("requests.get", side_effect=mocked_requests_get):
+            if not cls._check_ibpt_api(company, cls.env.ref("l10n_br_fiscal.ncm_85030010")):
+                company.write({"ibpt_api": False})
 
         return company
 

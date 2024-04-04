@@ -15,6 +15,7 @@ class DocumentSerie(models.Model):
     _name = "l10n_br_fiscal.document.serie"
     _description = "Fiscal Document Serie"
     _inherit = "l10n_br_fiscal.data.abstract"
+    _rec_name = "name"
 
     code = fields.Char(size=3)
 
@@ -77,9 +78,6 @@ class DocumentSerie(models.Model):
             if not vals.get("internal_sequence_id"):
                 vals.update({"internal_sequence_id": self._create_sequence(vals)})
         return super().create(vals_list)
-
-    def name_get(self):
-        return [(r.id, "{}".format(r.name)) for r in self]
 
     def _is_invalid_number(self, document_number):
         self.ensure_one()

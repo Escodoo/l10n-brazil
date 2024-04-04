@@ -14,25 +14,18 @@ class TaxDefinitionBenefit(models.Model):
     is_benefit = fields.Boolean(
         string="Benefit?",
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     code = fields.Char(
         size=8,
-        states={"draft": [("readonly", False)]},
     )
 
-    name = fields.Char(
-        states={"draft": [("readonly", False)]},
-    )
+    name = fields.Char()
 
-    description = fields.Text(
-        states={"draft": [("readonly", False)]},
-    )
+    description = fields.Text()
 
     benefit_type = fields.Selection(
         selection=ICMS_TAX_BENEFIT_TYPE,
-        states={"draft": [("readonly", False)]},
     )
 
     # Anexo RICMS

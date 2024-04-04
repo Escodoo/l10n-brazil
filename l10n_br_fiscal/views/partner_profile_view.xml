@@ -49,8 +49,8 @@
                             id="partner_button"
                             icon="fa-bars"
                             name="action_view_partners"
-                            context="{'default_fiscal_profile_id': active_id}"
-                            attrs="{'invisible': [('partner_qty', '=', 0)]}"
+                            context="{'default_fiscal_profile_id': id}"
+                            invisible="partner_qty == 0"
                         >
                             <field
                                 string="Partners"
@@ -68,7 +68,7 @@
                         <field name="ind_ie_dest" />
                         <field
                             name="tax_framework"
-                            attrs="{'invisible': [('is_company', '=', False)]}"
+                            invisible="not is_company"
                         />
                     </group>
                     <notebook>

@@ -12,17 +12,15 @@
                     <field name="importing_type" />
                     <field
                         name="xml"
-                        attrs="{
-                            'invisible': [('importing_type', '!=', 'xml_file')],
-                            'required': [('importing_type', '=', 'xml_file')]
-                        }"
+                        invisible="importing_type != 'xml_file'"
+                        required="importing_type == 'xml_file'"
                     />
                 </group>
                 <separator
                     string="Preview Data"
-                    attrs="{'invisible': [('xml', '=', False)]}"
+                    invisible="not xml"
                 />
-                <group id="document_info" attrs="{'invisible': [('xml', '=', False)]}">
+                <group id="document_info" invisible="not xml">
                     <group>
                         <field name="document_key" readonly="1" />
                         <field name="document_number" readonly="1" />

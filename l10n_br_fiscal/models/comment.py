@@ -6,7 +6,7 @@ from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
 
-from odoo import api, fields, models, tools
+from odoo import api, fields, models, tools, _
 from odoo.osv.expression import AND
 
 from ..constants.fiscal import (
@@ -86,13 +86,15 @@ class Comment(models.Model):
             name_get_uid=name_get_uid,
         )
 
-    def name_get(self):
+    @api.depends("name")
+    def _compute_display_name(self):
         def truncate_name(name):
             if len(name) > 60:
                 name = "{}...".format(name[:60])
             return name
 
-        return [(r.id, "{}".format(truncate_name(r.name))) for r in self]
+        for rec in self:
+            rec.display_name = truncate_name(rec.name or "") or _("New")
 
     # format_amount function for fiscal observation
     # This way we can format numbers in currency template on fiscal observation

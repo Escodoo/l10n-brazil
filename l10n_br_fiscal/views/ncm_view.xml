@@ -102,7 +102,7 @@
                         name="web_ribbon"
                         title="Archived"
                         bg_color="bg-danger"
-                        attrs="{'invisible': [('active', '=', True)]}"
+                        invisible="active"
                     />
                     <div class="oe_button_box" name="button_box">
                         <button
@@ -119,8 +119,8 @@
                             id="product_tmpl_button"
                             icon="fa-bars"
                             name="%(product.product_template_action_all)d"
-                            context="{'search_default_ncm_id': active_id}"
-                            attrs="{'invisible': [('product_tmpl_qty', '=', 0)]}"
+                            context="{'search_default_ncm_id': id}"
+                            invisible="product_tmpl_qty == 0"
                         >
                             <field
                                 string="Products"

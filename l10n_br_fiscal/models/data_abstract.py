@@ -91,13 +91,18 @@ class DataAbstract(models.AbstractModel):
             name, args=args, operator=operator, limit=limit, name_get_uid=name_get_uid
         )
 
-    def name_get(self):
+    @api.depends("name", "code")
+    @api.depends_context("show_code_only")
+    def _compute_display_name(self):
         def truncate_name(name):
             if len(name) > 60:
                 name = "{}...".format(name[:60])
             return name
-
-        if self._context.get("show_code_only"):
-            return [(r.id, "{}".format(r.code)) for r in self]
-
-        return [(r.id, "{} - {}".format(r.code, truncate_name(r.name))) for r in self]
+            
+        for rec in self:
+            if self._context.get("show_code_only"):
+                rec.display_name = rec.code
+            else:
+                rec.display_name = "{} - {}".format(
+                    rec.code, truncate_name(rec.name)
+                )

@@ -8,9 +8,8 @@ from odoo import SUPERUSER_ID, _, api, tools
 _logger = logging.getLogger(__name__)
 
 
-def post_init_hook(cr, registry):
+def post_init_hook(env):
     """Import XML data to change core data"""
-    env = api.Environment(cr, SUPERUSER_ID, {})
 
     files = [
         "data/l10n_br_fiscal.cnae.csv",
@@ -31,7 +30,7 @@ def post_init_hook(cr, registry):
 
     for file in files:
         tools.convert_file(
-            cr,
+            env,
             "l10n_br_fiscal",
             file,
             None,
@@ -41,7 +40,7 @@ def post_init_hook(cr, registry):
         )
 
     env.cr.execute("select demo from ir_module_module where name='l10n_br_fiscal';")
-    is_demo = env.cr.fetchone()[0]
+    is_demo = env.cr.fetchone()[0] or True
     if is_demo:
         demofiles = [
             "demo/l10n_br_fiscal.ncm-demo.csv",
@@ -77,7 +76,7 @@ def post_init_hook(cr, registry):
 
         for f in demofiles:
             tools.convert_file(
-                cr,
+                env,
                 "l10n_br_fiscal",
                 f,
                 None,
@@ -110,7 +109,7 @@ def post_init_hook(cr, registry):
 
         for f in prodfiles:
             tools.convert_file(
-                cr,
+                env,
                 "l10n_br_fiscal",
                 f,
                 None,
@@ -128,7 +127,7 @@ def post_init_hook(cr, registry):
 
     for file in posloadfiles:
         tools.convert_file(
-            cr,
+            env,
             "l10n_br_fiscal",
             file,
             None,
@@ -149,7 +148,7 @@ def post_init_hook(cr, registry):
 
         for file in posdemofiles:
             tools.convert_file(
-                cr,
+                env,
                 "l10n_br_fiscal",
                 file,
                 None,

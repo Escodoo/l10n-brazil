@@ -45,7 +45,7 @@
                     <button
                         name="action_review"
                         type="object"
-                        states="draft"
+                        invisible="state != 'draft'"
                         string="Review"
                         class="oe_highlight"
                         groups="l10n_br_fiscal.group_manager"
@@ -53,7 +53,7 @@
                     <button
                         name="action_approve"
                         type="object"
-                        states="review,expired"
+                        invisible="state not in ['review', 'expired']"
                         string="Approve"
                         class="oe_highlight"
                         groups="l10n_br_fiscal.group_manager"
@@ -61,7 +61,7 @@
                     <button
                         name="action_draft"
                         type="object"
-                        states="review,approved"
+                        invisible="state not in ['review', 'approved']"
                         string="Reset To Draft"
                         class="oe_highlight"
                         groups="l10n_br_fiscal.group_manager"
@@ -73,41 +73,42 @@
                         <div class="col-2">
                             <label for="code" class="oe_edit_only" />
                             <div class="o_row">
-                                <field name="code" class="oe_inline" />
+                                <field 
+                                    name="code" 
+                                    class="oe_inline" 
+                                    readonly="state != 'draft'"
+                                />
                             </div>
                         </div>
                         <div class="col-10">
                             <label for="name" class="oe_edit_only" />
                             <div class="o_row d-flex">
-                                <field name="name" class="oe_inline" />
+                                <field name="name" class="oe_inline" readonly="state != 'draft'" />
                             </div>
                         </div>
                     </h1>
                     <group>
                         <group>
-                            <field name="fiscal_operation_type" />
-                            <field name="fiscal_type" />
-                            <field name="company_id" />
-                            <field name="edoc_purpose" />
+                            <field name="fiscal_operation_type" readonly="state != 'draft'" />
+                            <field name="fiscal_type" readonly="state != 'draft'" />
                             <field
                                 name="company_id"
                                 groups="base.group_multi_company"
+                                readonly="state != 'draft'"
                             />
+                            <field name="edoc_purpose" readonly="state != 'draft'" />
                         </group>
                         <group>
-                            <field
-                                name="company_id"
-                                groups="base.group_multi_company"
-                            />
-                            <field name="default_price_unit" />
-                            <field name="return_fiscal_operation_id" />
-                            <field name="inverse_fiscal_operation_id" />
+                            <field name="default_price_unit" readonly="state != 'draft'" />
+                            <field name="return_fiscal_operation_id" readonly="state != 'draft'" />
+                            <field name="inverse_fiscal_operation_id" readonly="state != 'draft'" />
                         </group>
                     </group>
                     <notebook>
                         <page name="operation_line" string="Operation Line">
                             <field
                                 name="line_ids"
+                                readonly="state != 'draft'"
                                 context="{'default_fiscal_operation_id': id, 'default_fiscal_type': fiscal_type, 'default_fiscal_operation_type': fiscal_operation_type, 'form_view_ref': 'l10n_br_fiscal.operation_line_form' , 'show_code_only': 1}"
                             >
                             </field>
@@ -115,6 +116,7 @@
                         <page name="operation_document_type" string="Fiscal Documents">
                             <field
                                 name="document_type_ids"
+                                readonly="state != 'draft'"
                                 context="{'default_fiscal_operation_id': id}"
                             >
                                 <tree>
@@ -138,8 +140,8 @@
                         </page>
                         <page name="subsequent_operation" string="Operations">
                             <group>
-                                <field name="return_fiscal_operation_id" />
-                                <field name="inverse_fiscal_operation_id" />
+                                <field name="return_fiscal_operation_id" readonly="state != 'draft'" />
+                                <field name="inverse_fiscal_operation_id" readonly="state != 'draft'" />
                             </group>
                             <field name="operation_subsequent_ids" />
                         </page>

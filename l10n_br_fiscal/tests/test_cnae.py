@@ -16,4 +16,4 @@ class TestCNAE(TransactionCase):
                 "internal_type": "normal",
             }
         )
-        assert self.cnae.name_get(), "Error with function name_get()"
+        assert self.cnae.display_name, "Error with computed display_name"

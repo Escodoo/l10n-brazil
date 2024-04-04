@@ -11,4 +11,4 @@ class TestServiceType(TransactionCase):
         self.service_type = self.env["l10n_br_fiscal.service.type"].create(
             {"code": "TESTE", "name": "TESTE", "internal_type": "normal"}
         )
-        assert self.service_type.name_get(), "Error with function name_get()"
+        assert self.service_type.display_name, "Error with computed display_name"

@@ -23,7 +23,6 @@
     <record id="service_type_tree" model="ir.ui.view">
         <field name="name">l10n_br_fiscal.service.type.tree</field>
         <field name="model">l10n_br_fiscal.service.type</field>
-        <field name="field_parent">children_ids</field>
         <field name="arch" type="xml">
             <tree>
                 <field name="code" />
@@ -80,8 +79,8 @@
                             id="product_tmpl_button"
                             icon="fa-bars"
                             name="%(product.product_template_action_all)d"
-                            context="{'search_default_service_type_id': active_id}"
-                            attrs="{'invisible': [('product_tmpl_qty', '=', 0)]}"
+                            context="{'search_default_service_type_id': id}"
+                            invisible="product_tmpl_qty == 0"
                         >
                             <field
                                 string="Products"

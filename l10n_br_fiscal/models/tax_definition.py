@@ -31,14 +31,6 @@ class TaxDefinition(models.Model):
         for record in self:
             record.display_name = record._get_complete_name()
 
-    @api.depends("tax_group_id", "tax_id", "cst_code")
-    def name_get(self):
-        result = []
-        for record in self:
-            name = record._get_complete_name()
-            result.append((record.id, name))
-        return result
-
     display_name = fields.Char(compute="_compute_display_name", store=True)
 
     type_in_out = fields.Selection(
@@ -47,7 +39,6 @@ class TaxDefinition(models.Model):
         required=True,
         default=FISCAL_OUT,
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     tax_group_id = fields.Many2one(
@@ -55,19 +46,16 @@ class TaxDefinition(models.Model):
         string="Tax Group",
         required=True,
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     custom_tax = fields.Boolean(
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     tax_id = fields.Many2one(
         comodel_name="l10n_br_fiscal.tax",
         string="Tax",
         readonly=True,
-        states={"draft": [("readonly", False)]},
         domain="[('tax_group_id', '=', tax_group_id)]",
     )
 
@@ -90,26 +78,22 @@ class TaxDefinition(models.Model):
         store=True,
         string="Tax Domain",
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     is_taxed = fields.Boolean(
         string="Taxed?",
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     is_debit_credit = fields.Boolean(
         string="Debit/Credit?",
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     company_id = fields.Many2one(
         comodel_name="res.company",
         string="Company",
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     state_from_id = fields.Many2one(
@@ -130,19 +114,16 @@ class TaxDefinition(models.Model):
     ncms = fields.Text(
         string="NCM List",
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     ncm_exception = fields.Text(
         string="NCM Exeption",
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     not_in_ncms = fields.Text(
         string="Not in NCMs",
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     ncm_ids = fields.Many2many(
@@ -157,7 +138,6 @@ class TaxDefinition(models.Model):
     cests = fields.Text(
         string="CEST List",
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     cest_ids = fields.Many2many(
@@ -172,13 +152,11 @@ class TaxDefinition(models.Model):
     nbms = fields.Text(
         string="NBM List",
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     not_in_nbms = fields.Text(
         string="Not in NBMs",
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     nbm_ids = fields.Many2many(
@@ -214,13 +192,11 @@ class TaxDefinition(models.Model):
     date_start = fields.Datetime(
         string="Start Date",
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     date_end = fields.Datetime(
         string="End Date",
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     state = fields.Selection(
