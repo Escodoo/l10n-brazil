@@ -1,4 +1,5 @@
 # Copyright (C) 2019  Renato Lima - Akretion <renato.lima@akretion.com.br>
+# Copyright (C) 2024 Xipp Tech - Ravi do Valle Luz <raviluz@xipptech.com.br>
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
 from odoo import api, fields, models
@@ -14,12 +15,14 @@ class DataAbstract(models.AbstractModel):
 
     name = fields.Text(required=True, index=True)
 
-    def name_get(self):
-        return [(r.id, "{} - {}".format(r.code, r.name)) for r in self]
+    @api.depends("name", "code")
+    def _compute_display_name(self):
+        for rec in self:
+            rec.display_name = f"{rec.code} - {rec.name}"
 
     @api.model
     def _name_search(
-        self, name, args=None, operator="ilike", limit=100, name_get_uid=None
+        self, name, args=None, operator="ilike", limit=None, order=None
     ):
         args = args or []
         domain = []
@@ -28,8 +31,8 @@ class DataAbstract(models.AbstractModel):
             return self._search(
                 expression.AND([domain, args]),
                 limit=limit,
-                access_rights_uid=name_get_uid,
+                order=order,
             )
         return super()._name_search(
-            name, args=args, operator=operator, limit=limit, name_get_uid=name_get_uid
+            name, args=args, operator=operator, limit=limit, order=order
         )

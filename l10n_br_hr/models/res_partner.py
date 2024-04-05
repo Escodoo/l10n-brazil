@@ -1,4 +1,5 @@
 # (c) 2019 KMEE INFORMATICA LTDA
+# (c) 2024 Xipp Tech - Ravi do Valle Luz <raviluz@xipptech.com.br>
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
 from odoo import api, fields, models
@@ -10,25 +11,22 @@ class ResPartner(models.Model):
     is_employee_dependent = fields.Boolean(string="Is an employee dependent")
 
     def create_depentent(self):
-        for record in self.with_context(active_test=False):
-            self.env["hr.employee.dependent"].create({"partner_id": record.id})
+        self.env["hr.employee.dependent"].create([
+            dict(partner_id=r.id) for r in self
+        ])
         return True
 
-    @api.model
-    def create(self, vals):
-        if "depentent_employee_id" in self.env.context:
-            employee_id = self.env["hr.employee"].browse(
-                self.env.context.get("depentent_employee_id")
-            )
-            vals["parent_id"] = employee_id.address_home_id.id
+    @api.model_create_multi
+    def create(self, vals_list):
+        recs = super().create(vals_list)
+        if "create_depentent" in self._context:
+            return recs
+        
+        recs.filtered("is_employee_dependent").with_context(
+            create_depentent=True
+        ).create_depentent()
 
-        partner = super().create(vals)
-
-        if "create_depentent" not in self._context and vals.get(
-            "is_employee_dependent", False
-        ):
-            partner.with_context(create_depentent=True).create_depentent()
-        return partner
+        return recs
 
     def write(self, vals):
         res = super().write(vals)

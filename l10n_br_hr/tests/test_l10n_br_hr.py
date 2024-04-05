@@ -1,8 +1,8 @@
 from odoo.exceptions import ValidationError
-from odoo.tests import SavepointCase
+from odoo.tests import SingleTransactionCase
 
 
-class TestL10nBr(SavepointCase):
+class TestL10nBr(SingleTransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -48,8 +48,8 @@ class TestL10nBr(SavepointCase):
     def test_l10n_br_hr_cbo(self):
         cbo = self.env.ref("l10n_br_hr.1")
         self.assertTrue(
-            cbo.name_get()[0][1] == "010105 - Oficial general da " "aeronáutica",
-            "The CBO name by name_get is not valid, expected " "'code - name'",
+            cbo.display_name == "010105 - Oficial general da " "aeronáutica",
+            "The CBO display_name is not valid, expected " "'code - name'",
         )
 
     def test_hr_deficiency(self):
@@ -61,24 +61,24 @@ class TestL10nBr(SavepointCase):
         )
 
     def test_dependent_type(self):
-        dependent_type = self.env["hr.dependent.type"].search([])[0].name_get()[0][1]
+        dependent_type = self.env["hr.dependent.type"].search([])[0].display_name
         self.assertEqual(
             dependent_type,
             "1 - Cônjuge",
-            "The dependent type get is not valid, expected" " '1 - Cônjuge'",
+            "The dependent type display_name is not valid, expected" " '1 - Cônjuge'",
         )
 
     def test_hr_ethnicity(self):
-        ethnicity = self.env["hr.ethnicity"].search([])[0].name_get()[0][1]
+        ethnicity = self.env["hr.ethnicity"].search([])[0].display_name
         self.assertEqual(
             ethnicity,
             "1 - Branca",
-            "The ethnicity get is not valid, expectded" " '1 - Branca'",
+            "The ethnicity display_name is not valid, expectded" " '1 - Branca'",
         )
 
     def test_hr_educational_attainment(self):
         educational_attainment = self.env["hr.educational.attainment"]
-        educational_attainment = educational_attainment.search([])[0].name_get()[0][1]
+        educational_attainment = educational_attainment.search([])[0].display_name
         expected_result = (
             "01 - Analfabeto, inclusive o que, embora tenha "
             "recebido instrução, não se alfabetizou"

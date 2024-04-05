@@ -1,6 +1,7 @@
 # (c) 2014 Kmee - Rafael da Silva Lima <rafael.lima@kmee.com.br>
 # (c) 2014 Kmee - Matheus Felix <matheus.felix@kmee.com.br>
 # (c) 2016 KMEE Informática - Daniel Sadamo <daniel.sadamo@kmee.com.br>
+# (c) 2024 Xipp Tech - Ravi do Valle Luz <raviluz@xipptech.com.br>
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
 from erpbrasil.base.fiscal import cnpj_cpf
@@ -20,7 +21,9 @@ class HrEmployeeDependent(models.Model):
         return self.env.user.employee_ids[0]
 
     employee_id = fields.Many2one(
-        comodel_name="hr.employee", string="Employee ID", default=_get_default_employee
+        comodel_name="hr.employee", 
+        string="Employee", 
+        default=_get_default_employee,
     )
 
     dependent_dob = fields.Date(string="Date of birth", required=True)
@@ -63,16 +66,18 @@ class HrEmployeeDependent(models.Model):
         help="Certidão de Nascimento / Casamento / etc",
     )
 
-    @api.model
-    def create(self, vals):
-        ctx = self.env.context.copy()
-        ctx["create_depentent"] = True
-        ctx["depentent_employee_id"] = vals.get("employee_id", False)
-        #
+    @api.model_create_multi
+    def create(self, vals_list):
         # O sudo foi utilizado para evitar a permissão de criação de contato
         # para o funcionário.
-        #
-        return super(HrEmployeeDependent, self.sudo().with_context(**ctx)).create(vals)
+        for vals in vals_list:
+            vals["parent_id"] = self.env["hr.employee"].browse(
+                vals.get("employee_id")
+            ).work_contact_id.id
+        return super(
+            HrEmployeeDependent, 
+            self.sudo().with_context(create_depentent=True)
+        ).create(vals_list)
 
     @api.onchange("cnpj_cpf")
     def onchange_cpf(self):

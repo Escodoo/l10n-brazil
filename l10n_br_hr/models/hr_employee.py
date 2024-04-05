@@ -74,7 +74,7 @@ class HrEmployee(models.Model):
     rg = fields.Char(
         string="RG",
         store=True,
-        related="address_home_id.inscr_est",
+        related="work_contact_id.inscr_est",
         help="National ID number",
         groups="hr.group_hr_user",
     )
@@ -82,7 +82,7 @@ class HrEmployee(models.Model):
     cpf = fields.Char(
         string="CPF",
         store=True,
-        related="address_home_id.cnpj_cpf",
+        related="work_contact_id.cnpj_cpf",
         readonly=False,
         groups="hr.group_hr_user",
     )
@@ -147,13 +147,14 @@ class HrEmployee(models.Model):
     identity_uf_id = fields.Many2one(
         string="ID expedition district",
         comodel_name="res.country.state",
+        domain="[('country_id', '=', country_id)]",
         groups="hr.group_hr_user",
     )
 
     identity_city_id = fields.Many2one(
         string="ID expedition city",
         comodel_name="res.city",
-        domain="[('state_id','=',identity_uf_id)]",
+        domain="[('state_id', '=', identity_uf_id)]",
         groups="hr.group_hr_user",
     )
 
@@ -236,7 +237,7 @@ class HrEmployee(models.Model):
             if record.pis_pasep and not pis.validar(record.pis_pasep):
                 raise ValidationError(_("Invalid PIS/PASEP"))
 
-    @api.constrains("cpf")
+    @api.constrains("cpf", "country_id")
     def _check_cpf(self):
         for record in self:
             check_cnpj_cpf(record.env, record.cpf, record.country_id)

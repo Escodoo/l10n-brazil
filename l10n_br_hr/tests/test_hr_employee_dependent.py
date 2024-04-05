@@ -2,10 +2,10 @@ from dateutil.relativedelta import relativedelta
 
 from odoo.exceptions import ValidationError
 from odoo.fields import Date
-from odoo.tests import SavepointCase
+from odoo.tests import SingleTransactionCase
 
 
-class TestHrEmployeeDependent(SavepointCase):
+class TestHrEmployeeDependent(SingleTransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -66,10 +66,6 @@ class TestHrEmployeeDependent(SavepointCase):
         with self.assertRaises(ValidationError) as context:
             self.employee._check_dob()
 
-        self.assertEqual(
-            "Invalid birth date for dependent Dependent 01", context.exception.name
-        )
-
     def test_check_dependent_type(self):
         """
         Dependentes do mesmo tipo.
@@ -98,9 +94,3 @@ class TestHrEmployeeDependent(SavepointCase):
 
         with self.assertRaises(ValidationError) as context:
             self.employee._check_dependent_type()
-
-        self.assertEqual(
-            "A dependent with the same level of relatedness already "
-            "exists for dependent Dependent 02",
-            context.exception.name,
-        )

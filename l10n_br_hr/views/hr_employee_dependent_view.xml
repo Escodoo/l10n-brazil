@@ -26,11 +26,11 @@
                                 name="partner_id"
                                 readonly="1"
                                 required="0"
-                                attrs="{'invisible': [('id', '=', False)]}"
+                                invisible="not id"
                             />
                         </group>
                     </group>
-                    <group attrs="{'invisible':[('have_alimony', '!=', True)]}">
+                    <group invisible="not have_alimony">
                         <separator string="Bank account for alimony" colspan="4" />
                         <field name="partner_id_bank_ids" />
                     </group>
