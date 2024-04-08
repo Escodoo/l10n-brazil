@@ -1,18 +1,16 @@
 # Copyright (C) 2012 - TODAY  Renato Lima - Akretion
+# Copyright (C) 2024 Ravi do Valle Luz - XippTech
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
 import logging
+
+from erpbrasil.base import misc
+from erpbrasil.base.fiscal import cnpj_cpf, ie
 
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
-
-try:
-    from erpbrasil.base import misc
-    from erpbrasil.base.fiscal import cnpj_cpf, ie
-except ImportError:
-    _logger.error("erpbrasil.base library not installed")
 
 
 class Lead(models.Model):
@@ -38,7 +36,7 @@ class Lead(models.Model):
         if not self.name_surname:
             self.name_surname = self.contact_name
 
-    @api.constrains("cnpj")
+    @api.constrains("cnpj", "country_id")
     def _check_cnpj(self):
         for record in self:
             country_code = record.country_id.code or ""
@@ -48,7 +46,7 @@ class Lead(models.Model):
                     raise ValidationError(_("Invalid CNPJ!"))
             return True
 
-    @api.constrains("cpf")
+    @api.constrains("cpf", "country_id")
     def _check_cpf(self):
         for record in self:
             country_code = record.country_id.code or ""
@@ -58,7 +56,7 @@ class Lead(models.Model):
                     raise ValidationError(_("Invalid CPF!"))
             return True
 
-    @api.constrains("inscr_est")
+    @api.constrains("inscr_est", "cnpj", "state_id")
     def _check_ie(self):
         """Checks if company register number in field insc_est is valid,
         this method call others methods because this validation is State wise
@@ -82,7 +80,7 @@ class Lead(models.Model):
     def _onchange_mask_cpf(self):
         self.cpf = cnpj_cpf.formata(self.cpf)
 
-    @api.onchange("city_id")
+    @api.onchange("city_id", "partner_id")
     def _onchange_city_id(self):
         """Ao alterar o campo l10n_br_city_id que é um campo relacional
         com o l10n_br_base.city que são os municípios do IBGE, copia o nome
@@ -104,7 +102,7 @@ class Lead(models.Model):
 
     @api.onchange("partner_id")
     def _onchange_partner_id(self):
-        result = super(Lead, self)._prepare_values_from_partner(self.partner_id)
+        result = self._prepare_values_from_partner(self.partner_id)
 
         if self.partner_id:
             result["street_name"] = self.partner_id.street_name
@@ -120,13 +118,13 @@ class Lead(models.Model):
                 result["inscr_mun"] = self.partner_id.inscr_mun
                 result["suframa"] = self.partner_id.suframa
             else:
-                result["partner_name"] = self.partner_id.parent_id.name or False
-                result["legal_name"] = self.partner_id.parent_id.legal_name or False
-                result["cnpj"] = self.partner_id.parent_id.cnpj_cpf or False
-                result["inscr_est"] = self.partner_id.parent_id.inscr_est or False
-                result["inscr_mun"] = self.partner_id.parent_id.inscr_mun or False
-                result["suframa"] = self.partner_id.parent_id.suframa or False
-                result["website"] = self.partner_id.parent_id.website or False
+                result["partner_name"] = self.partner_id.parent_id.name
+                result["legal_name"] = self.partner_id.parent_id.legal_name
+                result["cnpj"] = self.partner_id.parent_id.cnpj_cpf
+                result["inscr_est"] = self.partner_id.parent_id.inscr_est
+                result["inscr_mun"] = self.partner_id.parent_id.inscr_mun
+                result["suframa"] = self.partner_id.parent_id.suframa
+                result["website"] = self.partner_id.parent_id.website
                 result["cpf"] = self.partner_id.cnpj_cpf
                 result["rg"] = self.partner_id.rg
                 result["name_surname"] = self.partner_id.legal_name
