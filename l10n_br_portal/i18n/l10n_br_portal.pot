@@ -124,3 +124,12 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:l10n_br_portal.portal_my_details
 msgid "select..."
 msgstr ""
+
+#. module: l10n_br_portal
+#: model_terms:ir.ui.view,arch_db:l10n_br_portal.portal_my_details_fields
+msgid ""
+"<small class=\"form-text text-muted\">\n"
+"                Fiscal information can not be changed once document(s) have been issued for your account.\n"
+"                <br/>Please contact us directly for that operation.\n"
+"            </small>"
+msgstr ""
