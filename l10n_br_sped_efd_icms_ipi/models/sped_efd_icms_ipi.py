@@ -11,6 +11,10 @@ from lxml.builder import E
 from odoo import api, fields, models
 from odoo.exceptions import UserError
 
+from datetime import datetime, timedelta
+import pytz
+import base64
+
 from odoo.addons.l10n_br_sped_base.models.sped_mixin import LAYOUT_VERSIONS
 
 
@@ -3680,13 +3684,22 @@ class RegistroH005(models.Model):
     _name = "l10n_br_sped.efd_icms_ipi.h005"
     _inherit = "l10n_br_sped.efd_icms_ipi.17.h005"
 
-    # @api.model
-    # def _map_from_odoo(self, record, parent_record, declaration, index=0):
-    #     return {
-    #         "DT_INV": 0,  # Data do inventário
-    #         "VL_INV": 0,  # Valor total do estoque
-    #         "MOT_INV": 0,  # Informe o motivo do Inventário: 01 – No final no per...
-    #     }
+    @api.model
+    def _map_from_odoo(self, record, parent_record, declaration, index=0):
+
+        to_date = '%s 23:59:00' %(datetime.strftime(
+            declaration.DT_FIN, '%Y-%m-%d'))
+        context = dict(self.env.context, to_date=to_date)
+        product = self.env['product.product'].with_context(context)
+        records = product.search([('qty_available','>', 0)])
+        inventory_amount = 0.0
+        for record in records:
+            inventory_amount += record.qty_available * record.standard_price
+        return {
+            "DT_INV": declaration.DT_FIN,  # Data do inventário
+            "VL_INV": inventory_amount,  # Valor total do estoque
+            "MOT_INV": 1,  # Informe o motivo do Inventário: 01 – No final no per...
+        }
 
 
 class RegistroH010(models.Model):
@@ -3694,22 +3707,33 @@ class RegistroH010(models.Model):
     _description = textwrap.dedent("    %s" % (__doc__,))
     _name = "l10n_br_sped.efd_icms_ipi.h010"
     _inherit = "l10n_br_sped.efd_icms_ipi.17.h010"
+    _odoo_model = "product.product"
 
-    # @api.model
-    # def _map_from_odoo(self, record, parent_record, declaration, index=0):
-    #     return {
-    #         "COD_ITEM": 0,  # Código do item (campo 02 do Registro 0200)
-    #         "UNID": 0,  # Unidade do item
-    #         "QTD": 0,  # Quantidade do item
-    #         "VL_UNIT": 0,  # Valor unitário do item
-    #         "VL_ITEM": 0,  # Valor do item
-    #         "IND_PROP": 0,  # Indicador de propriedade/posse do item: 0- Item de ...
-    #         "COD_PART": 0,  # Código do participante (campo 02 do Registro 0150):...
-    #         "TXT_COMPL": 0,  # Descrição complementar.
-    #         "COD_CTA": 0,  # Código da conta analítica contábil debitada/creditad...
-    #         "VL_ITEM_IR": 0,  # Valor do item para efeitos do Imposto de Renda.
-    #     }
+    @api.model
+    def _odoo_domain(self, parent_record, declaration):
+        to_date = '%s 23:59:00' %(datetime.strftime(
+        declaration.DT_FIN, '%Y-%m-%d'))
+        context = dict(self.env.context, to_date=to_date)
+        product = self.env['product.product'].with_context(context)
+        records = product.search([('qty_available','>', 0)])
+        return [
+            ("id", "in", records.ids),
+        ]
 
+    @api.model
+    def _map_from_odoo(self, record, parent_record, declaration, index=0):
+        return {
+            "COD_ITEM": record.default_code,  # Código do item (campo 02 do Registro 0200)
+            "UNID": record.uom_id.code,  # Unidade do item
+            "QTD": record.qty_available,  # Quantidade do item
+            "VL_UNIT": record.standard_price,  # Valor unitário do item
+            "VL_ITEM": record.qty_available * record.standard_price,  # Valor do item
+            "IND_PROP": 0,  # Indicador de propriedade/posse do item: 0- Item de ...
+            "COD_PART": 0,  # Código do participante (campo 02 do Registro 0150):...
+            "TXT_COMPL": 0,  # Descrição complementar.
+            "COD_CTA": 0,  # Código da conta analítica contábil debitada/creditad...
+            "VL_ITEM_IR": 0,  # Valor do item para efeitos do Imposto de Renda.
+        }
 
 class RegistroH020(models.Model):
     "Informação complementar do Inventário"
@@ -3748,12 +3772,12 @@ class RegistroK100(models.Model):
     _name = "l10n_br_sped.efd_icms_ipi.k100"
     _inherit = "l10n_br_sped.efd_icms_ipi.17.k100"
 
-    # @api.model
-    # def _map_from_odoo(self, record, parent_record, declaration, index=0):
-    #     return {
-    #         "DT_INI": 0,  # Data inicial a que a apuração se refere
-    #         "DT_FIN": 0,  # Data final a que a apuração se refere
-    #     }
+    @api.model
+    def _map_from_odoo(self, record, parent_record, declaration, index=0):
+        return {
+            "DT_INI": declaration.DT_INI,  # Data inicial a que a apuração se refere
+            "DT_FIN": declaration.DT_FIN,  # Data final a que a apuração se refere
+        }
 
 
 class RegistroK200(models.Model):
@@ -3761,16 +3785,28 @@ class RegistroK200(models.Model):
     _description = textwrap.dedent("    %s" % (__doc__,))
     _name = "l10n_br_sped.efd_icms_ipi.k200"
     _inherit = "l10n_br_sped.efd_icms_ipi.17.k200"
+    _odoo_model = "product.product"
 
-    # @api.model
-    # def _map_from_odoo(self, record, parent_record, declaration, index=0):
-    #     return {
-    #         "DT_EST": 0,  # Data do estoque final
-    #         "COD_ITEM": 0,  # Código do item (campo 02 do Registro 0200)
-    #         "QTD": 0,  # Quantidade em estoque
-    #         "IND_EST": 0,  # Indicador do tipo de estoque: 0 - Estoque de proprie...
-    #         "COD_PART": 0,  # Código do participante (campo 02 do Registro 0150):...
-    #     }
+    @api.model
+    def _odoo_domain(self, parent_record, declaration):
+        to_date = '%s 23:59:00' %(datetime.strftime(
+        declaration.DT_FIN, '%Y-%m-%d'))
+        context = dict(self.env.context, to_date=to_date)
+        product = self.env['product.product'].with_context(context)
+        records = product.search([('qty_available','>', 0)])
+        return [
+            ("id", "in", records.ids),
+        ]
+
+    @api.model
+    def _map_from_odoo(self, record, parent_record, declaration, index=0):
+        return {
+            "DT_EST": declaration.DT_FIN,  # Data do estoque final
+            "COD_ITEM": record.default_code,  # Código do item (campo 02 do Registro 0200)
+            "QTD": record.qty_available,  # Quantidade em estoque
+            "IND_EST": 0,  # Indicador do tipo de estoque: 0 - Estoque de proprie...
+            "COD_PART": 0,  # Código do participante (campo 02 do Registro 0150):...
+        }
 
 
 class RegistroK210(models.Model):
