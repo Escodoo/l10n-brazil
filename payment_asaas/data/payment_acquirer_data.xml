@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Copyright 2024 - TODAY, Kaynnan Lemes <kaynnan.lemes@escodoo.com.br>
+     License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl). -->
+<odoo noupdate="1">
+    <record id="payment_acquirer_asaas" model="payment.acquirer">
+        <field name="name">Asaas</field>
+        <field
+            name="image_128"
+            type="base64"
+            file="payment_asaas/static/src/img/asaas_icon.png"
+        />
+        <field name="provider">asaas</field>
+        <field name="company_id" ref="base.main_company" />
+        <field name="view_template_id" ref="asaas_form" />
+        <field name="registration_view_template_id" ref="asaas_s2s_form" />
+        <field name="save_token">none</field>
+        <field name="payment_flow">s2s</field>
+        <field name="capture_manually">True</field>
+        <field
+            name="pre_msg"
+        ><![CDATA[
+<p>You will be redirected to the Asaas website after clicking on the payment button.</p>]]></field>
+        <field name='asaas_token'>dummy</field>
+    </record>
+</odoo>
