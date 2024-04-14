@@ -17,16 +17,6 @@ msgstr ""
 "X-Generator: Weblate 4.17\n"
 
 #. module: l10n_br_coa
-#: model:ir.model,name:l10n_br_coa.model_account_chart_template
-msgid "Account Chart Template"
-msgstr "Plantilla del plan contable"
-
-#. module: l10n_br_coa
-#: model:ir.model,name:l10n_br_coa.model_l10n_br_coa_account_tax_group_account_template
-msgid "Account Tax Group Account Template"
-msgstr "Plantilla de cuenta de grupo fiscal"
-
-#. module: l10n_br_coa
 #: model:ir.model,name:l10n_br_coa.model_account_tax_mixin
 msgid "Account Tax Mixin"
 msgstr "Mezcla de impuestos sobre cuentas"
@@ -62,41 +52,10 @@ msgid "CSLL WH"
 msgstr "CSLL WH"
 
 #. module: l10n_br_coa
-#: model:ir.model.fields,field_description:l10n_br_coa.field_l10n_br_coa_account_tax_group_account_template__chart_template_id
-msgid "Chart Template"
-msgstr "Plantilla de gráfico"
-
-#. module: l10n_br_coa
-#: model:ir.model.fields,field_description:l10n_br_coa.field_l10n_br_coa_account_tax_group_account_template__create_uid
-msgid "Created by"
-msgstr "Creado por"
-
-#. module: l10n_br_coa
-#: model:ir.model.fields,field_description:l10n_br_coa.field_l10n_br_coa_account_tax_group_account_template__create_date
-msgid "Created on"
-msgstr "Creado el"
-
-#. module: l10n_br_coa
-#: model:ir.model.fields,field_description:l10n_br_coa.field_l10n_br_coa_account_tax_group_account_template__ded_account_id
-msgid "Deductible Tax Account"
-msgstr "Cuenta fiscal deducible"
-
-#. module: l10n_br_coa
-#: model:ir.model.fields,field_description:l10n_br_coa.field_l10n_br_coa_account_tax_group_account_template__ded_refund_account_id
-msgid "Deductible Tax Account on Credit Notes"
-msgstr "Cuenta fiscal deducible en las notas de crédito"
-
-#. module: l10n_br_coa
 #: model:ir.model.fields,field_description:l10n_br_coa.field_account_tax__deductible
 #: model:ir.model.fields,field_description:l10n_br_coa.field_account_tax_mixin__deductible
-#: model:ir.model.fields,field_description:l10n_br_coa.field_account_tax_template__deductible
 msgid "Deductible Tax?"
 msgstr "¿Impuesto deducible?"
-
-#. module: l10n_br_coa
-#: model:ir.model.fields,field_description:l10n_br_coa.field_l10n_br_coa_account_tax_group_account_template__display_name
-msgid "Display Name"
-msgstr "Mostrar Nombre"
 
 #. module: l10n_br_coa
 #: model:account.tax.group,name:l10n_br_coa.tax_group_icms
@@ -117,11 +76,6 @@ msgstr "ICMS SN"
 #: model:account.tax.group,name:l10n_br_coa.tax_group_icmsst
 msgid "ICMS ST"
 msgstr "ICMS ST"
-
-#. module: l10n_br_coa
-#: model:ir.model.fields,field_description:l10n_br_coa.field_l10n_br_coa_account_tax_group_account_template__id
-msgid "ID"
-msgstr "ID (identificación)"
 
 #. module: l10n_br_coa
 #: model:account.tax.group,name:l10n_br_coa.tax_group_ii
@@ -169,21 +123,6 @@ msgid "ISSQN WH"
 msgstr "ISSQN WH"
 
 #. module: l10n_br_coa
-#: model:ir.model.fields,field_description:l10n_br_coa.field_l10n_br_coa_account_tax_group_account_template____last_update
-msgid "Last Modified on"
-msgstr "Last Modified el"
-
-#. module: l10n_br_coa
-#: model:ir.model.fields,field_description:l10n_br_coa.field_l10n_br_coa_account_tax_group_account_template__write_uid
-msgid "Last Updated by"
-msgstr "actualizado por última vez por"
-
-#. module: l10n_br_coa
-#: model:ir.model.fields,field_description:l10n_br_coa.field_l10n_br_coa_account_tax_group_account_template__write_date
-msgid "Last Updated on"
-msgstr "Última Actualización el"
-
-#. module: l10n_br_coa
 #: model:account.tax.group,name:l10n_br_coa.tax_group_others
 msgid "Outros"
 msgstr "Otros"
@@ -212,23 +151,3 @@ msgstr "Nacionales Simples"
 #: model:ir.model,name:l10n_br_coa.model_account_tax
 msgid "Tax"
 msgstr "Impuesto"
-
-#. module: l10n_br_coa
-#: model:ir.model.fields,field_description:l10n_br_coa.field_l10n_br_coa_account_tax_group_account_template__account_id
-msgid "Tax Account"
-msgstr "Importe el impuesto"
-
-#. module: l10n_br_coa
-#: model:ir.model.fields,field_description:l10n_br_coa.field_l10n_br_coa_account_tax_group_account_template__refund_account_id
-msgid "Tax Account on Credit Notes"
-msgstr "Cuenta de impuestos sobre notas de crédito"
-
-#. module: l10n_br_coa
-#: model:ir.model.fields,field_description:l10n_br_coa.field_l10n_br_coa_account_tax_group_account_template__tax_group_id
-msgid "Tax Group"
-msgstr "Grupo de impuesto"
-
-#. module: l10n_br_coa
-#: model:ir.model,name:l10n_br_coa.model_account_tax_template
-msgid "Templates for Taxes"
-msgstr "Plantillas para impuestos"

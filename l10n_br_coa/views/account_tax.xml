@@ -12,4 +12,12 @@
       </field>
   </record>
 
+    <menuitem
+        id="account_reports_br_statements_menu"
+        name="Brazil"
+        parent="account.menu_finance_reports"
+        sequence="0"
+        groups="account.group_account_user"
+    />
+
 </odoo>
