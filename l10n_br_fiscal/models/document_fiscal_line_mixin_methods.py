@@ -866,4 +866,5 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
 
     @api.model
     def _rm_fields_to_amount(self):
-        return ["icms_relief_value"]
+        fields = ["icms_relief_value", "amount_tax_withholding"]
+        return fields
