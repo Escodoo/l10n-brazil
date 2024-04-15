@@ -3,8 +3,7 @@
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 # pylint: disable=api-one-deprecated
 
-from odoo import _, api, fields, models
-from odoo.exceptions import UserError
+from odoo import api, fields, models
 
 from odoo.addons.l10n_br_fiscal.models.document_fiscal_line_mixin_methods import (
     FISCAL_TAX_PREFIXES,
@@ -103,12 +102,6 @@ class AccountMoveLine(models.Model):
 
     allow_csll_irpj = fields.Boolean(
         compute="_compute_allow_csll_irpj",
-    )
-
-    wh_move_line_id = fields.Many2one(
-        comodel_name="account.move.line",
-        string="WH Account Move Line",
-        ondelete="restrict",
     )
 
     discount = fields.Float(
@@ -249,13 +242,6 @@ class AccountMoveLine(models.Model):
             result = super().write(values)
 
         for line in self:
-            if line.wh_move_line_id and (
-                "quantity" in values or "price_unit" in values
-            ):
-                raise UserError(
-                    _("You cannot edit an invoice related to a withholding entry")
-                )
-
             cleaned_vals = line.move_id._cleanup_write_orm_values(line, values)
             if not cleaned_vals:
                 continue
