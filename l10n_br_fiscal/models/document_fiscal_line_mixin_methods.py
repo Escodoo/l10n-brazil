@@ -192,6 +192,9 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
             # Valor Liquido (TOTAL + IMPOSTOS - RETENÇÕES)
             record.amount_taxed = record.amount_total - record.amount_tax_withholding
 
+            # Valor do documento (NF) - RETENÇÕES
+            record.amount_total = record.amount_taxed
+
             # Valor financeiro
             if (
                 record.fiscal_operation_line_id
