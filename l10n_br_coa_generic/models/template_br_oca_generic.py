@@ -10,7 +10,7 @@ class AccountChartTemplate(models.AbstractModel):
     _inherit = "account.chart.template"
 
     @template("br_oca_generic")
-    def _get_br_oca_template_data(self):
+    def _get_br_oca_generic_template_data(self):
         return {
             'name': _(
                 'Plano de Contas Genérico para Empresas do Regime normal'
