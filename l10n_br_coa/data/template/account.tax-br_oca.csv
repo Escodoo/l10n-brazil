@@ -29,7 +29,7 @@
 "tax_template_out_cofinsst","cofins st","cofins st saida","cofins st saida","0.00","sale","0","0","tax_group_cofinsst"
 "tax_template_out_cofins_wh","cofins wh","cofins wh saida","cofins wh saida","0.00","sale","0","0","tax_group_cofinsst"
 "tax_template_in_cofins","cofins","cofins entrada","cofins entrada","0.00","purchase","0","0","tax_group_cofins"
-"tax_template_in_cofinsst","cofins st","cofins st entrada","cofins st entrada","0.00","purchase","0","0","ax_group_cofinsst"
+"tax_template_in_cofinsst","cofins st","cofins st entrada","cofins st entrada","0.00","purchase","0","0","tax_group_cofinsst"
 "tax_template_in_cofins_wh","cofins wh","cofins wh entrada","cofins wh entrada","0.00","purchase","0","0","tax_group_cofins_wh"
 "tax_template_cofins_in_deductible","cofins","cofins entrada dedutível","cofins entrada dedutível","0.00","purchase","0","1","tax_group_cofins"
 "tax_template_cofins_out_deductible","cofins","cofins saida dedutível","cofins saida dedutível","0.00","sale","0","1","tax_group_cofins"

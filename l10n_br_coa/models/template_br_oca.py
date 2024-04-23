@@ -31,15 +31,27 @@ class AccountChartTemplate(models.AbstractModel):
             },
         }
 
-    @template("br_oca", "account.journal")
-    def _get_br_oca_account_journal(self, template_code):
-        return {}
-
     @template(model="account.tax")
     def _get_account_tax(self, template_code):
         tax_data = super()._get_account_tax(template_code)
         self._set_tax_group_accs(template_code, tax_data)
         return tax_data
+    
+    def _parse_csv(self, template_code, model, module=None):
+        """
+            Override to ensure that it will actually try to load br_oca's CSVs
+            in its module, as the original implementation assume that all used 
+            parent templates CSVs are actually in the child module.
+            We may also merge all l10_br_coa dependent modules in this
+        """
+        res = dict()
+        if "br_oca" in self._get_parent_template(template_code):
+            res = super()._parse_csv(
+                template_code, model, module="l10n_br_coa"
+            )
+        return dict(
+            res, **super()._parse_csv(template_code, model, module=module)
+        )
 
     def _set_tax_group_accs(self, template_code, tax_data):
         group_to_accounts = self._get_tax_group_accounts(template_code)
@@ -79,7 +91,6 @@ class AccountChartTemplate(models.AbstractModel):
                         Command.create({'repartition_type': 'tax'}),
                     ]
                 is_refund = fname == 'refund_repartition_line_ids'
-                group_to_accounts[tax.get("group_account")]
                 for _command, _id, repartition in tax[fname]:
                     repartition['account_id'] = (
                         refund_account_id 
@@ -93,7 +104,7 @@ class AccountChartTemplate(models.AbstractModel):
         """
             Default invoice/refund accounts by tax group
             Data previously populated l10n_br_coa.account.tax.group.account.template 
-            in <v17, when CoA template models was used
+            until v16, when CoA template models was used
 
             [tax_group_id xmlid (pseudo)]: {
                 ded_account_id: xmlid
