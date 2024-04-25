@@ -225,6 +225,8 @@ class AccountMoveLine(models.Model):
         # of the remaining fiscal document lines with their proper aml. That's why we
         # remove the useless fiscal document lines here.
         for line in results:
+            if not line.exclude_from_invoice_tab:
+                line._onchange_price_subtotal()
             if not line.move_id.fiscal_document_id or line.exclude_from_invoice_tab:
                 fiscal_line_to_delete = line.fiscal_document_line_id
                 line.fiscal_document_line_id = False
@@ -318,7 +320,7 @@ class AccountMoveLine(models.Model):
             force_computation=force_computation,
         )
         if not self.exclude_from_invoice_tab and "price_unit" in res:
-            res["price_unit"] = self.price_unit
+            res["price_unit"] = self.price_unit or price_subtotal / quantity
         return res
 
     def _get_price_total_and_subtotal(
