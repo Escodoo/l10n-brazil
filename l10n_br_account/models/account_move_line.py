@@ -224,13 +224,26 @@ class AccountMoveLine(models.Model):
         # the creation of l10n_br_fiscal.document.line as it would mess the association
         # of the remaining fiscal document lines with their proper aml. That's why we
         # remove the useless fiscal document lines here.
+        moves_to_recompute = []
+        recompute_dynamic_lines = False
         for line in results:
             if not line.exclude_from_invoice_tab:
-                line._onchange_price_subtotal()
+                if line.company_id.country_id.code == "BR":
+                    recompute_dynamic_lines = True
+                    moves_to_recompute.append(line.move_id)
+                    line.with_context(
+                        check_move_validity=False
+                    )._onchange_price_subtotal()
             if not line.move_id.fiscal_document_id or line.exclude_from_invoice_tab:
                 fiscal_line_to_delete = line.fiscal_document_line_id
                 line.fiscal_document_line_id = False
                 fiscal_line_to_delete.sudo().unlink()
+        if moves_to_recompute and recompute_dynamic_lines:
+            for move in moves_to_recompute:
+                if move.company_id.country_id.code == "BR":
+                    move.with_context(
+                        check_move_validity=False
+                    )._recompute_dynamic_lines(recompute_all_taxes=True)
 
         return results
 
@@ -320,7 +333,8 @@ class AccountMoveLine(models.Model):
             force_computation=force_computation,
         )
         if not self.exclude_from_invoice_tab and "price_unit" in res:
-            res["price_unit"] = self.price_unit or price_subtotal / quantity
+            res = {}
+
         return res
 
     def _get_price_total_and_subtotal(
