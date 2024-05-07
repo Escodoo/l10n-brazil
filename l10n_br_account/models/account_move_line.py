@@ -356,6 +356,7 @@ class AccountMoveLine(models.Model):
                 icmssn_range=self.icmssn_range_id,
                 icms_origin=self.icms_origin,
                 ind_final=self.ind_final,
+                icms_relief_value=self.icms_relief_value,
             ),
         )._get_price_total_and_subtotal(
             price_unit=price_unit or self.price_unit,
@@ -402,6 +403,7 @@ class AccountMoveLine(models.Model):
         other_value = self.env.context.get("other_value", 0)
         freight_value = self.env.context.get("other_value", 0)
         ii_customhouse_charges = self.env.context.get("ii_customhouse_charges", 0)
+        icms_relief_value = self.env.context.get("icms_relief_value", 0)
 
         # Compute 'price_total'.
         if taxes:
@@ -440,7 +442,11 @@ class AccountMoveLine(models.Model):
             result["price_total"] = taxes_res["total_included"]
 
         result["price_total"] = (
-            result["price_total"] + insurance_value + other_value + freight_value
+            result["price_total"]
+            + insurance_value
+            + other_value
+            + freight_value
+            - icms_relief_value
         )
 
         return result
