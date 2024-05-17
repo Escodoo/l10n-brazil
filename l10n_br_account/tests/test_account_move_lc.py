@@ -135,7 +135,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             {
                 "name": "Simples Remessa com PIS e Cofins Retido",
                 "ind_ie_dest": "1",
-                "cfop_internal_id": cls.env.ref("l10n_br_fiscal.5949").id,
+                "cfop_internal_id": cls.env.ref("l10n_br_fiscal.cfop_5949").id,
                 "cfop_external_id": cls.env.ref("l10n_br_fiscal.cfop_6949").id,
                 "cfop_export_id": cls.env.ref("l10n_br_fiscal.cfop_7949").id,
                 "state": "approved",
