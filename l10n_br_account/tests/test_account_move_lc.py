@@ -239,7 +239,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             document_serie_id=cls.empresa_lc_document_55_serie_1,
             fiscal_operation=cls.env.ref("l10n_br_fiscal.fo_simples_remessa"),
             fiscal_operation_lines=[
-                cls.fo_sale_tax_withholding.fo_simples_remessa_simples_remessa_tax_withholding
+                cls.fo_simples_remessa_simples_remessa_tax_withholding
             ],
         )
 
