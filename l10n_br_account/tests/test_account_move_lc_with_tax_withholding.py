@@ -12,7 +12,7 @@ class AccountMoveLucroPresumidoWithTaxWithholding(AccountMoveBRCommon):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.pis_tax_definition_empresa_lc = cls.env[
+        cls.pis_tax_definition_empresa_lc_tax_withholding = cls.env[
             "l10n_br_fiscal.tax.definition"
         ].create(
             {
@@ -26,7 +26,7 @@ class AccountMoveLucroPresumidoWithTaxWithholding(AccountMoveBRCommon):
             }
         )
 
-        cls.cofins_tax_definition_empresa_lc = cls.env[
+        cls.cofins_tax_definition_empresa_lc_tax_withholding = cls.env[
             "l10n_br_fiscal.tax.definition"
         ].create(
             {
@@ -51,7 +51,7 @@ class AccountMoveLucroPresumidoWithTaxWithholding(AccountMoveBRCommon):
             }
         )
 
-        cls.move_out_venda = cls.init_invoice(
+        cls.move_out_venda_tax_withholding = cls.init_invoice(
             "out_invoice",
             products=[cls.product_a],
             document_type=cls.env.ref("l10n_br_fiscal.document_55"),
@@ -60,7 +60,7 @@ class AccountMoveLucroPresumidoWithTaxWithholding(AccountMoveBRCommon):
             fiscal_operation_lines=[cls.env.ref("l10n_br_fiscal.fo_venda_venda")],
         )
 
-        cls.move_out_simples_remessa = cls.init_invoice(
+        cls.move_out_simples_remessa_tax_withholding = cls.init_invoice(
             "out_invoice",
             products=[cls.product_a],
             document_type=cls.env.ref("l10n_br_fiscal.document_55"),
@@ -72,7 +72,7 @@ class AccountMoveLucroPresumidoWithTaxWithholding(AccountMoveBRCommon):
         )
 
         cls.env.ref("l10n_br_fiscal.fo_compras").deductible_taxes = True
-        cls.move_in_compra_para_revenda = cls.init_invoice(
+        cls.move_in_compra_para_revenda_tax_withholding = cls.init_invoice(
             "in_invoice",
             products=[cls.product_a],
             document_type=cls.env.ref("l10n_br_fiscal.document_55"),
@@ -111,11 +111,11 @@ class AccountMoveLucroPresumidoWithTaxWithholding(AccountMoveBRCommon):
 
     def test_venda_fiscal_lines(self):
         self.assertEqual(
-            self.move_out_venda.invoice_line_ids[0].cfop_id.name,
+            self.move_out_venda_tax_withholding.invoice_line_ids[0].cfop_id.name,
             "Venda de produção do estabelecimento",
         )
 
-    def test_venda(self):
+    def test_venda_tax_withholding(self):
         product_line_vals_1 = {
             "name": self.product_a.name,
             "product_id": self.product_a.id,
@@ -274,7 +274,7 @@ class AccountMoveLucroPresumidoWithTaxWithholding(AccountMoveBRCommon):
         }
 
         self.assertInvoiceValues(
-            self.move_out_venda,
+            self.move_out_venda_tax_withholding,
             [
                 product_line_vals_1,
                 tax_line_vals_cofins,
@@ -286,7 +286,7 @@ class AccountMoveLucroPresumidoWithTaxWithholding(AccountMoveBRCommon):
             move_vals,
         )
 
-    def test_simples_remessa(self):
+    def test_simples_remessa_tax_withholding(self):
         product_line_vals_1 = {
             "name": self.product_a.name,
             "product_id": self.product_a.id,
@@ -445,7 +445,7 @@ class AccountMoveLucroPresumidoWithTaxWithholding(AccountMoveBRCommon):
         }
 
         self.assertInvoiceValues(
-            self.move_out_simples_remessa,
+            self.move_out_simples_remessa_tax_withholding,
             [
                 product_line_vals_1,
                 tax_line_vals_cofins,
@@ -457,9 +457,9 @@ class AccountMoveLucroPresumidoWithTaxWithholding(AccountMoveBRCommon):
             move_vals,
         )
 
-    def test_compra_para_revenda(self):
+    def test_compra_para_revenda_tax_withholding(self):
         """
-        Test move with deductible taxes
+        Test move with deductible taxes and tax withholding
         """
         product_line_vals_1 = {
             "name": self.product_a.name,
@@ -666,7 +666,7 @@ class AccountMoveLucroPresumidoWithTaxWithholding(AccountMoveBRCommon):
         }
 
         self.assertInvoiceValues(
-            self.move_in_compra_para_revenda,
+            self.move_in_compra_para_revenda_tax_withholding,
             [
                 product_line_vals_1,
                 tax_line_vals_cofins,
