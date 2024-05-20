@@ -6,13 +6,28 @@ from odoo import fields
 from odoo.exceptions import UserError
 from odoo.tests.common import tagged
 
+from odoo.addons.account.tests import common
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon
+
+instantiate_accountman_orig = common.instantiate_accountman
+
+def instantiate_accountman(cls):
+    def get_group(xmlid):
+        return cls.env.ref(xmlid, False) or cls.env["res.groups"]
+
+    # Copiado para adicionar grupos da localização necessários
+    instantiate_accountman_orig(cls)
+    cls.user.groups_id |= (
+        get_group("l10n_br_fiscal.group_manager")
+        | get_group("l10n_br_fiscal.group_data_maintenance")
+    )
 
 
 @tagged("post_install", "-at_install")
 class TestPaymentOrderOutboundPIX(AccountTestInvoicingCommon):
     @classmethod
     def setUpClass(cls, chart_template_ref=None):
+        common.instantiate_accountman = instantiate_accountman
         super().setUpClass(chart_template_ref=chart_template_ref)
         cls.env = cls.env(context=dict(cls.env.context, tracking_disable=True))
         cls.company = cls.company_data["company"]
@@ -84,6 +99,10 @@ class TestPaymentOrderOutboundPIX(AccountTestInvoicingCommon):
             ("company_id", "=", cls.company.id),
         ]
         cls.payment_order_model.search(cls.domain).unlink()
+
+    @classmethod
+    def cleanUpClass(cls):
+        common.instantiate_accountman = instantiate_accountman_orig
 
     def test_pix_payment_order(self):
         # Open invoice

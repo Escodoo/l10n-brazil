@@ -38,7 +38,11 @@ class TestPaymentOrder(TransactionCase):
             )
         )
         payment_register.journal_id = self.journal_cash
-        payment_register.payment_method_id = self.payment_method_manual_in
+        self.assertEqual(
+            payment_register.payment_method_line_id.payment_method_id,
+            self.payment_method_manual_in,
+            "Unexpected Payment Method",
+        )
 
         # Perform the partial payment by setting the amount at 300 instead of 500
         payment_register.amount = open_amount

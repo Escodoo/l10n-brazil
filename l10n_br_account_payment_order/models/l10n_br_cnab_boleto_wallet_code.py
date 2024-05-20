@@ -48,11 +48,9 @@ class L10nBrCNABBoletoWalletCode(models.Model):
     @api.depends("bank_ids")
     def _compute_bank_id(self):
         for record in self:
-            record.bank_id = record.bank_ids and record.bank_ids[0] or False
+            record.bank_id = record.bank_ids[:1]
 
     @api.depends("payment_method_ids")
     def _compute_payment_method_id(self):
         for record in self:
-            record.payment_method_id = (
-                record.payment_method_ids and record.payment_method_ids[0] or False
-            )
+            record.payment_method_id = record.payment_method_ids[:1]

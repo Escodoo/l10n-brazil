@@ -1,5 +1,7 @@
 # Copyright (C) 2016-Today - KMEE (<http://kmee.com.br>).
 #  Luis Felipe Miléo - mileo@kmee.com.br
+# Copyright (C) 2024-Today - XippTech (<http://www.xipptech.com.br>).
+# @author Ravi do Valle Luz <raviluz@xipptech.com.br>
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
 
@@ -232,7 +234,7 @@ class AccountPaymentLine(models.Model):
         for line in self:
             line.pix_transfer_type = False
             if line.payment_mode_domain != "pix_transfer":
-                return
+                continue
             if line.partner_pix_id:
                 line.pix_transfer_type = "pix_key"
             elif line.partner_bank_id:
