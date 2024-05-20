@@ -67,7 +67,6 @@ class TestL10nBrAccountPaymentOder(TransactionCase):
             )
         )
         line_create.payment_mode = "same"
-        line_create.move_line_filters_change()
         line_create.populate()
         line_create.create_payment_lines()
         line_created_due = (

@@ -67,6 +67,7 @@ class TestPaymentOrderInbound(TransactionCase):
 
         # Change status of Move to draft just to test
         self.invoice_cef.button_cancel()
+        self.invoice_cef.button_draft()
 
         # TODO v13, o account.move não tem um campo para informar um account_id
         #  isso pode ser um problema na localização?
@@ -162,8 +163,12 @@ class TestPaymentOrderInbound(TransactionCase):
             {
                 "payment_date": Date.context_today(self.env.user),
                 "journal_id": self.journal_cash.id,
-                "payment_method_id": self.payment_method_manual_in.id,
             }
+        )
+        self.assertEqual(
+            register_payments.payment_method_line_id.payment_method_id,
+            self.payment_method_manual_in,
+            "Unexpected Payment Method",
         )
 
         # Caso a Ordem de Pagamento ainda não esteja Confirmada
@@ -200,8 +205,12 @@ class TestPaymentOrderInbound(TransactionCase):
             {
                 "payment_date": Date.context_today(self.env.user),
                 "journal_id": self.journal_cash.id,
-                "payment_method_id": self.payment_method_manual_in.id,
             }
+        )
+        self.assertEqual(
+            register_payments.payment_method_line_id.payment_method_id,
+            self.payment_method_manual_in,
+            "Unexpected Payment Method",
         )
 
         # Erro de ter uma Instrução CNAB Pendente, como não é possivel gerar a
@@ -310,7 +319,11 @@ class TestPaymentOrderInbound(TransactionCase):
             )
         )
         payment_register.journal_id = self.journal_cash
-        payment_register.payment_method_id = self.payment_method_manual_in
+        self.assertEqual(
+            payment_register.payment_method_line_id.payment_method_id,
+            self.payment_method_manual_in,
+            "Unexpected Payment Method",
+        )
 
         # Perform the partial payment by setting the amount at 300 instead of 500
         payment_register.amount = open_amount
@@ -376,7 +389,11 @@ class TestPaymentOrderInbound(TransactionCase):
             )
         )
         payment_register.journal_id = self.journal_cash
-        payment_register.payment_method_id = self.payment_method_manual_in
+        self.assertEqual(
+            payment_register.payment_method_line_id.payment_method_id,
+            self.payment_method_manual_in,
+            "Unexpected Payment Method",
+        )
 
         # Perform the partial payment by setting the amount at 300 instead of 1000
         payment_register.amount = 300
@@ -399,7 +416,11 @@ class TestPaymentOrderInbound(TransactionCase):
             )
         )
         payment_register.journal_id = self.journal_cash
-        payment_register.payment_method_id = self.payment_method_manual_in
+        self.assertEqual(
+            payment_register.payment_method_line_id.payment_method_id,
+            self.payment_method_manual_in,
+            "Unexpected Payment Method",
+        )
 
         # Perform the partial payment by setting the amount at 700 instead of 500
         payment_register.amount = 700

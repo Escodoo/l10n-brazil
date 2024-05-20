@@ -3,6 +3,8 @@
 #  @author Renato Lima - renato.lima@akretion.com.br
 # Copyright (C) 2021-Today - Akretion (<http://www.akretion.com>).
 # @author Magno Costa <magno.costa@akretion.com.br>
+# Copyright (C) 2024-Today - XippTech (<http://www.xipptech.com.br>).
+# @author Ravi do Valle Luz <raviluz@xipptech.com.br>
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
 from odoo import _, api, fields, models
@@ -106,29 +108,25 @@ class AccountPaymentMode(models.Model):
         "group_lines",
     )
     def _check_cnab_restriction(self):
-        for record in self:
+        for rec in self:
             if (
-                record.payment_method_code not in BR_CODES_PAYMENT_ORDER
-                or self.payment_type == "outbound"
+                rec.payment_method_code not in BR_CODES_PAYMENT_ORDER
+                or rec.payment_type == "outbound"
             ):
-                return False
-            fields_forbidden_cnab = []
-            if record.group_lines:
-                fields_forbidden_cnab.append("Group Lines")
-
-            for field in fields_forbidden_cnab:
+                continue
+            if rec.group_lines:
                 raise ValidationError(
                     _(
                         "The Payment Mode can not be used for CNAB with the field"
                         " %s active. \n Please uncheck it to continue."
                     )
-                    % field
+                    % "Group Lines"
                 )
 
             if (
-                self.bank_code_bc == "341"
-                and self.payment_type == "inbound"
-                and not self.boleto_wallet
+                rec.bank_code_bc == "341"
+                and rec.payment_type == "inbound"
+                and not rec.boleto_wallet
             ):
                 raise ValidationError(_("Carteira no banco Itaú é obrigatória"))
 

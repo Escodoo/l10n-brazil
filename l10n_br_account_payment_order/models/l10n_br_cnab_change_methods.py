@@ -160,28 +160,24 @@ class L10nBrCNABChangeMethods(models.Model):
         )
 
     def _cnab_already_start(self):
-        result = False
         # Se existir uma Ordem já gerada, exportada ou concluída
         # significa que o processo desse CNAB já foi iniciado no Banco
-        cnab_already_start = self.payment_line_ids.filtered(
-            lambda t: t.order_id.state in ("generated", "uploaded", "done")
+        return bool(
+            self.payment_line_ids.filtered(
+                lambda t: t.order_id.state in ("generated", "uploaded", "done")
+            )
         )
-        if cnab_already_start:
-            result = True
-        return result
 
     def update_cnab_for_cancel_invoice(self):
-        cnab_already_start = self._cnab_already_start()
-        if cnab_already_start:
+        to_unlink = self.filtered(lambda r: not r._cnab_already_start())
+        for rec in self - to_unlink:
             reason_write_off = (
                 "Movement Instruction Code Updated for Request to Write Off,"
                 " because Invoice %s was Cancel."
-            ) % self.move_id.name
-            payment_situation = "fatura_cancelada"
-            self.create_cnab_write_off(reason_write_off, payment_situation)
-        else:
-            # Processo de CNAB ainda não iniciado a linha será apenas excluida
-            self.payment_line_ids.unlink()
+            ) % rec.move_id.name
+            rec.create_cnab_write_off(reason_write_off, "fatura_cancelada")
+        # Processo de CNAB ainda não iniciado a linha será apenas excluida
+        to_unlink.payment_line_ids.unlink()
 
     def _get_cnab_date_maturity(self, new_date):
         """

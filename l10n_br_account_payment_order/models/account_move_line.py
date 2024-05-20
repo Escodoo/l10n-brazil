@@ -2,6 +2,8 @@
 #  Luis Felipe Miléo - mileo@kmee.com.br
 # Copyright (C) 2021-Today - Akretion (<http://www.akretion.com>).
 # @author Magno Costa <magno.costa@akretion.com.br>
+# Copyright (C) 2024-Today - XippTech (<http://www.xipptech.com.br>).
+# @author Ravi do Valle Luz <raviluz@xipptech.com.br>
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
 from odoo import api, fields, models
@@ -274,40 +276,36 @@ class AccountMoveLine(models.Model):
         for record in self:
             if record.own_number:
                 record.own_number_without_zfill = record.own_number.lstrip("0")
+            else:
+                record.own_number_without_zfill = False
 
     @api.depends("payment_mode_id")
     def _compute_journal_payment_mode(self):
         for record in self:
-            if record.payment_mode_id:
-                # CNAB usa sempre a opção fixed_journal_id
-                if record.payment_mode_id.fixed_journal_id:
-                    record.journal_payment_mode_id = (
-                        record.payment_mode_id.fixed_journal_id.id
-                    )
+            # CNAB usa sempre a opção fixed_journal_id
+            record.journal_payment_mode_id = record.payment_mode_id.fixed_journal_id
 
-    def reconcile(self):
-        res = super().reconcile()
+    def _reconcile_post_hook(self, pre_hook_data):
+        res = super()._reconcile_post_hook(pre_hook_data)
+        # Na importação do arquivo de retorno o metodo também é
+        # chamado no caso do modulo l10n_br_account_payment_brcobranca
+        # o contexto traz o campo 'file_name' que ao ser encontrado
+        # ignora o envio de alterações CNAB, outros modulos precisam
+        # validar isso
+        # Caso de Não Pagamento já está criando um Pedido de Baixa
+        if self._context.get("file_name") or self._context.get("not_payment"):
+            return res
         for record in self:
             # Verificar Casos de CNAB
             if (
                 record.payment_mode_id.payment_method_code in BR_CODES_PAYMENT_ORDER
                 and record.payment_mode_id.payment_method_id.payment_type == "inbound"
             ):
-                # Na importação do arquivo de retorno o metodo também é
-                # chamado no caso do modulo l10n_br_account_payment_brcobranca
-                # o contexto traz o campo 'file_name' que ao ser encontrado
-                # ignora o envio de alterações CNAB, outros modulos precisam
-                # validar isso
-                # Caso de Não Pagamento já está criando um Pedido de Baixa
-                if self.env.context.get("file_name") or self.env.context.get(
-                    "not_payment"
+                for line in record.matched_credit_ids.filtered(
+                    lambda r: not r.already_send_cnab
                 ):
-                    continue
-                if record.matched_credit_ids:
-                    for line in record.matched_credit_ids:
-                        if not line.already_send_cnab:
-                            record.create_payment_outside_cnab(line.amount)
-                            line.already_send_cnab = True
+                    record.create_payment_outside_cnab(line.amount)
+                    line.already_send_cnab = True
 
         return res
 

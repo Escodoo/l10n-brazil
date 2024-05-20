@@ -1,6 +1,8 @@
 # © 2019 KMEE INFORMATICA LTDA
 # Copyright (C) 2021-Today - Akretion (<http://www.akretion.com>).
 # @author Magno Costa <magno.costa@akretion.com.br>
+# Copyright (C) 2024-Today - XippTech (<http://www.xipptech.com.br>).
+# @author Ravi do Valle Luz <raviluz@xipptech.com.br>
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
 from odoo import fields, models
@@ -68,12 +70,11 @@ class AccountMove(models.Model):
         return self._target_new_tab(self.file_boleto_pdf_id)
 
     def button_cancel(self):
-        for record in self:
-            if record.payment_mode_id.payment_method_code in BR_CODES_PAYMENT_ORDER:
-                for line in record.line_ids:
-                    # Verificar a situação do CNAB para apenas apagar
-                    # a linha ou mandar uma solicitação de Baixa
-                    line.update_cnab_for_cancel_invoice()
+        # Verificar a situação do CNAB para apenas apagar
+        # a linha ou mandar uma solicitação de Baixa
+        self.filtered(
+            lambda r: r.payment_mode_id.payment_method_code in BR_CODES_PAYMENT_ORDER
+        ).line_ids.update_cnab_for_cancel_invoice()
 
         return super().button_cancel()
 
@@ -84,7 +85,7 @@ class AccountMove(models.Model):
         retornamos o name do invoice/account.move do core.
         """
         self.ensure_one()
-        if hasattr(self, "document_number") and self.document_number:
+        if "document_number" in self._fields and self.document_number:
             return self.document_number
         return self.name
 
@@ -155,8 +156,6 @@ class AccountMove(models.Model):
 
         if cnab_already_start:
             # Solicitar a Baixa do CNAB
-            invoice = self.env["account.move"].search([("move_id", "=", self.id)])
-            for l_aml in invoice.mapped("financial_move_line_ids"):
-                l_aml.update_cnab_for_cancel_invoice()
+            self.financial_move_line_ids.update_cnab_for_cancel_invoice()
 
         return super().unlink()
