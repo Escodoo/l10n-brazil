@@ -33,7 +33,7 @@
                             <field
                                 name="name"
                                 class="oe_inline"
-                                attrs="{'invisible': [('name', '=', True)]}"
+                                invisible="name"
                             />
                         </h1>
                     </div>
@@ -44,7 +44,7 @@
                             name="web_ribbon"
                             title="Archived"
                             bg_color="bg-danger"
-                            attrs="{'invisible': [('active', '=', True)]}"
+                            invisible="active"
                         />
 
                     </div>
@@ -63,7 +63,7 @@
                     </group>
                     <group
                         string="Certificate Infos"
-                        attrs="{'invisible': [('file', '=', False)]}"
+                        invisible="not file"
                     >
                         <group>
                             <field name="issuer_name" readonly="1" />

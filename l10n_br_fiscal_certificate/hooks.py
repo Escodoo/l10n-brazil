@@ -12,8 +12,7 @@ from .constants import CERTIFICATE_TYPE_ECNPJ, CERTIFICATE_TYPE_NFE
 _logger = logging.getLogger(__name__)
 
 
-def post_init_hook(cr, registry):
-    env = api.Environment(cr, SUPERUSER_ID, {})
+def post_init_hook(env):
 
     def prepare_fake_certificate_vals(
         valid=True,
@@ -51,6 +50,7 @@ def post_init_hook(cr, registry):
                     prepare_fake_certificate_vals(cert_type=CERTIFICATE_TYPE_ECNPJ)
                 )
         except NameError:  # (means from erpbrasil.assinatura import misc failed)
+            raise
             _logger.error(
                 _(
                     "Python Library erpbrasil.assinatura not installed!"
