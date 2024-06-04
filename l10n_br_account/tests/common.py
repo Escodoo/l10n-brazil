@@ -64,6 +64,7 @@ class AccountMoveBRCommon(AccountTestInvoicingCommon):
 
         cls.product_b.write(
             {
+                "default_code": "prod_b",
                 "lst_price": 1000.0,
                 "ncm_id": cls.env.ref("l10n_br_fiscal.ncm_94013090").id,
                 "fiscal_genre_id": cls.env.ref("l10n_br_fiscal.product_genre_94").id,
@@ -143,6 +144,119 @@ class AccountMoveBRCommon(AccountTestInvoicingCommon):
             }
         )
 
+        cls.fo_sale_with_icms_reduction = cls.env[
+            "l10n_br_fiscal.operation.line"
+        ].create(
+            {
+                "name": "Venda com ICMS 12 e Redução de 26,57",
+                "ind_ie_dest": "1",
+                "cfop_internal_id": cls.env.ref("l10n_br_fiscal.cfop_5101").id,
+                "cfop_external_id": cls.env.ref("l10n_br_fiscal.cfop_6101").id,
+                "cfop_export_id": cls.env.ref("l10n_br_fiscal.cfop_7101").id,
+                "state": "approved",
+                "product_type": "04",
+                "fiscal_operation_id": cls.env.ref("l10n_br_fiscal.fo_venda").id,
+            }
+        )
+
+        cls.pis_tax_definition_empresa_lc = cls.env[
+            "l10n_br_fiscal.tax.definition"
+        ].create(
+            {
+                "company_id": cls.company_data["company"].id,
+                "tax_group_id": cls.env.ref("l10n_br_fiscal.tax_group_pis").id,
+                "is_taxed": True,
+                "is_debit_credit": True,
+                "custom_tax": True,
+                "tax_id": cls.env.ref("l10n_br_fiscal.tax_pis_0_65").id,
+                "cst_id": cls.env.ref("l10n_br_fiscal.cst_pis_01").id,
+                "state": "approved",
+            }
+        )
+
+        cls.cofins_tax_definition_empresa_lc = cls.env[
+            "l10n_br_fiscal.tax.definition"
+        ].create(
+            {
+                "company_id": cls.company_data["company"].id,
+                "tax_group_id": cls.env.ref("l10n_br_fiscal.tax_group_cofins").id,
+                "is_taxed": True,
+                "is_debit_credit": True,
+                "custom_tax": True,
+                "tax_id": cls.env.ref("l10n_br_fiscal.tax_cofins_3").id,
+                "cst_id": cls.env.ref("l10n_br_fiscal.cst_cofins_01").id,
+                "state": "approved",
+            }
+        )
+
+        cls.icms_tax_definition_empresa_lc_icms_reduction = cls.env[
+            "l10n_br_fiscal.tax.definition"
+        ].create(
+            {
+                "company_id": cls.company_data["company"].id,
+                "tax_group_id": cls.env.ref("l10n_br_fiscal.tax_group_icms").id,
+                "is_taxed": True,
+                "is_debit_credit": True,
+                "custom_tax": True,
+                "tax_id": cls.env.ref("l10n_br_fiscal.tax_icms_12_red_26_57").id,
+                "cst_id": cls.env.ref("l10n_br_fiscal.cst_icms_20").id,
+                "state": "approved",
+                "fiscal_operation_line_id": cls.fo_sale_with_icms_reduction.id,
+            }
+        )
+
+        # Tax Definition for PIS and COFINS Withholding
+        cls.pis_wh_tax_definition_empresa_lc = cls.env[
+            "l10n_br_fiscal.tax.definition"
+        ].create(
+            {
+                "company_id": cls.company_data["company"].id,
+                "tax_group_id": cls.env.ref("l10n_br_fiscal.tax_group_pis_wh").id,
+                "is_taxed": True,
+                "is_debit_credit": True,
+                "custom_tax": True,
+                "tax_id": cls.env.ref("l10n_br_fiscal.tax_pis_wh_0_65").id,
+                "state": "expired",
+            }
+        )
+
+        cls.cofins_wh_tax_definition_empresa_lc = cls.env[
+            "l10n_br_fiscal.tax.definition"
+        ].create(
+            {
+                "company_id": cls.company_data["company"].id,
+                "tax_group_id": cls.env.ref("l10n_br_fiscal.tax_group_cofins_wh").id,
+                "is_taxed": True,
+                "is_debit_credit": True,
+                "custom_tax": True,
+                "tax_id": cls.env.ref("l10n_br_fiscal.tax_cofins_wh_3").id,
+                "state": "expired",
+            }
+        )
+
+        cls.empresa_lc_document_55_serie_1 = cls.env[
+            "l10n_br_fiscal.document.serie"
+        ].create(
+            {
+                "code": "1",
+                "name": "Série 1",
+                "document_type_id": cls.env.ref("l10n_br_fiscal.document_55").id,
+                "active": True,
+            }
+        )
+
+        cls.payment_mode = cls.env["account.payment.mode"].create(
+            {
+                "name": "Money",
+                "company_id": cls.company_data["company"].id,
+                "payment_method_id": cls.env.ref(
+                    "account.account_payment_method_manual_in"
+                ).id,
+                "fiscal_payment_mode": "18",
+                "bank_account_link": "variable",
+            }
+        )
+
     @classmethod
     def setup_company_data(cls, company_name, chart_template=None, **kwargs):
         """
@@ -164,6 +278,7 @@ class AccountMoveBRCommon(AccountTestInvoicingCommon):
             chart_template,
             country_id=cls.env.ref("base.br").id,
             currency_id=cls.env.ref("base.BRL").id,
+            processador_edoc="oca",
             **kwargs
         )
 
@@ -184,6 +299,7 @@ class AccountMoveBRCommon(AccountTestInvoicingCommon):
         fiscal_operation_lines=None,
         document_serie=None,
         document_number=None,
+        payment_mode=None,
     ):
         """
         We could not override the super one because we need to inject extra BR fiscal fields.
@@ -200,6 +316,7 @@ class AccountMoveBRCommon(AccountTestInvoicingCommon):
         move_form.date = move_form.invoice_date
         move_form.partner_id = partner or cls.partner_a
         move_form.currency_id = currency if currency else cls.company_data["currency"]
+        move_form.payment_mode_id = payment_mode if payment_mode else cls.payment_mode
 
         # extra BR fiscal params:
         move_form.document_type_id = document_type
