@@ -19,15 +19,12 @@ class CNABStructure(models.Model):
         "An structure with header, body and trailer that make up the CNAB structure."
     )
 
-    name = fields.Char(readonly=True, states={"draft": [("readonly", False)]})
+    name = fields.Char()
 
-    bank_id = fields.Many2one(
-        comodel_name="res.bank", readonly=True, states={"draft": [("readonly", False)]}
-    )
+    bank_id = fields.Many2one(comodel_name="res.bank")
 
     payment_method_id = fields.Many2one(
         comodel_name="account.payment.method",
-        states={"draft": [("readonly", False)]},
         domain=[("code", "in", CNAB_CODES)],
     )
 
@@ -42,15 +39,11 @@ class CNABStructure(models.Model):
     batch_ids = fields.One2many(
         comodel_name="l10n_br_cnab.batch",
         inverse_name="cnab_structure_id",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     line_ids = fields.One2many(
         comodel_name="l10n_br_cnab.line",
         inverse_name="cnab_structure_id",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     state = fields.Selection(
@@ -68,141 +61,99 @@ class CNABStructure(models.Model):
 
     conf_bank_start_pos = fields.Integer(
         string="Bank Start Position",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     conf_bank_end_pos = fields.Integer(
         string="Bank Last Position",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     conf_record_type_start_pos = fields.Integer(
         string="Record Type Start Position",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     conf_record_type_end_pos = fields.Integer(
         string="Record Type Last Position",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     conf_batch_start_pos = fields.Integer(
         string="Batch Start Position",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     conf_batch_end_pos = fields.Integer(
         string="Batch Last Position",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     conf_payment_way_start_pos = fields.Integer(
         string="Payment Way start position in Header Batch Records."
         " Only for Header Batch Records.",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     conf_payment_way_end_pos = fields.Integer(
         string="Payment Way last position in Header Batch Records."
         " Only for Header Batch Records.",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     conf_detail_start_pos = fields.Integer(
         string="Position of sequencial identification of Detail Records."
         " Only for detail records.",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     conf_detail_end_pos = fields.Integer(
         string="Last position of sequencial identification of Detail Records."
         " Only for detail records.",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     conf_segment_start_pos = fields.Integer(
         string="Start position of segment of an detail record. Only for detail records.",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     conf_segment_end_pos = fields.Integer(
         string="Last position of segment of an detail record. Only for detail records.",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     record_type_file_header_id = fields.Integer(
         string="File Header Type ID",
         help="What`s the identification for header of file type?",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     record_type_file_trailer_id = fields.Integer(
         string="File Trailer Type ID",
         help="What`s the identification for trailer of file type?",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     record_type_batch_header_id = fields.Integer(
         string="Batch Header Type ID",
         help="What`s the identification for header of batch type?",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     record_type_batch_trailer_id = fields.Integer(
         string="Batch Trailer Type ID",
         help="What`s the identification for trailer of batch type?",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     record_type_detail_id = fields.Integer(
         string="Detail Type ID",
         help="What`s the identification for detail type?",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     cnab_payment_way_ids = fields.One2many(
         comodel_name="cnab.payment.way",
         inverse_name="cnab_structure_id",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     cnab_pix_key_type_ids = fields.One2many(
         comodel_name="cnab.pix.key.type",
         inverse_name="cnab_structure_id",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     cnab_pix_transfer_type_ids = fields.One2many(
         comodel_name="cnab.pix.transfer.type",
         inverse_name="cnab_structure_id",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     cnab_occurrence_ids = fields.One2many(
         comodel_name="cnab.occurrence",
         inverse_name="cnab_structure_id",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     @api.onchange("cnab_format", "payment_type")
@@ -338,13 +289,12 @@ class CNABStructure(models.Model):
             [("model", "=", "account.payment.order")]
         )
 
-    def unlink(self):
-        lines = self.filtered(lambda line: line.state != "draft")
-        if lines:
+    @api.ondelete(at_uninstall=False)
+    def _unlink_draft_only(self):
+        if self.filtered(lambda line: line.state != "draft"):
             raise UserError(
                 _("You cannot delete an CNAB Structure which is not draft !")
             )
-        return super().unlink()
 
     def action_review(self):
         self.check_structure()

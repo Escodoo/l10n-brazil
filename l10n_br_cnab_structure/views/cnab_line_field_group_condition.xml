@@ -15,7 +15,7 @@
                 <field name="json_value" />
                 <field name="cnab_group_id" />
                 <field name="cnab_line_id" />
-                <field name="state" invisible="True" />
+                <field name="state" column_invisible="True" />
             </tree>
         </field>
     </record>
@@ -28,11 +28,10 @@
                 </header>
                 <sheet>
                     <group>
-                        <field name="state" invisible="True" />
-                        <field name="field_id" />
-                        <field name="operator" />
-                        <field name="json_value" />
-                        <field name="cnab_group_id" />
+                        <field name="field_id" readonly="state != 'draft'" />
+                        <field name="operator" readonly="state != 'draft'" />
+                        <field name="json_value" readonly="state != 'draft'" />
+                        <field name="cnab_group_id" readonly="state != 'draft'" />
                         <field name="cnab_line_id" />
                 </group>
                 </sheet>

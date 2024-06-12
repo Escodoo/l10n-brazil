@@ -16,13 +16,30 @@ from odoo.addons.account.tests.common import AccountTestInvoicingCommon
 def replace_chars(string, index, replacement):
     return string[:index] + replacement + string[index + len(replacement) :]
 
+from odoo.addons.account.tests import common
+
+instantiate_accountman_orig = common.instantiate_accountman
+
+def instantiate_accountman(cls):
+    def get_group(xmlid):
+        return cls.env.ref(xmlid, False) or cls.env["res.groups"]
+
+    # Copiado para adicionar grupos da localização necessários
+    instantiate_accountman_orig(cls)
+    cls.user.groups_id |= (
+        get_group("l10n_br_fiscal.group_manager")
+        | get_group("l10n_br_fiscal.group_data_maintenance")
+        | get_group("analytic.group_analytic_accounting")
+    )
+
 
 @tagged("post_install", "-at_install")
 class TestCNABStructure(AccountTestInvoicingCommon):
     @classmethod
     def setUpClass(
-        cls, chart_template_ref="l10n_br_coa_generic.l10n_br_coa_generic_template"
+        cls, chart_template_ref="br_oca_generic"
     ):
+        common.instantiate_accountman = instantiate_accountman
         super().setUpClass(chart_template_ref=chart_template_ref)
         cls.env = cls.env(context=dict(cls.env.context, tracking_disable=True))
         cls.company = cls.company_data["company"]
@@ -190,6 +207,10 @@ class TestCNABStructure(AccountTestInvoicingCommon):
         return payment_order_id
 
     def _create_valid_cnab_structure(self):
+        def set_field_ignoring_modifiers(form, field, value):
+            form._values[field] = value
+            form._perform_onchange(field)
+
         cnab_structure_form = Form(self.env["l10n_br_cnab.structure"])
         cnab_structure_form.payment_method_id = self.env.ref(
             "l10n_br_account_payment_order.payment_mode_type_cnab240_out"
@@ -204,13 +225,16 @@ class TestCNABStructure(AccountTestInvoicingCommon):
                 field_form.start_pos = 1
                 field_form.end_pos = 240
         # BATCH
-        with cnab_structure_form.batch_ids.new() as batch_form:
-            batch_form.name = "Test Batch 1"
         cnab_structure = cnab_structure_form.save()
+        cnab_structure.batch_ids = cnab_structure.batch_ids.create({
+            "name": "Test Batch 1",
+        })
 
         # BATCH HEADER
         line_form = Form(self.env["l10n_br_cnab.line"])
-        line_form.cnab_structure_id = cnab_structure
+        set_field_ignoring_modifiers(
+            line_form, "cnab_structure_id", cnab_structure.id
+        )
         line_form.batch_id = cnab_structure.batch_ids[0]
         line_form.type = "header"
         line_form.communication_flow = "both"
@@ -221,7 +245,9 @@ class TestCNABStructure(AccountTestInvoicingCommon):
 
         # BATCH SEGMENT
         line_form = Form(self.env["l10n_br_cnab.line"])
-        line_form.cnab_structure_id = cnab_structure
+        set_field_ignoring_modifiers(
+            line_form, "cnab_structure_id", cnab_structure.id
+        )
         line_form.batch_id = cnab_structure.batch_ids[0]
         line_form.type = "segment"
         line_form.segment_code = "X"
@@ -233,7 +259,9 @@ class TestCNABStructure(AccountTestInvoicingCommon):
 
         # BATCH TRAILER
         line_form = Form(self.env["l10n_br_cnab.line"])
-        line_form.cnab_structure_id = cnab_structure
+        set_field_ignoring_modifiers(
+            line_form, "cnab_structure_id", cnab_structure.id
+        )
         line_form.batch_id = cnab_structure.batch_ids[0]
         line_form.type = "trailer"
         line_form.communication_flow = "both"
@@ -244,7 +272,9 @@ class TestCNABStructure(AccountTestInvoicingCommon):
 
         # FILE TRAILER
         line_form = Form(self.env["l10n_br_cnab.line"])
-        line_form.cnab_structure_id = cnab_structure
+        set_field_ignoring_modifiers(
+            line_form, "cnab_structure_id", cnab_structure.id
+        )
         line_form.type = "trailer"
         line_form.communication_flow = "both"
         with line_form.field_ids.new() as field_form:

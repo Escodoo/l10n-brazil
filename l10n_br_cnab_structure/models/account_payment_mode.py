@@ -27,6 +27,7 @@ class AccountPaymentMode(models.Model):
 
     @api.model
     def _selection_cnab_processor(self):
-        selection = super()._selection_cnab_processor()
-        selection.append(("oca_processor", "OCA Processor"))
-        return selection
+        return (
+            super()._selection_cnab_processor() 
+            + [("oca_processor", "OCA Processor")]
+        )

@@ -3,7 +3,7 @@
 # @author Felipe Motter Pereira <felipe@engenere.one>
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 from ..cnab.cnab import CnabBatch, CnabDetailRecord, RecordType
@@ -13,13 +13,11 @@ class CNABBatch(models.Model):
     _name = "l10n_br_cnab.batch"
     _description = "A batch of lines in a CNAB structure."
 
-    name = fields.Char(readonly=True, states={"draft": [("readonly", False)]})
+    name = fields.Char()
 
     cnab_structure_id = fields.Many2one(
         help="Only structures with code equal to 240 is allowed.",
         comodel_name="l10n_br_cnab.structure",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
         domain="[('cnab_format', '=', '240')]",
     )
 
@@ -27,8 +25,6 @@ class CNABBatch(models.Model):
         help="Only structures with code equal to 240 is allowed.",
         comodel_name="l10n_br_cnab.line",
         inverse_name="batch_id",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
         domain="[('cnab_format', '=', '240')]",
     )
 
@@ -38,8 +34,6 @@ class CNABBatch(models.Model):
         inverse_name="batch_id",
         help="Payments ways that use the structure of this batch.",
         domain="[('cnab_structure_id', '=', cnab_structure_id)]",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     state = fields.Selection(
@@ -102,11 +96,10 @@ class CNABBatch(models.Model):
         )
         return batch
 
-    def unlink(self):
-        lines = self.filtered(lambda line: line.state != "draft")
-        if lines:
+    @api.ondelete(at_uninstall=False)
+    def _unlink_draft_only(self):
+        if self.filtered(lambda line: line.state != "draft"):
             raise UserError(_("You cannot delete an CNAB Batch which is not draft !"))
-        return super().unlink()
 
     def check_batch(self):
         if self.cnab_structure_id.cnab_format != "240":

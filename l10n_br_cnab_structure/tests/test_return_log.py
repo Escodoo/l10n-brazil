@@ -9,13 +9,30 @@ from odoo.tests.common import tagged
 
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon
 
+from odoo.addons.account.tests import common
+
+instantiate_accountman_orig = common.instantiate_accountman
+
+def instantiate_accountman(cls):
+    def get_group(xmlid):
+        return cls.env.ref(xmlid, False) or cls.env["res.groups"]
+
+    # Copiado para adicionar grupos da localização necessários
+    instantiate_accountman_orig(cls)
+    cls.user.groups_id |= (
+        get_group("l10n_br_fiscal.group_manager")
+        | get_group("l10n_br_fiscal.group_data_maintenance")
+        | get_group("analytic.group_analytic_accounting")
+    )
+
 
 @tagged("post_install", "-at_install")
 class TestReturnLog(AccountTestInvoicingCommon):
     @classmethod
     def setUpClass(
-        cls, chart_template_ref="l10n_br_coa_generic.l10n_br_coa_generic_template"
+        cls, chart_template_ref="br_oca_generic"
     ):
+        common.instantiate_accountman = instantiate_accountman
         super().setUpClass(chart_template_ref=chart_template_ref)
         cls.event_obj = cls.env["l10n_br_cnab.return.event"]
         cls.return_log_obj = cls.env["l10n_br_cnab.return.log"]
@@ -29,7 +46,7 @@ class TestReturnLog(AccountTestInvoicingCommon):
                 "company_id": cls.company.id,
                 "code": "TEST1",
                 "name": "Rebate Account",
-                "user_type_id": cls.env.ref("account.data_account_type_expenses").id,
+                "account_type": "expense",
                 "reconcile": False,
             }
         )
@@ -38,7 +55,7 @@ class TestReturnLog(AccountTestInvoicingCommon):
                 "company_id": cls.company.id,
                 "code": "TEST2",
                 "name": "Discount Account",
-                "user_type_id": cls.env.ref("account.data_account_type_expenses").id,
+                "account_type": "expense",
                 "reconcile": False,
             }
         )
@@ -47,7 +64,7 @@ class TestReturnLog(AccountTestInvoicingCommon):
                 "company_id": cls.company.id,
                 "code": "TEST3",
                 "name": "Tariff Account",
-                "user_type_id": cls.env.ref("account.data_account_type_expenses").id,
+                "account_type": "expense",
                 "reconcile": False,
             }
         )
@@ -104,7 +121,7 @@ class TestReturnLog(AccountTestInvoicingCommon):
             }
         )
         move_line_ids = self.invoice.line_ids.filtered(
-            lambda line: line.account_internal_type == "receivable"
+            lambda line: line.account_type == "asset_receivable"
         )
         event = self.event_obj.create(
             {
@@ -121,14 +138,16 @@ class TestReturnLog(AccountTestInvoicingCommon):
         )
         event.confirm_event()
         receivable_moves = event.generated_move_id.line_ids.filtered(
-            lambda line: line.account_internal_type == "receivable"
+            lambda line: line.account_type == "asset_receivable"
         )
         bank_moves = event.generated_move_id.line_ids.filtered(
             lambda line: line.account_id
             in (
-                self.bank_journal_itau.default_account_id,
-                self.bank_journal_itau.payment_debit_account_id,
-                self.bank_journal_itau.payment_credit_account_id,
+                self.bank_journal_itau.default_account_id |
+                self.bank_journal_itau.company_id.account_journal_payment_debit_account_id |
+                self.bank_journal_itau.company_id.account_journal_payment_credit_account_id |
+                self.bank_journal_itau.inbound_payment_method_line_ids.payment_account_id |
+                self.bank_journal_itau.outbound_payment_method_line_ids.payment_account_id
             )
         )
         rebate_moves = event.generated_move_id.line_ids.filtered(

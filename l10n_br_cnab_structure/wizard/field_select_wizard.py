@@ -40,15 +40,16 @@ class FieldSelectWizard(models.TransientModel):
 
     @api.depends("model_id", "notation_field")
     def _compute_parent_model_id(self):
-        model = self.model_id
-        if self.notation_field:
-            dn_fields = self.notation_field.split(".")
-            for fld in dn_fields:
-                field_id = self.env["ir.model.fields"].search(
-                    [("model_id", "=", model.id), ("name", "=", fld)]
-                )
-                model = self.env["ir.model"].search([("model", "=", field_id.relation)])
-        self.parent_model_id = model
+        for rec in self:
+            model = rec.model_id
+            if rec.notation_field:
+                dn_fields = rec.notation_field.split(".")
+                for fld in dn_fields:
+                    field_id = self.env["ir.model.fields"].search(
+                        [("model_id", "=", model.id), ("name", "=", fld)]
+                    )
+                    model = self.env["ir.model"].search([("model", "=", field_id.relation)])
+            rec.parent_model_id = model
 
     def _update_dot_notation(self):
         if self.new_field_id:
@@ -91,7 +92,8 @@ class FieldSelectWizard(models.TransientModel):
 
     @api.depends("notation_field")
     def _compute_notation_field_view(self):
-        self.notation_field_view = self.notation_field.replace(".", "→")
+        for rec in self:
+            rec.notation_field_view = rec.notation_field.replace(".", "→")
 
     def action_add_field(self):
         "Action Add Field"

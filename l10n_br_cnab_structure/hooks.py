@@ -5,7 +5,7 @@ from odoo import _, tools
 _logger = logging.getLogger(__name__)
 
 
-def post_init_hook(cr, registry):
+def post_init_hook(env):
     """Import XML data to change core data"""
 
     files = [
@@ -25,7 +25,7 @@ def post_init_hook(cr, registry):
 
     for file in files:
         tools.convert_file(
-            cr,
+            env,
             "l10n_br_cnab_structure",
             file,
             None,
@@ -34,6 +34,7 @@ def post_init_hook(cr, registry):
             kind="init",
         )
 
+    cr = env.cr
     cr.execute("select demo from ir_module_module where name='l10n_br_cnab_structure';")
     if cr.fetchone()[0]:
         demofiles = [
@@ -48,7 +49,7 @@ def post_init_hook(cr, registry):
 
         for file in demofiles:
             tools.convert_file(
-                cr,
+                env,
                 "l10n_br_cnab_structure",
                 file,
                 None,

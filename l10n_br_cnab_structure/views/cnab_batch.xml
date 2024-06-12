@@ -11,9 +11,9 @@
         <field name="model">l10n_br_cnab.batch</field>
         <field name="arch" type="xml">
             <tree>
-                <field name="state" invisible="True" />
-                <field name="name" />
-                <field name="cnab_structure_id" />
+                <field name="state" column_invisible="True" />
+                <field name="name" readonly="state != 'draft'" />
+                <field name="cnab_structure_id" readonly="state != 'draft'" />
             </tree>
         </field>
     </record>
@@ -30,10 +30,10 @@
                 <sheet>
                     <group>
                         <group>
-                            <field name="name" />
+                            <field name="name" readonly="state != 'draft'" />
                         </group>
                         <group>
-                            <field name="cnab_structure_id" />
+                            <field name="cnab_structure_id" readonly="state != 'draft'" />
 
                         </group>
                     </group>
@@ -43,21 +43,23 @@
                                 name="line_ids"
                                 mode='tree'
                                 widget='one2many'
+                                readonly="state != 'draft'"
                                 context="{'default_batch_id': id,'default_cnab_structure_id': cnab_structure_id}"
                             >
                                 <tree default_order="sequence">
-                                    <field name="state" invisible="True" />
-                                    <field name="sequence" widget="handle" />
-                                    <field name="type" />
+                                    <field name="state" column_invisible="True" />
+                                    <field name="sequence" widget="handle" readonly="state != 'draft'" />
+                                    <field name="type" readonly="state != 'draft'" />
                                     <field name="name" />
-                                    <field name="cnab_structure_id" invisible="1" />
-                                    <field name="batch_id" invisible="1" />
+                                    <field name="cnab_structure_id" column_invisible="1" />
+                                    <field name="batch_id" column_invisible="1" />
                                 </tree>
                             </field>
                         </page>
                         <page name="pay_ways" string="Payments Ways">
                             <field
                                 name="cnab_payment_way_ids"
+                                readonly="state != 'draft'"
                                 widget="many2many"
                                 options="{'no_create': True}"
                             />

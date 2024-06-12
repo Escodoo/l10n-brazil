@@ -25,28 +25,23 @@ class CNABFieldGroup(models.Model):
             res["cnab_line_id"] = self._context.get("default_cnab_line_id")
         return res
 
-    name = fields.Char(states={"draft": [("readonly", False)]})
+    name = fields.Char()
 
     cnab_line_id = fields.Many2one(
         "l10n_br_cnab.line",
         ondelete="cascade",
         required=True,
-        states={"draft": [("readonly", False)]},
     )
 
     field_ids = fields.One2many(
         comodel_name="l10n_br_cnab.line.field",
         inverse_name="cnab_group_id",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
         domain="[('cnab_line_id', '=', cnab_line_id)]",
     )
 
     condition_ids = fields.One2many(
         comodel_name="cnab.line.group.field.condition",
         inverse_name="cnab_group_id",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     state = fields.Selection(

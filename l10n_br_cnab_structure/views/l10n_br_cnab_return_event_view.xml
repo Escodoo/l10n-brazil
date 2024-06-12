@@ -12,7 +12,7 @@
         <field name="arch" type="xml">
             <form
                 edit="false"
-                attrs="{'invisible': [('cnab_structure_id', '=', False)]}"
+                invisible="not cnab_structure_id"
             >
                 <header>
                     <button
@@ -22,7 +22,7 @@
                         string="Ignore This Event"
                         confirm="Do you want to ignore this event?"
                         help="Any automatic move this event might generate will be ignored. If so, you will need to handle it manually."
-                        attrs="{'invisible': [('state', '!=', 'error')]}"
+                        invisible="state != 'error'"
                     />
                     <field name="state" widget="statusbar" />
                 </header>

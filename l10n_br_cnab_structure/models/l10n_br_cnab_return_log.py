@@ -3,7 +3,7 @@
 # @author Felipe Motter Pereira <felipe@engenere.one>
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 
@@ -59,9 +59,9 @@ class L10nBrCNABReturnLog(models.Model):
         for event in self.event_ids:
             event.confirm_event()
         self.state = "confirmed"
-
-    def unlink(self):
+    
+    @api.ondelete(at_uninstall=False)
+    def _unlink_except_confirmed(self):
         for return_log in self:
             if return_log.state == "confirmed":
                 raise UserError(_("You cannot delete Return Log in confirmed state."))
-        return super().unlink()

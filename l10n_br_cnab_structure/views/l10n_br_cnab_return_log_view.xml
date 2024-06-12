@@ -36,7 +36,7 @@
                         type="object"
                         class="oe_highlight"
                         string="Confirm"
-                        attrs="{'invisible': [('state', '=', 'confirmed')]}"
+                        invisible="state == 'confirmed'"
                         groups="l10n_br_account_payment_order.group_cnab_manager"
                     />
                     <field name="state" widget="statusbar" readonly="1" />

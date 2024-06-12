@@ -9,8 +9,8 @@
     <!-- Diario Itau -->
     <record id="l10n_br_account_payment_order.itau_journal" model="account.journal">
         <field
-            name="outbound_payment_method_ids"
-            eval="[(6,0,[ref('l10n_br_account_payment_order.payment_mode_type_cnab240_out')])]"
+            name="outbound_payment_method_line_ids"
+            eval="[Command.clear(), Command.create({'payment_method_id': ref('l10n_br_account_payment_order.payment_mode_type_cnab240_out')})]"
         />
         <field name="used_to_import_cnab">True</field>
         <field name="default_outbound_cnab_processor">oca_processor</field>

@@ -88,25 +88,26 @@ class CNABReturnEvent(models.Model):
             else:
                 record.balance = 0
 
-    @api.model
-    def create(self, vals):
+    @api.model_create_multi
+    def create(self, vals_list):
         """Override Create Method"""
-        event = super().create(vals)
-        if not event.cnab_return_log_id.cnab_structure_id:
-            # if there is no cnab_structure_id it is because the return file is not being
-            # processed by this module, so there is nothing to do here.
-            return event
-        event.load_description_occurrences()
-        event.load_bank_payment_line()
-        event.check_gen_liquidation_move()
-        event.set_move_line_ids()
-        event.set_occurrence_date()
-        if event.state != "error":
-            if event.gen_liquidation_move or event.tariff_charge > 0:
-                event.state = "ready"
-            else:
-                event.state = "confirmed"
-        return event
+        events = super().create(vals_list)
+        for event in events:
+            if not event.cnab_return_log_id.cnab_structure_id:
+                # if there is no cnab_structure_id it is because the return file 
+                # is not being processed by this module, so there is nothing to do here.
+                continue
+            event.load_description_occurrences()
+            event.load_bank_payment_line()
+            event.check_gen_liquidation_move()
+            event.set_move_line_ids()
+            event.set_occurrence_date()
+            if event.state != "error":
+                if event.gen_liquidation_move or event.tariff_charge > 0:
+                    event.state = "ready"
+                else:
+                    event.state = "confirmed"
+        return events
 
     def confirm_event(self):
         if self.state != "ignored":
@@ -254,19 +255,36 @@ class CNABReturnEvent(models.Model):
                 to_reconcile_amls.append(liq_move_line + move_line)
         self._create_counterpart_move_line(move_id, move_lines[0].partner_id)
         return to_reconcile_amls
+    
+    @property
+    def _journal_payment_credit_account(self):
+        j = self.journal_id
+        return (
+            j.outbound_payment_method_line_ids[:1].payment_account_id
+            or j.company_id.account_journal_payment_credit_account_id
+        )
+
+    @property
+    def _journal_payment_debit_account(self):
+        j = self.journal_id
+        return (
+            j.inbound_payment_method_line_ids[:1].payment_account_id
+            or j.company_id.account_journal_payment_debit_account_id
+        )
 
     def _create_counterpart_move_line(self, move_id, partner_id):
+        journal = self.journal_id
         if self.move_line_ids[0].balance < 0:
             debit_or_credit = "credit"
-            account_id = self.journal_id.payment_credit_account_id
+            account = self._journal_payment_credit_account
         else:
             debit_or_credit = "debit"
-            account_id = self.journal_id.payment_debit_account_id
+            account = self._journal_payment_debit_account
         move_line_obj = self.env["account.move.line"]
         counterpart_vals = {
             "move_id": move_id.id,
             "partner_id": partner_id.id,
-            "account_id": account_id.id,
+            "account_id": account.id,
             debit_or_credit: self.balance,
         }
         aml = move_line_obj.with_context(check_move_validity=False).create(
@@ -282,7 +300,7 @@ class CNABReturnEvent(models.Model):
                 {
                     "name": "Bank Tariff: " + self.your_number,
                     "credit": self.tariff_charge,
-                    "account_id": self.journal_id.payment_credit_account_id.id,
+                    "account_id": self._journal_payment_credit_account.id,
                     "partner_id": self.move_line_ids[0].partner_id.id,
                     "move_id": move_id.id,
                 }
@@ -341,7 +359,7 @@ class CNABReturnEvent(models.Model):
             if self.cnab_return_log_id.type == "inbound":
                 credit_move_line[
                     "account_id"
-                ] = self.journal_id.payment_credit_account_id.id
+                ] = self._journal_payment_credit_account.id
                 debit_move_line[
                     "account_id"
                 ] = self.journal_id.inbound_rebate_account_id.id
@@ -351,7 +369,7 @@ class CNABReturnEvent(models.Model):
                 ] = self.journal_id.outbound_rebate_account_id.id
                 debit_move_line[
                     "account_id"
-                ] = self.journal_id.payment_debit_account_id.id
+                ] = self._journal_payment_debit_account.id
 
             move_line_obj.with_context(check_move_validity=False).create(
                 [credit_move_line, debit_move_line]
@@ -375,7 +393,7 @@ class CNABReturnEvent(models.Model):
             if self.cnab_return_log_id.type == "inbound":
                 credit_move_line[
                     "account_id"
-                ] = self.journal_id.payment_credit_account_id.id
+                ] = self._journal_payment_credit_account.id
                 debit_move_line[
                     "account_id"
                 ] = self.journal_id.inbound_discount_account_id.id
@@ -385,7 +403,7 @@ class CNABReturnEvent(models.Model):
                 ] = self.journal_id.outbound_discount_account_id.id
                 debit_move_line[
                     "account_id"
-                ] = self.journal_id.payment_debit_account_id.id
+                ] = self._journal_payment_debit_account.id
 
             move_line_obj.with_context(check_move_validity=False).create(
                 [credit_move_line, debit_move_line]
@@ -412,11 +430,11 @@ class CNABReturnEvent(models.Model):
                 ] = self.journal_id.inbound_interest_fee_account_id.id
                 debit_move_line[
                     "account_id"
-                ] = self.journal_id.payment_debit_account_id.id
+                ] = self._journal_payment_debit_account.id
             else:
                 credit_move_line[
                     "account_id"
-                ] = self.journal_id.payment_credit_account_id.id
+                ] = self._journal_payment_credit_account.id
                 debit_move_line[
                     "account_id"
                 ] = self.journal_id.outbound_interest_fee_account_id.id

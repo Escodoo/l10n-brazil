@@ -11,7 +11,7 @@
         <field name="model">l10n_br_cnab.line.field</field>
         <field name="arch" type="xml">
             <tree default_order='cnab_line_id, start_pos ASC' create="false">
-                <field name="state" invisible="True" />
+                <field name="state" column_invisible="True" />
                 <field name="name" />
                 <field name="meaning" />
                 <field name="start_pos" />
@@ -36,27 +36,27 @@
                 <sheet>
                     <group name="field" string="Field Setting">
                         <group>
-                            <field name="name" />
-                            <field name="meaning" />
-                            <field name="start_pos" />
-                            <field name="end_pos" />
-                            <field name="assumed_comma" />
-                            <field name="type" />
+                            <field name="name" readonly="state != 'draft'" />
+                            <field name="meaning" readonly="state != 'draft'" />
+                            <field name="start_pos" readonly="state != 'draft'" />
+                            <field name="end_pos" readonly="state != 'draft'" />
+                            <field name="assumed_comma" readonly="state != 'draft'" />
+                            <field name="type" readonly="state != 'draft'" />
                         </group>
                         <group>
                             <field name="ref_name" />
-                            <field name="cnab_line_id" />
-                            <field name="cnab_group_id" />
-                            <field name="default_value" />
+                            <field name="cnab_line_id" readonly="state != 'draft'" />
+                            <field name="cnab_group_id" readonly="state != 'draft'" />
+                            <field name="default_value" readonly="state != 'draft'" />
                             <field name="size" />
                         </group>
-                        <field name="notes" placeholder="Notes.." widget="text" />
+                        <field name="notes" placeholder="Notes.." widget="text" readonly="state != 'draft'" />
                     </group>
                     <notebook>
                         <page name="send_mapping" string="Send Mapping">
                             <group col="2" name="content" stirng="Content">
                                 <field name="content_source_model_id" />
-                                <field name="content_source_field" />
+                                <field name="content_source_field" readonly="state != 'draft'" />
                                 <label for="action_change_field_sending" />
                                 <button
                                     name="action_change_field_sending"
@@ -69,6 +69,7 @@
                             <group>
                                 <field
                                     name="sending_dynamic_content"
+                                    readonly="state != 'draft'"
                                     widget="ace"
                                     options="{'mode': 'python'}"
                                 />
@@ -77,7 +78,7 @@
                         <page name="return_mapping" string="Return Mapping">
                             <group col="2" name="content" stirng="Content">
                                 <field name="content_dest_model_id" />
-                                <field name="content_dest_field" />
+                                <field name="content_dest_field" readonly="state != 'draft'" />
                                 <label for="action_change_field_return" />
                                 <button
                                     name="action_change_field_return"
@@ -90,6 +91,7 @@
                             <group>
                                 <field
                                     name="return_dynamic_content"
+                                    readonly="state != 'draft'"
                                     widget="ace"
                                     options="{'mode': 'python'}"
                                 />

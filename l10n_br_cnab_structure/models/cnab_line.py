@@ -18,26 +18,21 @@ class CNABLine(models.Model):
 
     name = fields.Char(compute="_compute_name", store=True)
 
-    sequence = fields.Integer(readonly=True, states={"draft": [("readonly", False)]})
+    sequence = fields.Integer()
 
     cnab_structure_id = fields.Many2one(
         comodel_name="l10n_br_cnab.structure",
         ondelete="cascade",
         required=True,
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
-    segment_code = fields.Char(
-        states={"draft": [("readonly", False)]},
-    )
+    segment_code = fields.Char()
 
     content_source_model_id = fields.Many2one(
         comodel_name="ir.model",
         string="Content Source",
         help="Related model that will provide the origin of the contents of CNAB files.",
         compute="_compute_content_source_model_id",
-        states={"draft": [("readonly", False)]},
     )
 
     content_dest_model_id = fields.Many2one(
@@ -46,59 +41,37 @@ class CNABLine(models.Model):
         help="Related model that will provide the destination"
         " of the contents of return CNAB files.",
         compute="_compute_dest_source_model_id",
-        states={"draft": [("readonly", False)]},
     )
 
-    requerid = fields.Boolean(
-        states={"draft": [("readonly", False)]},
-    )
+    requerid = fields.Boolean()
 
     communication_flow = fields.Selection(
         [("sending", "Sending"), ("return", "Return"), ("both", "Sending and Return")],
-        required=True,
-        states={"draft": [("readonly", False)]},
     )
 
     current_view = fields.Selection(
         [("general", "General"), ("sending", "Sending"), ("return", "Return")],
         required=True,
         default="general",
-        states={"draft": [("readonly", False)]},
     )
 
     type = fields.Selection(
         [("header", "Header"), ("segment", "Segment"), ("trailer", "Trailer")],
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     field_ids = fields.One2many(
         comodel_name="l10n_br_cnab.line.field",
         inverse_name="cnab_line_id",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     group_ids = fields.One2many(
         comodel_name="cnab.line.field.group",
         inverse_name="cnab_line_id",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     batch_id = fields.Many2one(
         comodel_name="l10n_br_cnab.batch",
         ondelete="cascade",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
-    )
-
-    cnab_structure_id = fields.Many2one(
-        comodel_name="l10n_br_cnab.structure",
-        ondelete="cascade",
-        required=True,
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     @api.model
@@ -111,12 +84,10 @@ class CNABLine(models.Model):
     resource_ref = fields.Reference(
         string="Reference",
         selection="_selection_target_model",
-        states={"draft": [("readonly", False)]},
     )
 
     cnab_format = fields.Char(
         related="cnab_structure_id.cnab_format",
-        states={"draft": [("readonly", False)]},
     )
 
     state = fields.Selection(
@@ -130,8 +101,6 @@ class CNABLine(models.Model):
         string="Payments Ways",
         help="Payment Ways that must use this segment.",
         domain="[('cnab_structure_id', '=', cnab_structure_id)]",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     def is_requerid(self, payment_way):
@@ -217,11 +186,10 @@ class CNABLine(models.Model):
             else:
                 line.name = f"{line.cnab_structure_id.name} -> {name}"
 
-    def unlink(self):
-        lines = self.filtered(lambda line: line.state != "draft")
-        if lines:
+    @api.ondelete(at_uninstall=False)
+    def _unlink_draft_only(self):
+        if self.filtered(lambda line: line.state != "draft"):
             raise UserError(_("You cannot delete an CNAB Line which is not draft !"))
-        return super().unlink()
 
     def check_line(self):
         cnab_fields = self.field_ids.sorted(key=lambda r: r.start_pos)
