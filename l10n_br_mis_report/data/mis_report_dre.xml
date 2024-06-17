@@ -23,7 +23,7 @@
         <field name="name">receita_vendas</field>
         <field
             name="expression"
-        >-bal[('user_type_id', '=', ref('account.data_account_type_revenue').id)]</field>
+        >-bal[('account_type', '=', 'income')]</field>
         <field name="type">num</field>
         <field name="compare_method">pct</field>
         <field name="auto_expand_accounts" eval="True" />
@@ -38,7 +38,7 @@
         <field name="name">deducoes_receita</field>
         <field
             name="expression"
-        >bal[('user_type_id', '=', ref('l10n_br_coa.data_account_type_revenue_deduction').id)]</field>
+        >bal[('account_type', '=', 'income_other')]</field>
         <field name="type">num</field>
         <field name="compare_method">pct</field>
         <field name="auto_expand_accounts" eval="True" />
@@ -74,7 +74,7 @@
         <field name="name">custo_vendas</field>
         <field
             name="expression"
-        >balp[('user_type_id', '=', ref('account.data_account_type_direct_costs').id)]</field>
+        >balp[('account_type', '=', 'expense_direct_cost')]</field>
         <field name="type">num</field>
         <field name="compare_method">pct</field>
         <field name="auto_expand_accounts" eval="True" />
@@ -112,7 +112,7 @@
         <field name="name">despesas_administrativas</field>
         <field
             name="expression"
-        >balp[('user_type_id', '=', ref('l10n_br_coa.data_account_type_admin_expenses').id)]</field>
+        >balp[('account_type', '=', 'expense')]</field>
         <field name="type">num</field>
         <field name="compare_method">pct</field>
         <field name="auto_expand_accounts" eval="True" />
@@ -125,7 +125,7 @@
         <field name="name">despesas_vendas</field>
         <field
             name="expression"
-        >balp[('user_type_id', '=', ref('l10n_br_coa.data_account_type_sale_expenses').id)]</field>
+        >balp[('account_type', '=', 'expense')]</field>
         <field name="type">num</field>
         <field name="compare_method">pct</field>
         <field name="auto_expand_accounts" eval="True" />
@@ -138,7 +138,7 @@
         <field name="name">despesas_gerais</field>
         <field
             name="expression"
-        >balp[('user_type_id', '=', ref('l10n_br_coa.data_account_type_other_general_expenses').id)]</field>
+        >balp[('account_type', '=', 'expense')]</field>
         <field name="type">num</field>
         <field name="compare_method">pct</field>
         <field name="auto_expand_accounts" eval="True" />
@@ -175,7 +175,7 @@
         <field name="name">receitas_financeiras</field>
         <field
             name="expression"
-        >balp[('user_type_id', '=', ref('l10n_br_coa.data_account_type_revenue_financial').id)]</field>
+        >balp[('account_type', '=', 'income')]</field>
         <field name="type">num</field>
         <field name="compare_method">pct</field>
         <field name="auto_expand_accounts" eval="True" />
@@ -188,7 +188,7 @@
         <field name="name">despesas_financeiras</field>
         <field
             name="expression"
-        >balp[('user_type_id', '=', ref('l10n_br_coa.data_account_type_expenses_financial').id)]</field>
+        >balp[('account_type', '=', 'expense')]</field>
         <field name="type">num</field>
         <field name="compare_method">pct</field>
         <field name="auto_expand_accounts" eval="True" />
@@ -202,7 +202,7 @@
         <field name="name">outras_receitas_despesas_op</field>
         <field
             name="expression"
-        >balp[('user_type_id', '=', ref('l10n_br_coa.data_account_type_other_operational_expenses').id)]</field>
+        >balp[('account_type', '=', 'income_other')]</field>
         <field name="type">num</field>
         <field name="compare_method">pct</field>
         <field name="style_id" ref="mis_report_style_l10n_br_negrito" />
@@ -232,7 +232,7 @@
         <field name="name">contribuicao_social</field>
         <field
             name="expression"
-        >balp[('user_type_id', '=', ref('l10n_br_coa.data_account_type_expense_csll').id)]</field>
+        >balp[('account_type', '=', 'expense')]</field>
         <field name="type">num</field>
         <field name="compare_method">pct</field>
     </record>
@@ -246,7 +246,7 @@
         <field name="name">imposto_renda_pj</field>
         <field
             name="expression"
-        >balp[('user_type_id', '=', ref('l10n_br_coa.data_account_type_expense_irpj').id)]</field>
+        >balp[('account_type', '=', 'expense')]</field>
         <field name="type">num</field>
         <field name="compare_method">pct</field>
     </record>
