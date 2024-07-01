@@ -132,12 +132,7 @@ class CTe(spec_models.StackedModel):
 
     cte40_cCT = fields.Char(compute="_compute_cct")
 
-    cfop_id = fields.Many2one(
-        comodel_name="l10n_br_fiscal.cfop",
-        string="CFOP",
-    )
-
-    cte40_CFOP = fields.Char(related="cfop_id.code")
+    cte40_CFOP = fields.Char(compute="_compute_CFOP", store=True)
 
     cte40_natOp = fields.Char(related="operation_name")
 
@@ -168,7 +163,14 @@ class CTe(spec_models.StackedModel):
         compute="_compute_cte40_data", string="cte40_UFEnv", store=True
     )
 
-    # cte40_indIEToma = fields.Char(related="partner_id.incr_est", store=True)
+    cte40_indIEToma = fields.Selection(
+        selection=[
+            ("1", "Contribuinte ICMS"),
+            ("2", "Contribuinte isento de inscrição"),
+            ("9", "Não Contribuinte"),
+        ],
+        default="1",
+    )
 
     cte40_cMunIni = fields.Char(compute="_compute_cte40_data", store=True)
 
@@ -194,11 +196,12 @@ class CTe(spec_models.StackedModel):
 
     cte40_tpServ = fields.Selection(
         selection=[
-            ("6", "Transporte de Pessoas"),
-            ("7", "Transporte de Valores"),
-            ("8", "Excesso de Bagagem"),
+            ("0", "Normal"),
+            ("1", "Subcontratação"),
+            ("2", "Redespacho"),
+            ("3", "Redespacho Intermediário"),
         ],
-        default="6",
+        default="0",
     )
 
     cte40_tpCTe = fields.Selection(
@@ -287,10 +290,17 @@ class CTe(spec_models.StackedModel):
             else:
                 doc.cte40_choice_toma = "cte40_toma4"
 
+    @api.depends("fiscal_line_ids")
+    def _compute_CFOP(self):
+        for rec in self:
+            if rec.fiscal_line_ids:
+                rec.cte40_CFOP = rec.fiscal_line_ids[0].cfop_id.code
+
+    @api.depends("document_key")
     def _compute_cDV(self):
         for rec in self:
             if rec.document_key:
-                rec.cte40_cDV = rec.document_key[:-1]
+                rec.cte40_cDV = rec.document_key[-1]
 
     def _compute_cct(self):
         for rec in self:
@@ -306,7 +316,7 @@ class CTe(spec_models.StackedModel):
                 doc.cte40_xMunEnv = doc.company_id.partner_id.city_id.name
                 doc.cte40_cMunEnv = doc.company_id.partner_id.city_id.ibge_code
                 doc.cte40_UFEnv = doc.company_id.partner_id.state_id.code
-                doc.cte40_UFIni = doc.company_id.partner_id.state_id.ibge_code
+                doc.cte40_UFIni = doc.company_id.partner_id.state_id.code
                 doc.cte40_cMunFim = doc.partner_id.city_id.ibge_code
                 doc.cte40_xMunFim = doc.partner_id.city_id.name
                 doc.cte40_UFFim = doc.partner_id.state_id.code
@@ -375,7 +385,7 @@ class CTe(spec_models.StackedModel):
     ##########################
 
     cte40_exped = fields.Many2one(
-        comodel_name="res.company",
+        comodel_name="res.partner",
         compute="_compute_exped_data",
         readonly=True,
         string="Exped",
@@ -388,7 +398,7 @@ class CTe(spec_models.StackedModel):
 
     def _compute_exped_data(self):
         for doc in self:  # TODO if out
-            doc.cte40_exped = doc.company_id
+            doc.cte40_exped = doc.company_id.partner_id
 
     ##########################
     # CT-e tag: dest
@@ -750,15 +760,15 @@ class CTe(spec_models.StackedModel):
 
     def _export_fields_cte_40_tcte_infmodal(self, xsd_fields, class_obj, export_dict):
         self = self.with_context(module="l10n_br_cte")
-        if self.cte40_modal == "1":
+        if self.cte40_modal == "01":
             export_dict["any_element"] = self._export_modal_rodoviario()
-        elif self.cte40_modal == "2":
+        elif self.cte40_modal == "02":
             export_dict["any_element"] = self._export_modal_aereo()
-        elif self.cte40_modal == "3":
+        elif self.cte40_modal == "03":
             export_dict["any_element"] = self._export_modal_aquaviario()
-        elif self.cte40_modal == "4":
+        elif self.cte40_modal == "04":
             export_dict["any_element"] = self._export_modal_ferroviario()
-        elif self.cte40_modal == "5":
+        elif self.cte40_modal == "05":
             export_dict["any_element"] = self._export_modal_dutoviario()
 
     def _export_modal_aereo(self):
@@ -817,16 +827,13 @@ class CTe(spec_models.StackedModel):
         if not self.company_id.certificate_nfe_id:
             raise UserError(_("Certificado não encontrado"))
 
-        certificado = cert.Certificado(
-            arquivo=self.company_id.certificate_nfe_id.file,
-            senha=self.company_id.certificate_nfe_id.password,
-        )
+        certificado = self.env.company._get_br_ecertificate()
         session = Session()
         session.verify = False
         transmissao = TransmissaoSOAP(certificado, session)
         return edoc_cte(
             transmissao,
-            self.company_id.state_id.id,
+            self.company_id.state_id.ibge_code,
             self.cte40_versao,
             self.cte40_tpAmb,
         )

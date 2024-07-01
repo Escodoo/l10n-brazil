@@ -77,13 +77,13 @@
                         <field name="transport_modal" widget="radio" />
                     </group>
                     <separator name="modais_sep" string="Campos do Modal" />
-                    <group attrs="{'invisible': [('transport_modal', '!=', '1')]}">
+                    <group attrs="{'invisible': [('transport_modal', '!=', '01')]}">
                             <group>
                                 <field name="cte40_RNTRC" />
                                 <field name="cte40_occ" />
                             </group>
                     </group>
-                    <group attrs="{'invisible': [('transport_modal', '!=', '2')]}">
+                    <group attrs="{'invisible': [('transport_modal', '!=', '02')]}">
                             <group>
                                 <field name="cte40_nMinu" />
                                 <field name="cte40_nOCA" />
@@ -95,7 +95,7 @@
                                 <field name="cte40_peri" />
                             </group>
                     </group>
-                    <group attrs="{'invisible': [('transport_modal', '!=', '3')]}">
+                    <group attrs="{'invisible': [('transport_modal', '!=', '03')]}">
                             <group>
                                 <field name="cte40_vPrest" />
                                 <field name="cte40_vAFRMM" />
@@ -107,7 +107,7 @@
                                 <field name="cte40_balsa" />
                             </group>
                     </group>
-                    <group attrs="{'invisible': [('transport_modal', '!=', '4')]}">
+                    <group attrs="{'invisible': [('transport_modal', '!=', '04')]}">
                             <group>
                                 <field name="cte40_tpTraf" />
                                 <field name="cte40_fluxo" />
@@ -123,7 +123,7 @@
                             />
                             </group>
                     </group>
-                    <group attrs="{'invisible': [('transport_modal', '!=', '5')]}">
+                    <group attrs="{'invisible': [('transport_modal', '!=', '05')]}">
                             <group>
                                 <field name="cte40_dIni" />
                                 <field name="cte40_dFim" />
