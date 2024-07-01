@@ -144,7 +144,7 @@ class CTeLine(spec_models.StackedModel):
             "CST": self.cte40_CST,
             "vBC": str("%.02f" % self.icms_base),
             "pRedBC": str("%.04f" % self.icms_reduction),
-            "pICMS": str("%.04f" % self.icms_percent),
+            "pICMS": str("%.02f" % self.icms_percent),
             "vICMS": str("%.02f" % self.icms_value),
             "vICMSSubstituto": str("%.02f" % self.icms_substitute),
             "indSN": int(self.cte40_indSN),
