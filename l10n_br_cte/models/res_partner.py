@@ -133,6 +133,14 @@ class ResPartner(spec_models.SpecModel):
             rec.cte40_CEP = punctuation_rm(rec.zip)
 
     def _export_field(self, xsd_field, class_obj, member_spec, export_value=None):
+        if (
+            xsd_field == "cte40_xNome"
+            and class_obj._name
+            in ["cte.40.tcte_rem", "cte.40.tcte_dest", "cte.40.exped"]
+            and self.env.context.get("tpAmb") == "2"
+        ):
+            return "CTE EMITIDO EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL"
+
         if not self.cnpj_cpf and self.parent_id:
             cnpj_cpf = punctuation_rm(self.parent_id.cnpj_cpf)
         else:
