@@ -5,7 +5,7 @@ import logging
 import re
 from datetime import datetime
 
-from erpbrasil.transmissao import TransmissaoSOAP
+from erpbrasil.edoc.cte import TransmissaoCTE
 from nfelib.cte.bindings.v4_0.cte_v4_00 import Cte
 from nfelib.nfe.ws.edoc_legacy import CTeAdapter as edoc_cte
 from requests import Session
@@ -809,6 +809,16 @@ class CTe(spec_models.StackedModel):
         return self.modal_dutoviario_id.export_ds()[0]
 
     ################################
+    # Framework Spec model's methods
+    ################################
+
+    def _export_field(self, xsd_field, class_obj, member_spec, export_value=None):
+        if xsd_field == "cte40_tpAmb":
+            self.env.context = dict(self.env.context)
+            self.env.context.update({"tpAmb": self[xsd_field]})
+        return super()._export_field(xsd_field, class_obj, member_spec, export_value)
+
+    ################################
     # Business Model Methods
     ################################
 
@@ -829,7 +839,7 @@ class CTe(spec_models.StackedModel):
         certificado = self.env.company._get_br_ecertificate()
         session = Session()
         session.verify = False
-        transmissao = TransmissaoSOAP(certificado, session)
+        transmissao = TransmissaoCTE(certificado, session)
         return edoc_cte(
             transmissao,
             self.company_id.state_id.ibge_code,
