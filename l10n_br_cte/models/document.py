@@ -158,9 +158,7 @@ class CTe(spec_models.StackedModel):
 
     cte40_xMunEnv = fields.Char(compute="_compute_cte40_data", store=True)
 
-    cte40_UFEnv = fields.Char(
-        compute="_compute_cte40_data", string="cte40_UFEnv", store=True
-    )
+    cte40_UFEnv = fields.Char(compute="_compute_cte40_data", store=True)
 
     cte40_indIEToma = fields.Selection(
         selection=[
@@ -177,19 +175,11 @@ class CTe(spec_models.StackedModel):
 
     cte40_UFIni = fields.Char(compute="_compute_cte40_data", store=True)
 
-    cte40_cMunFim = fields.Char(
-        compute="_compute_cte40_data",
-        related="partner_id.city_id.ibge_code",
-        store=True,
-    )
+    cte40_cMunFim = fields.Char(compute="_compute_cte40_data", store=True)
 
-    cte40_xMunFim = fields.Char(
-        compute="_compute_cte40_data", related="partner_id.city_id.name", store=True
-    )
+    cte40_xMunFim = fields.Char(compute="_compute_cte40_data", store=True)
 
-    cte40_UFFim = fields.Char(
-        compute="_compute_cte40_data", string="cte40_cUF", store=True
-    )
+    cte40_UFFim = fields.Char(compute="_compute_cte40_data", store=True)
 
     cte40_retira = fields.Selection(selection=[("0", "Sim"), ("1", "Não")], default="1")
 
@@ -310,15 +300,15 @@ class CTe(spec_models.StackedModel):
     def _compute_cte40_data(self):
         for doc in self:
             if doc.company_id.partner_id.country_id == doc.partner_id.country_id:
-                doc.cte40_xMunIni = doc.company_id.partner_id.city_id.name
-                doc.cte40_cMunIni = doc.company_id.partner_id.city_id.ibge_code
                 doc.cte40_xMunEnv = doc.company_id.partner_id.city_id.name
                 doc.cte40_cMunEnv = doc.company_id.partner_id.city_id.ibge_code
                 doc.cte40_UFEnv = doc.company_id.partner_id.state_id.code
-                doc.cte40_UFIni = doc.company_id.partner_id.state_id.code
-                doc.cte40_cMunFim = doc.partner_id.city_id.ibge_code
-                doc.cte40_xMunFim = doc.partner_id.city_id.name
-                doc.cte40_UFFim = doc.partner_id.state_id.code
+                doc.cte40_xMunIni = doc.cte40_exped.city_id.name
+                doc.cte40_cMunIni = doc.cte40_exped.city_id.ibge_code
+                doc.cte40_UFIni = doc.cte40_exped.state_id.code
+                doc.cte40_xMunFim = doc.cte40_receb.city_id.name
+                doc.cte40_cMunFim = doc.cte40_receb.city_id.ibge_code
+                doc.cte40_UFFim = doc.cte40_receb.state_id.code
             else:
                 doc.cte40_UFIni = "EX"
                 doc.cte40_UFEnv = "EX"
@@ -366,7 +356,8 @@ class CTe(spec_models.StackedModel):
     cte40_rem = fields.Many2one(
         comodel_name="res.partner",
         compute="_compute_rem_data",
-        readonly=True,
+        readonly=False,
+        store=True,
         string="Rem",
     )
 
@@ -377,7 +368,7 @@ class CTe(spec_models.StackedModel):
 
     def _compute_rem_data(self):
         for doc in self:  # TODO if out
-            doc.cte40_rem = doc.partner_id
+            doc.cte40_rem = doc.company_id.partner_id
 
     ##########################
     # CT-e tag: exped
@@ -386,7 +377,8 @@ class CTe(spec_models.StackedModel):
     cte40_exped = fields.Many2one(
         comodel_name="res.partner",
         compute="_compute_exped_data",
-        readonly=True,
+        readonly=False,
+        store=True,
         string="Exped",
     )
 
@@ -417,7 +409,30 @@ class CTe(spec_models.StackedModel):
 
     def _compute_dest_data(self):
         for doc in self:  # TODO if out
-            doc.cte40_dest = doc.partner_shipping_id
+            doc.cte40_dest = doc.partner_id
+
+    ##########################
+    # CT-e tag: receb
+    ##########################
+
+    cte40_receb = fields.Many2one(
+        comodel_name="res.partner",
+        compute="_compute_receb_data",
+        readonly=True,
+        string="Receb",
+    )
+
+    ##########################
+    # CT-e tag: receb
+    # Compute Methods
+    ##########################
+
+    def _compute_receb_data(self):
+        for doc in self:
+            if doc.partner_shipping_id:
+                doc.cte40_receb = doc.partner_shipping_id
+            else:
+                doc.cte40_receb = doc.partner_id
 
     ##########################
     # CT-e tag: imp TODO
