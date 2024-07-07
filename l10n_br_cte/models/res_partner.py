@@ -69,6 +69,10 @@ class ResPartner(spec_models.SpecModel):
         comodel_name="res.partner", compute="_compute_cte40_ender"
     )
 
+    cte40_enderReceb = fields.Many2one(
+        comodel_name="res.partner", compute="_compute_cte40_ender"
+    )
+
     cte40_enderFerro = fields.Many2one(
         comodel_name="res.partner", compute="_compute_cte40_ender"
     )
@@ -116,6 +120,7 @@ class ResPartner(spec_models.SpecModel):
             rec.cte40_enderReme = rec.id
             rec.cte40_enderDest = rec.id
             rec.cte40_enderExped = rec.id
+            rec.cte40_enderReceb = rec.id
             rec.cte40_enderFerro = rec.id
 
     @api.depends("company_type", "inscr_est", "cnpj_cpf", "country_id")
@@ -140,7 +145,7 @@ class ResPartner(spec_models.SpecModel):
     def _inverse_cte40_fone(self):
         for rec in self:
             if rec.cte40_fone:
-                rec.phone = rec.cte40_fone
+                rec.phone = rec.nfe40_fone
 
     def _compute_cep(self):
         for rec in self:
@@ -150,7 +155,7 @@ class ResPartner(spec_models.SpecModel):
         if (
             xsd_field == "cte40_xNome"
             and class_obj._name
-            in ["cte.40.tcte_rem", "cte.40.tcte_dest", "cte.40.exped"]
+            in ["cte.40.tcte_rem", "cte.40.tcte_dest", "cte.40.exped", "cte.40.receb"]
             and self.env.context.get("tpAmb") == "2"
         ):
             return "CTE EMITIDO EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL"
