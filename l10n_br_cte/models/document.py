@@ -552,7 +552,7 @@ class CTe(spec_models.StackedModel):
     cte40_autXML = fields.One2many(default=_default_cte40_autxml)
 
     ##########################
-    # NF-e tag: infCTeSupl
+    # CT-e tag: infCTeSupl
     ##########################
 
     cte40_infCTeSupl = fields.Many2one(
@@ -560,7 +560,7 @@ class CTe(spec_models.StackedModel):
     )
 
     ##########################
-    # MDF-e tag: infRespTec
+    # CT-e tag: infRespTec
     ##########################
 
     cte40_infRespTec = fields.Many2one(
