@@ -470,7 +470,6 @@ class CTe(spec_models.StackedModel):
 
     cte40_proPred = fields.Char(
         string="Produto predominante",
-        required=True,
     )
 
     cte40_xOutCat = fields.Char(
@@ -484,6 +483,43 @@ class CTe(spec_models.StackedModel):
 
     cte40_vCargaAverb = fields.Monetary(
         string="Valor da Carga para efeito de averbação",
+    )
+
+    ##########################
+    # CT-e tag: infDoc
+    ##########################
+
+    cte40_infDoc = fields.One2many(
+        comodel_name="l10n_br_fiscal.document.related",
+        related="document_related_ids",
+        inverse_name="document_id",
+        string="Informações dos documentos transportados",
+    )
+
+    def _compute_cte40_infNFe(self):
+        for record in self:
+            record.cte40_infNFe = record.document_related_ids.filtered(
+                lambda r: r.cte40_infDoc == "cte40_infNFe"
+            )
+
+    def _compute_cte40_infOutros(self):
+        for record in self:
+            record.cte40_infOutros = record.document_related_ids.filtered(
+                lambda r: r.cte40_infDoc == "cte40_infOutros"
+            )
+
+    cte40_infNFe = fields.One2many(
+        comodel_name="l10n_br_fiscal.document.related",
+        inverse_name="document_id",
+        string="Informações das NF-e DOCS (Cte)",
+        compute="_compute_cte40_infNFe",
+    )
+
+    cte40_infOutros = fields.One2many(
+        comodel_name="l10n_br_fiscal.document.related",
+        inverse_name="document_id",
+        string="Informações dos Outros DOCS (Cte)",
+        compute="_compute_cte40_infOutros",
     )
 
     ##########################
@@ -828,7 +864,10 @@ class CTe(spec_models.StackedModel):
             filter_processador_edoc_cte
         ):
             inf_cte = record.export_ds()[0]
-            cte = Cte(infCte=inf_cte, infCTeSupl=None, signature=None)
+            inf_cte_supl = None
+            if record.cte40_infCTeSupl:
+                inf_cte_supl = record.cte40_infCTeSupl.export_ds()[0]
+            cte = Cte(infCte=inf_cte, infCTeSupl=inf_cte_supl, signature=None)
             edocs.append(cte)
         return edocs
 
@@ -873,8 +912,14 @@ class CTe(spec_models.StackedModel):
         erros = "\n".join(erros)
         self.write({"xml_error_message": erros or False})
 
-    def atualiza_status_cte(self, infProt, xml_file):
+    def atualiza_status_cte(self, processo):
         self.ensure_one()
+
+        if hasattr(processo, "protocolo"):
+            infProt = processo.protocolo.infProt
+        else:
+            infProt = processo.resposta.protCTe.infProt
+
         if infProt.cStat in AUTORIZADO:
             state = SITUACAO_EDOC_AUTORIZADA
         elif infProt.cStat in DENEGADO:
@@ -894,7 +939,7 @@ class CTe(spec_models.StackedModel):
                 response=infProt.xMotivo,
                 protocol_date=protocol_date,
                 protocol_number=infProt.nProt,
-                file_response_xml=xml_file,
+                file_response_xml=processo.retorno.text,
             )
         self.write(
             {
@@ -996,3 +1041,28 @@ class CTe(spec_models.StackedModel):
                 protocol_number=retevento.infEvento.nProt,
                 file_response_xml=processo.retorno.content.decode("utf-8"),
             )
+
+    def _document_qrcode(self):
+        super()._document_qrcode()
+
+        for record in self:
+            record.cte40_infCTeSupl = self.env[
+                "l10n_br_fiscal.document.supplement"
+            ].create(
+                {
+                    "qrcode": record.get_cte_qrcode(),
+                }
+            )
+
+    def get_cte_qrcode(self):
+        # if self.document_type != MODELO_FISCAL_CTE:
+        #     return
+
+        processador = self._processador()
+        # if self.nfe_transmission == "1":
+        #     return processador.monta_qrcode(self.document_key)
+        return processador.monta_qrcode(self.document_key)
+
+        # serialized_doc = self.serialize()[0]
+        # xml = processador.assina_raiz(serialized_doc, serialized_doc.infNFe.Id)
+        # return processador._generate_qrcode_contingency(serialized_doc, xml)
