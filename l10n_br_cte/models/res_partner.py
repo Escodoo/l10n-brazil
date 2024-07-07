@@ -98,6 +98,14 @@ class ResPartner(spec_models.SpecModel):
 
     cte40_xNome = fields.Char(related="legal_name")
 
+    cte40_xContato = fields.Char(related="legal_name")
+
+    cte40_email = fields.Char(related="email")
+
+    cte40_fone = fields.Char(
+        compute="_compute_cte_data", inverse="_inverse_cte40_fone", compute_sudo=True
+    )
+
     def _compute_cte40_IE(self):
         for rec in self:
             rec.cte40_IE = str(rec.inscr_est).replace(".", "")
@@ -121,12 +129,18 @@ class ResPartner(spec_models.SpecModel):
                 else:
                     rec.cte40_CNPJ = None
                     rec.cte40_CPF = cnpj_cpf
+            rec.cte40_fone = punctuation_rm(rec.phone or "").replace(" ", "")
 
     def _inverse_cte40_CEP(self):
         for rec in self:
             if rec.cte40_CEP:
                 country_code = rec.country_id.code if rec.country_id else "BR"
                 rec.zip = format_zipcode(rec.cte40_CEP, country_code)
+
+    def _inverse_cte40_fone(self):
+        for rec in self:
+            if rec.cte40_fone:
+                rec.phone = rec.cte40_fone
 
     def _compute_cep(self):
         for rec in self:
