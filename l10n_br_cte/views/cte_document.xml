@@ -22,6 +22,8 @@
             <field name="document_serie_id" position="after">
                 <field name="service_provider" />
                 <field name="cte40_tpServ" />
+                <field name="cte40_rem" />
+                <field name="cte40_exped" />
             </field>
             <page name="delivery" position="inside">
                 <separator name="cargo_infos_sep" string="Cargo Infos" />
