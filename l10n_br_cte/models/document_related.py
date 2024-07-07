@@ -11,11 +11,13 @@ class CTeRelated(spec_models.StackedModel):
     _name = "l10n_br_fiscal.document.related"
     _inherit = [
         "l10n_br_fiscal.document.related",
-        "cte.40.tcte_infnfe",
-        "cte.40.tcte_infnf",
-        "cte.40.tcte_infq",
+        "cte.40.tcte_infctenorm",
+        # "cte.40.tcte_infnfe",
+        # "cte.40.tcte_infnf",
+        # "cte.40.tcte_infq",
     ]
-    _stacked = "cte.40.tcte_infnfe"
+    _stacked = "cte.40.tcte_infctenorm"
+    # _stacked = "cte.40.tcte_infnfe"
     _field_prefix = "cte40_"
     _schema_name = "cte"
     _schema_version = "4.0.0"
@@ -68,7 +70,31 @@ class CTeRelated(spec_models.StackedModel):
         inverse="_inverse_cte40_tpDoc",
     )
 
-    cte40_infDoc = fields.Selection(related="cte40_choice_infNF_infNFE_infOutros")
+    # infOutros
+
+    cte40_descOutros = fields.Char(string="Descrição do documento")
+
+    cte40_nDoc = fields.Char(string="Número", default="123123")
+
+    cte40_dEmi = fields.Date(
+        string="Data de Emissão",
+        help="Data de Emissão\nFormato AAAA-MM-DD",
+    )
+
+    cte40_vDocFisc = fields.Monetary(
+        string="Valor do documento",
+        default=1000.0,
+        currency_field="brl_currency_id",
+    )
+
+    cte40_dPrev = fields.Date(
+        string="Data prevista de entrega",
+        help="Data prevista de entrega\nFormato AAAA-MM-DD",
+    )
+
+    cte40_infDoc = fields.Selection(
+        related="cte40_choice_infNF_infNFE_infOutros", string="infDoc"
+    )
 
     # infCteNorm
     cte40_chCTe = fields.Char(compute="_compute_chCte", string="chCte")
@@ -93,6 +119,7 @@ class CTeRelated(spec_models.StackedModel):
         ],
         compute="_compute_cte_data",
         inverse="_inverse_cte40_choice_infNF_infNFE_infOutros",
+        string="CHOICE",
     )
 
     def _compute_vCarga(self):
