@@ -511,6 +511,12 @@ class CTe(spec_models.StackedModel):
         string="Informações dos documentos transportados",
     )
 
+    ##########################
+    # CT-e tag: infGlobalizado
+    ##########################
+
+    cte40_xObs = fields.Text(related="fiscal_additional_data")
+
     def _compute_cte40_infNFe(self):
         for record in self:
             record.cte40_infNFe = record.document_related_ids.filtered(
@@ -795,6 +801,7 @@ class CTe(spec_models.StackedModel):
         comodel_name="l10n_br_cte.modal.rodo.occ",
         inverse_name="document_id",
         string="Ordens de Coleta associados",
+        copy=False,
     )
 
     ##########################
