@@ -214,3 +214,9 @@ class CTeLine(spec_models.StackedModel):
                 record.cte40_xDime = (
                     package.width + "X" + package.packaging_length + "X" + package.width
                 )
+
+    ##########################
+    # CT-e tag: infAdFisco
+    ##########################
+
+    cte40_infAdFisco = fields.Text(related="additional_data")
