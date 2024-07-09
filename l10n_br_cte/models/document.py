@@ -476,6 +476,42 @@ class CTe(spec_models.StackedModel):
     # )
 
     ##########################
+    # CT-e tag: vPrest
+    # Methods
+    ##########################
+
+    cte40_vPrest = fields.Many2one(
+        comodel_name="l10n_br_fiscal.document", compute="_compute_cte40_vPrest"
+    )
+
+    cte40_vTPrest = fields.Monetary(
+        compute="_compute_cte40_vPrest",
+        string="Valor da Total Prestação Base de Cálculo",
+    )
+
+    cte40_vRec = fields.Monetary(
+        compute="_compute_cte40_vPrest",
+        string="Valor Recebido",
+    )
+
+    cte40_comp = fields.One2many(
+        comodel_name="l10n_br_fiscal.document.line",
+        inverse_name="document_id",
+        related="fiscal_line_ids",
+    )
+
+    def _compute_cte40_vPrest(self):
+        vTPrest = 0
+        vRec = 0
+        for doc in self:
+            doc.cte40_vPrest = doc
+            for line in self.fiscal_line_ids:
+                vTPrest += line.amount_total
+                vRec += line.price_gross
+            doc.cte40_vTPrest = vTPrest
+            doc.cte40_vRec = vRec
+
+    ##########################
     # CT-e tag: infCarga
     ##########################
 
@@ -682,11 +718,12 @@ class CTe(spec_models.StackedModel):
     # Campos do Modal Aquaviario
     modal_aquaviario_id = fields.Many2one(comodel_name="l10n_br_cte.modal.aquav")
 
-    cte40_vPrest = fields.Monetary(
-        compute="_compute_cte40_vPrest",  # FIX
-        store=True,
-        string="Valor da Prestação Base de Cálculo",
-    )
+    # TODO: fix
+    # cte40_vPrest = fields.Monetary(
+    #     compute="_compute_cte40_vPrest",  # FIX
+    #     store=True,
+    #     string="Valor da Prestação Base de Cálculo",
+    # )
 
     cte40_vAFRMM = fields.Monetary(
         string="AFRMM",
@@ -809,11 +846,12 @@ class CTe(spec_models.StackedModel):
     # Compute Methods
     ##########################
 
-    def _compute_cte40_vPrest(self):
-        vPrest = 0
-        for record in self.fiscal_line_ids:
-            vPrest += record.cte40_vTPrest
-        self.cte40_vPrest = vPrest
+    # TODO: Fix
+    # -   def _compute_cte40_vPrest(self):
+    # -       vPrest = 0
+    # -       for record in self.fiscal_line_ids:
+    # -           vPrest += record.cte40_vTPrest
+    # -       self.cte40_vPrest = vPrest
 
     def _export_fields_cte_40_tcte_infmodal(self, xsd_fields, class_obj, export_dict):
         self = self.with_context(module="l10n_br_cte")

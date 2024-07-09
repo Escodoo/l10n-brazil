@@ -23,15 +23,12 @@ class CTeLine(spec_models.StackedModel):
     _binding_module = "nfelib.cte.bindings.v4_0.cte_tipos_basico_v4_00"
 
     ##########################
-    # CT-e tag: vPrest
+    # CT-e tag: comp
     ##########################
 
-    cte40_vTPrest = fields.Monetary(string="vTPrest", related="amount_total")
+    cte40_xNome = fields.Text(related="name")
 
-    cte40_vRec = fields.Monetary(
-        related="price_gross",
-        string="vRec",
-    )
+    cte40_vComp = fields.Monetary(related="amount_total")
 
     ##################################################
     # CT-e tag: ICMS
