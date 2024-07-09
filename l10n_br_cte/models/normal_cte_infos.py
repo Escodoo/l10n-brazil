@@ -91,7 +91,9 @@ class CTeNormalInfos(spec_models.StackedModel):
         related="document_id.modal_aquaviario_id",
     )
 
-    cte40_vPrest = fields.Monetary(related="document_id.cte40_vPrest")
+    cte40_vPrest = fields.Monetary(
+        related="document_id.cte40_vTPrest"
+    )  # TODO: avaliar melhor
 
     cte40_vAFRMM = fields.Monetary(related="document_id.cte40_vAFRMM")
 
