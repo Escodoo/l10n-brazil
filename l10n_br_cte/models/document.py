@@ -1068,37 +1068,34 @@ class CTe(spec_models.StackedModel):
 
         self.cancel_event_id = self.event_ids.create_event_save_xml(
             company_id=self.company_id,
-            environment=(
-                EVENT_ENV_PROD if self.cte_environment == "1" else EVENT_ENV_HML
-            ),
+            environment=(EVENT_ENV_PROD if self.cte40_tpAmb == "1" else EVENT_ENV_HML),
             event_type="2",
-            xml_file=processo.envio_xml.decode("utf-8"),
+            xml_file=processo.envio_xml,
             document_id=self,
         )
 
-        for retevento in processo.resposta.retEvento:
-            if not retevento.infEvento.chCte == self.document_key:
-                continue
+        resposta = processo.resposta.infEvento
+        if resposta.chCTe == self.document_key:
 
-            if retevento.infEvento.cStat not in CANCELADO:
+            if resposta.cStat not in CANCELADO:
                 mensagem = "Erro no cancelamento"
-                mensagem += "\nCódigo: " + retevento.infEvento.cStat
-                mensagem += "\nMotivo: " + retevento.infEvento.xMotivo
+                mensagem += "\nCódigo: " + resposta.cStat
+                mensagem += "\nMotivo: " + resposta.xMotivo
                 raise UserError(mensagem)
 
-            if retevento.infEvento.cStat == CANCELADO_FORA_PRAZO:
+            if resposta.cStat in CANCELADO_FORA_PRAZO:
                 self.state_fiscal = SITUACAO_FISCAL_CANCELADO_EXTEMPORANEO
-            elif retevento.infEvento.cStat == CANCELADO_DENTRO_PRAZO:
+            elif resposta.cStat in CANCELADO_DENTRO_PRAZO:
                 self.state_fiscal = SITUACAO_FISCAL_CANCELADO
 
             self.state_edoc = SITUACAO_EDOC_CANCELADA
             self.cancel_event_id.set_done(
-                status_code=retevento.infEvento.cStat,
-                response=retevento.infEvento.xMotivo,
+                status_code=resposta.cStat,
+                response=resposta.xMotivo,
                 protocol_date=fields.Datetime.to_string(
-                    datetime.fromisoformat(retevento.infEvento.dhRegEvento)
+                    datetime.fromisoformat(resposta.dhRegEvento)
                 ),
-                protocol_number=retevento.infEvento.nProt,
+                protocol_number=resposta.nProt,
                 file_response_xml=processo.retorno.content.decode("utf-8"),
             )
 
