@@ -24,6 +24,9 @@
                 <field name="cte40_tpServ" />
                 <field name="cte40_rem" />
                 <field name="cte40_exped" />
+                <field name="cte40_tpPer" />
+                <field name="cte40_dProg" />
+                <field name="cte40_tpHor" />
             </field>
             <page name="delivery" position="inside">
                 <separator name="cargo_infos_sep" string="Cargo Infos" />

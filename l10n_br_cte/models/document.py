@@ -18,18 +18,26 @@ from odoo.addons.l10n_br_cte_spec.models.v4_0.cte_modal_ferroviario_v4_00 import
     TRAFMUT_FERREMI,
     TRAFMUT_RESPFAT,
 )
+from odoo.addons.l10n_br_cte_spec.models.v4_0.cte_tipos_basico_v4_00 import (
+    COMDATA_TPPER,
+    SEMHORA_TPHOR,
+)
 from odoo.addons.l10n_br_fiscal.constants.fiscal import (
     AUTORIZADO,
     CANCELADO,
     CANCELADO_DENTRO_PRAZO,
     CANCELADO_FORA_PRAZO,
     DENEGADO,
+    DOCUMENT_ISSUER_COMPANY,
     EVENT_ENV_HML,
     EVENT_ENV_PROD,
     LOTE_PROCESSADO,
+    PROCESSADOR_OCA,
+    SITUACAO_EDOC_A_ENVIAR,
     SITUACAO_EDOC_AUTORIZADA,
     SITUACAO_EDOC_CANCELADA,
     SITUACAO_EDOC_DENEGADA,
+    SITUACAO_EDOC_EM_DIGITACAO,
     SITUACAO_EDOC_REJEITADA,
     SITUACAO_FISCAL_CANCELADO,
     SITUACAO_FISCAL_CANCELADO_EXTEMPORANEO,
@@ -540,18 +548,15 @@ class CTe(spec_models.StackedModel):
     # CT-e tag: infDoc
     ##########################
 
-    cte40_infDoc = fields.One2many(
-        comodel_name="l10n_br_fiscal.document.related",
-        related="document_related_ids",
-        inverse_name="document_id",
+    cte40_infDoc = fields.Many2one(
+        comodel_name="l10n_br_fiscal.document",
+        compute="_compute_cte40_infDoc",
         string="Informações dos documentos transportados",
     )
 
-    ##########################
-    # CT-e tag: infGlobalizado
-    ##########################
-
-    cte40_xObs = fields.Text(related="fiscal_additional_data")
+    def _compute_cte40_infDoc(self):
+        for doc in self:
+            doc.cte40_infDoc = doc
 
     def _compute_cte40_infNFe(self):
         for record in self:
@@ -1123,3 +1128,62 @@ class CTe(spec_models.StackedModel):
         # serialized_doc = self.serialize()[0]
         # xml = processador.assina_raiz(serialized_doc, serialized_doc.infNFe.Id)
         # return processador._generate_qrcode_contingency(serialized_doc, xml)
+
+    def _need_compute_cte_tags(self):
+        if (
+            self.state_edoc in [SITUACAO_EDOC_EM_DIGITACAO, SITUACAO_EDOC_A_ENVIAR]
+            and self.processador_edoc == PROCESSADOR_OCA
+            and self.document_type_id.code in ["57"]
+            and self.issuer == DOCUMENT_ISSUER_COMPANY
+        ):
+            return True
+        else:
+            return False
+
+    # Complemento
+    cte40_compl = fields.Many2one(
+        comodel_name="l10n_br_fiscal.document", compute="_compute_cte40_compl"
+    )
+    cte40_xObs = fields.Text(compute="_compute_cte40_compl")
+    cte40_obsCont = fields.One2many(
+        "l10n_br_fiscal.comment", compute="_compute_cte40_obsCont"
+    )
+
+    def _compute_cte40_obsCont(self):
+        for doc in self:
+            doc.cte40_obsCont = doc.comment_ids
+
+    def _compute_cte40_compl(self):
+        for doc in self:
+            fiscal_data = (
+                doc.fiscal_additional_data if doc.fiscal_additional_data else ""
+            )
+            customer_data = (
+                doc.customer_additional_data if doc.customer_additional_data else ""
+            )
+            doc.cte40_xObs = (fiscal_data + " " + customer_data)[:256].strip()
+            doc.cte40_compl = doc.id
+
+    # Entrega
+    cte40_entrega = fields.Many2one(
+        comodel_name="l10n_br_fiscal.document", compute="_compute_cte40_entrega"
+    )
+
+    cte40_comData = fields.Many2one(
+        comodel_name="l10n_br_fiscal.document", compute="_compute_cte40_entrega"
+    )
+    cte40_tpPer = fields.Selection(
+        selection=COMDATA_TPPER, string="Tipo de data/período programado", default="2"
+    )
+    cte40_dProg = fields.Date("Data Programada", default=fields.Date.today)
+
+    cte40_semHora = fields.Many2one(
+        comodel_name="l10n_br_fiscal.document", compute="_compute_cte40_entrega"
+    )
+    cte40_tpHor = fields.Selection(SEMHORA_TPHOR, string="Tipo de hora", default="0")
+
+    def _compute_cte40_entrega(self):
+        for doc in self:
+            doc.cte40_entrega = doc
+            doc.cte40_comData = doc
+            doc.cte40_semHora = doc
