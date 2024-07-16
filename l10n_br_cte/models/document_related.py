@@ -11,13 +11,9 @@ class CTeRelated(spec_models.StackedModel):
     _name = "l10n_br_fiscal.document.related"
     _inherit = [
         "l10n_br_fiscal.document.related",
-        "cte.40.tcte_infctenorm",
-        # "cte.40.tcte_infnfe",
-        # "cte.40.tcte_infnf",
-        # "cte.40.tcte_infq",
+        "cte.40.tcte_infdoc",
     ]
-    _stacked = "cte.40.tcte_infctenorm"
-    # _stacked = "cte.40.tcte_infnfe"
+    _stacked = "cte.40.tcte_infdoc"
     _field_prefix = "cte40_"
     _schema_name = "cte"
     _schema_version = "4.0.0"
@@ -25,39 +21,6 @@ class CTeRelated(spec_models.StackedModel):
     _spec_module = "odoo.addons.l10n_br_cte_spec.models.v4_0.cte_tipos_basico_v4_00"
     _spec_tab_name = "CTe"
     _binding_module = "nfelib.cte.bindings.v4_0.cte_tipos_basico_v4_00"
-
-    # infQ TODO computes/relateds
-
-    cte40_tpMed = fields.Char()
-
-    cte40_qCarga = fields.Float()
-
-    cte40_cUnid = fields.Selection(
-        selection=[
-            ("00", "M3"),
-            ("01", "KG"),
-            ("02", "TON"),
-            ("03", "UNIDADE"),
-            ("04", "LITROS"),
-            ("05", "MMBTU"),
-        ],
-    )
-
-    # infCarga
-    cte40_prodPred = fields.Char(string="prodPred")
-
-    cte40_vCarga = fields.Monetary(
-        currency_field="currency_id", compute="_compute_vCarga", store=True
-    )
-
-    currency_id = fields.Many2one(
-        comodel_name="res.currency", related="company_id.currency_id", readonly=True
-    )
-
-    company_id = fields.Many2one(
-        comodel_name="res.company",
-        default=lambda self: self.env.company,
-    )
 
     # InfNFe
     cte40_chave = fields.Char(
@@ -121,11 +84,6 @@ class CTeRelated(spec_models.StackedModel):
         inverse="_inverse_cte40_choice_infNF_infNFE_infOutros",
         string="CHOICE",
     )
-
-    def _compute_vCarga(self):
-        for rec in self:
-            if rec.document_related_id:
-                rec.cte40_vCarga += rec.document_related_id.amount_price_gross
 
     @api.depends("document_type_id")
     def _compute_cte_data(self):
