@@ -31,6 +31,7 @@ from odoo.addons.l10n_br_fiscal.constants.fiscal import (
     DOCUMENT_ISSUER_COMPANY,
     EVENT_ENV_HML,
     EVENT_ENV_PROD,
+    EVENTO_RECEBIDO,
     LOTE_PROCESSADO,
     PROCESSADOR_OCA,
     SITUACAO_EDOC_A_ENVIAR,
@@ -917,6 +918,11 @@ class CTe(spec_models.StackedModel):
         if xsd_field == "cte40_tpAmb":
             self.env.context = dict(self.env.context)
             self.env.context.update({"tpAmb": self[xsd_field]})
+
+        # TODO: Força a remoção da tag infGlobalizado já que o
+        # campo xObs está no l10n_br_fiscal.document
+        if xsd_field == "cte40_infGlobalizado":
+            return False
         return super()._export_field(xsd_field, class_obj, member_spec, export_value)
 
     ################################
@@ -1103,6 +1109,61 @@ class CTe(spec_models.StackedModel):
                 protocol_number=resposta.nProt,
                 file_response_xml=processo.retorno.content.decode("utf-8"),
             )
+
+    def _document_correction(self, justificative):
+        result = super(CTe, self)._document_correction(justificative)
+        online_event = self.filtered(filter_processador_edoc_cte)
+        if online_event:
+            online_event._cte_correction(justificative)
+        return result
+
+    def _cte_correction(self, justificative):
+        self.ensure_one()
+        processador = self._processador()
+
+        numeros = self.event_ids.filtered(
+            lambda e: e.type == "14" and e.state == "done"
+        ).mapped("sequence")
+
+        sequence = str(int(max(numeros)) + 1) if numeros else "1"
+
+        evento = processador.carta_correcao(
+            chave=self.document_key,
+            protocolo_autorizacao=self.authorization_protocol,
+            justificativa=justificative.replace("\n", "\\n"),
+            sequencia=sequence,
+        )
+        processo = processador.enviar_lote_evento(lista_eventos=[evento])
+        # Gravamos o arquivo no disco e no filestore ASAP.
+        event_id = self.event_ids.create_event_save_xml(
+            company_id=self.company_id,
+            environment=(EVENT_ENV_PROD if self.cte40_tpAmb == "1" else EVENT_ENV_HML),
+            event_type="14",
+            xml_file=processo.envio_xml,
+            document_id=self,
+            sequence=sequence,
+            justification=justificative,
+        )
+
+        resposta = processo.resposta.infEvento
+
+        if resposta.cStat not in EVENTO_RECEBIDO and not (
+            resposta.chCTe == self.document_key
+        ):
+            mensagem = "Erro na carta de correção"
+            mensagem += "\nCódigo: " + resposta.cStat
+            mensagem += "\nMotivo: " + resposta.xMotivo
+            raise UserError(mensagem)
+
+        event_id.set_done(
+            status_code=resposta.cStat,
+            response=resposta.xMotivo,
+            protocol_date=fields.Datetime.to_string(
+                datetime.fromisoformat(resposta.dhRegEvento)
+            ),
+            protocol_number=resposta.nProt,
+            file_response_xml=processo.retorno.content.decode("utf-8"),
+        )
 
     def _document_qrcode(self):
         super()._document_qrcode()
