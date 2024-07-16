@@ -3,6 +3,7 @@
 
 import logging
 import re
+import sys
 from datetime import datetime
 
 from erpbrasil.edoc.cte import TransmissaoCTE
@@ -43,6 +44,7 @@ from odoo.addons.l10n_br_fiscal.constants.fiscal import (
     SITUACAO_FISCAL_CANCELADO,
     SITUACAO_FISCAL_CANCELADO_EXTEMPORANEO,
 )
+from odoo.addons.l10n_br_fiscal.constants.icms import ICMS_CST, ICMS_SN_CST
 from odoo.addons.spec_driven_model.models import spec_models
 
 from ..constants.modal import CTE_MODAL_VERSION_DEFAULT
@@ -66,29 +68,66 @@ def filter_processador_edoc_cte(record):
 class CTe(spec_models.StackedModel):
 
     _name = "l10n_br_fiscal.document"
-    _inherit = ["l10n_br_fiscal.document", "cte.40.tcte_infcte", "cte.40.tcte_fat"]
+    _inherit = [
+        "l10n_br_fiscal.document",
+        "cte.40.tcte_infcte",
+        "cte.40.tcte_imp",
+        "cte.40.tcte_fat",
+    ]
     _stacked = "cte.40.tcte_infcte"
     _field_prefix = "cte40_"
     _schema_name = "cte"
     _schema_version = "4.0.0"
     _odoo_module = "l10n_br_cte"
     _spec_module = "odoo.addons.l10n_br_cte_spec.models.v4_0.cte_tipos_basico_v4_00"
+    _spec_tab_name = "CTe"
     _binding_module = "nfelib.cte.bindings.v4_0.cte_tipos_basico_v4_00"
+    _stack_skip = (
+        "cte40_fluxo",
+        "cte40_semData",
+        "cte40_noInter",
+        "cte40_comHora",
+        "cte40_noPeriodo",
+    )
     _cte_search_keys = ["cte40_Id"]
+
+    # all m2o at this level will be stacked even if not required:
+    _force_stack_paths = (
+        "infcte.compl",
+        "infcte.compl.entrega" "infcte.vprest",
+        "infcte.imp",
+    )
 
     INFCTE_TREE = """
     > infCte
         > <ide>
-        - <toma> res.partner
+            > <toma> res.partner
+        > <compl>
+            > <Entrega>
+            - <xObs>
+            ≡ <ObsCont>
+            ≡ <ObsFisco>
+
         > <emit> res.company
-        > <dest> res.partner
+        > <rem> res.company
+        > <exped> res.partner
+        > <receb> res.partner
         > <vPrest>
+            ≡ <comp>
         > <imp>
-        - <ICMS>
-        - <ICMSUFFim>
+            > <ICMS>
+            > <ICMSUFFim>
         > <infCTeNorm>
-        - <infCarga>
-        - <infModal>"""
+            > <infCarga>
+                ≡ <infQ>
+            > <infDoc>
+                ≡ <infNF>
+                ≡ <infNFe>
+                ≡ <infOutros>
+        -   > <infModal>
+        > <autXML>
+        > <infRespTec>
+    > <infCTeSupl>"""
 
     ##########################
     # CT-e spec related fields
@@ -334,6 +373,57 @@ class CTe(spec_models.StackedModel):
                 doc.cte40_UFFim = "EX"
 
     ##########################
+    # CT-e tag: compl
+    ##########################
+
+    cte40_xObs = fields.Text(compute="_compute_cte40_compl")
+    cte40_obsCont = fields.One2many(
+        "l10n_br_fiscal.comment", compute="_compute_cte40_obsCont"
+    )
+
+    cte40_obsFisco = fields.One2many(
+        "l10n_br_fiscal.comment", compute="_compute_cte40_obsCont"
+    )
+
+    ##########################
+    # CT-e tag: compl
+    # Methods
+    ##########################
+
+    @api.depends("comment_ids")
+    def _compute_cte40_obsCont(self):
+        for doc in self:
+            doc.cte40_obsCont = doc.comment_ids.filtered(
+                lambda c: c.comment_type == "commercial"
+            )
+            doc.cte40_obsFisco = doc.comment_ids.filtered(
+                lambda c: c.comment_type == "fiscal"
+            )
+
+    def _compute_cte40_compl(self):
+        for doc in self:
+            fiscal_data = (
+                doc.fiscal_additional_data if doc.fiscal_additional_data else ""
+            )
+            customer_data = (
+                doc.customer_additional_data if doc.customer_additional_data else ""
+            )
+            doc.cte40_xObs = (fiscal_data + " " + customer_data)[:256].strip()
+
+    ##########################
+    # CT-e tag: entrega
+    ##########################
+
+    # TODO: pensar em algo genericoom base nisso decidir quais tags
+    # puxar (comData,semData,noPeriodo...)
+    cte40_tpPer = fields.Selection(
+        selection=COMDATA_TPPER, string="Tipo de data/período programado", default="2"
+    )
+    cte40_dProg = fields.Date("Data Programada", default=fields.Date.today)
+
+    cte40_tpHor = fields.Selection(SEMHORA_TPHOR, string="Tipo de hora", default="0")
+
+    ##########################
     # CT-e tag: emit
     ##########################
 
@@ -444,23 +534,210 @@ class CTe(spec_models.StackedModel):
                 doc.cte40_receb = doc.partner_id
 
     ##########################
-    # CT-e tag: imp TODO
+    # CT-e tag: vPrest
+    # Methods
     ##########################
 
-    cte40_imp = fields.One2many(
+    cte40_vTPrest = fields.Monetary(
+        compute="_compute_cte40_vPrest",
+        string="Valor da Total Prestação Base de Cálculo",
+    )
+
+    cte40_vRec = fields.Monetary(
+        compute="_compute_cte40_vPrest",
+        string="Valor Recebido",
+    )
+
+    cte40_comp = fields.One2many(
         comodel_name="l10n_br_fiscal.document.line",
         inverse_name="document_id",
         related="fiscal_line_ids",
     )
 
+    def _compute_cte40_vPrest(self):
+        vTPrest = 0
+        vRec = 0
+        for doc in self:
+            for line in self.fiscal_line_ids:
+                vTPrest += line.amount_total
+                vRec += line.price_gross
+            doc.cte40_vTPrest = vTPrest
+            doc.cte40_vRec = vRec
+
+    ##################################################
+    # CT-e tag: ICMS
+    # Grupo N01. Grupo Tributação do ICMS= 00
+    # Grupo N02. Grupo Tributação do ICMS= 20
+    # Grupo N03. Grupo Tributação do ICMS= 45 (40, 41 e 51)
+    # Grupo N04. Grupo Tributação do ICMS= 60
+    # Grupo N05. Grupo Tributação do ICMS= 90 - ICMS outros
+    # Grupo N06. Grupo Tributação do ICMS= 90 - ICMS Outra UF
+    # Grupo N06. Grupo Tributação do ICMS= 01 - ISSN
+    #################################################
+
+    cte40_vTotTrib = fields.Monetary(related="amount_estimate_tax")
+
+    # cte40_infAdFisco = fields.Text(related="additional_data")
+
+    ##################################################
+    # CT-e tag: ICMS
+    # Methods
+    ##################################################
+
+    cte40_choice_icms = fields.Selection(
+        selection=[
+            ("cte40_ICMS00", "ICMS00"),
+            ("cte40_ICMS20", "ICMS20"),
+            ("cte40_ICMS45", "ICMS45"),
+            ("cte40_ICMS60", "ICMS60"),
+            ("cte40_ICMS90", "ICMS90"),
+            ("cte40_ICMSOutraUF", "ICMSOutraUF"),
+            ("cte40_ICMSSN", "ICMSSN"),
+        ],
+        string="Tipo de ICMS",
+        compute="_compute_choice_icms",
+        store=True,
+    )
+
+    cte40_CST = fields.Selection(
+        selection=[
+            ("00", "00 - Tributação normal ICMS"),
+            ("20", "20 - Tributação com BC reduzida do ICMS"),
+            ("45", "45 - ICMS Isento, não Tributado ou diferido"),
+            ("60", "60 - ICMS cobrado por substituição tributária"),
+            ("90", "90 - ICMS outros"),
+            ("90", "90 - ICMS Outra UF"),
+            ("01", "01 - Simples Nacional"),
+        ],
+        string="Classificação Tributária do Serviço",
+        compute="_compute_choice_icms",
+        store=True,
+    )
+
+    # ICMSSN
+    cte40_indSN = fields.Float(default=1)
+
+    # # ICMSOutraUF
+    # # TODO
+
     ##########################
-    # CT-e tag: imp
+    # CT-e tag: ICMS
     # Compute Methods
     ##########################
 
-    def _compute_imp(self):
-        for doc in self:
-            doc.cte40_ICMS = doc.fiscal_line_ids
+    @api.depends("fiscal_line_ids")
+    def _compute_choice_icms(self):
+        for record in self:
+            record.cte40_choice_icms = None
+            record.cte40_CST = None
+            if not record.fiscal_line_ids:
+                continue
+            if record.fiscal_line_ids[0].icms_cst_id.code in ICMS_CST:
+                if record.fiscal_line_ids[0].icms_cst_id.code in ["40", "41", "50"]:
+                    record.cte40_choice_icms = "cte40_ICMS45"
+                    record.cte40_CST = "45"
+                elif (
+                    record.fiscal_line_ids[0].icms_cst_id.code == "90"
+                    and record.partner_id.state_id != record.company_id.state_id
+                ):
+                    record.cte40_choice_icms = "cte40_ICMSOutraUF"
+                else:
+                    record.cte40_choice_icms = "{}{}".format(
+                        "cte40_ICMS", record.fiscal_line_ids[0].icms_cst_id.code
+                    )
+                    record.cte40_CST = record.fiscal_line_ids[0].icms_cst_id.code
+            elif record.fiscal_line_ids[0].icms_cst_id.code in ICMS_SN_CST:
+                record.cte40_choice_icms = "cte40_ICMSSN"
+                record.cte40_CST = "90"
+
+    def _export_fields_icms(self):
+        # Verifica se fiscal_line_ids está vazio para evitar erros
+        if not self.fiscal_line_ids:
+            return {}
+
+        # TODO:aprimorar. talvez criar os campos relacionados com os campos e totais
+        # do documento fiscal e buscar apenas os percentuais da primeira linha
+        first_line = self.fiscal_line_ids[0]
+
+        icms = {
+            "CST": self.cte40_CST,
+            "vBC": 0.0,
+            "pRedBC": first_line.icms_reduction,
+            "pICMS": first_line.icms_percent,
+            "vICMS": 0.0,
+            "vICMSSubstituto": 0.0,
+            "indSN": int(self.cte40_indSN),
+            "vBCSTRet": 0.0,
+            "vICMSSTRet": 0.0,
+            "pICMSSTRet": first_line.icmsst_wh_percent,
+        }
+
+        for line in self.fiscal_line_ids:
+            icms["vBC"] += line.icms_base
+            icms["vICMS"] += line.icms_value
+            icms["vICMSSubstituto"] += line.icms_substitute
+            icms["vBCSTRet"] += line.icmsst_wh_base
+            icms["vICMSSTRet"] += line.icmsst_wh_value
+
+        # Formatar os valores acumulados
+        icms["vBC"] = str("%.02f" % icms["vBC"])
+        icms["vICMS"] = str("%.02f" % icms["vICMS"])
+        icms["vICMSSubstituto"] = str("%.02f" % icms["vICMSSubstituto"])
+        icms["vBCSTRet"] = str("%.02f" % icms["vBCSTRet"])
+        icms["vICMSSTRet"] = str("%.02f" % icms["vICMSSTRet"])
+        icms["pRedBC"] = str("%.04f" % icms["pRedBC"])
+        icms["pICMS"] = str("%.02f" % icms["pICMS"])
+        icms["pICMSSTRet"] = str("%.02f" % icms["pICMSSTRet"])
+
+        return icms
+
+    def _export_fields_cte_40_timp(self, xsd_fields, class_obj, export_dict):
+        # TODO Not Implemented
+        if "cte40_ICMSOutraUF" in xsd_fields:
+            xsd_fields.remove("cte40_ICMSOutraUF")
+
+        xsd_fields = [self.cte40_choice_icms]
+        icms_tag = (
+            self.cte40_choice_icms.replace("cte40_", "")
+            .replace("ICMSSN", "Icmssn")
+            .replace("ICMS", "Icms")
+        )
+        binding_module = sys.modules[self._binding_module]
+        icms = binding_module.Timp
+        icms_binding = getattr(icms, icms_tag)
+        icms_dict = self._export_fields_icms()
+        sliced_icms_dict = {
+            key: icms_dict.get(key)
+            for key in icms_binding.__dataclass_fields__.keys()
+            if icms_dict.get(key)
+        }
+        export_dict[icms_tag.upper()] = icms_binding(**sliced_icms_dict)
+
+    # ##########################
+    # # CT-e tag: ICMSUFFim
+    # ##########################
+
+    # cte40_vBCUFFim = fields.Monetary(related="icms_destination_base")
+    # cte40_pFCPUFFim = fields.Monetary(compute="_compute_cte40_ICMSUFFim", store=True)
+    # cte40_pICMSUFFim = fields.Monetary(compute="_compute_cte40_ICMSUFFim", store=True)
+    # # TODO
+    # # cte40_pICMSInter = fields.Selection(
+    # #    selection=[("0", "Teste")],
+    # #    compute="_compute_cte40_ICMSUFFim")
+
+    # def _compute_cte40_ICMSUFFim(self):
+    #     for record in self:
+    #         #    if record.icms_origin_percent:
+    #         #        record.cte40_pICMSInter = str("%.02f" % record.icms_origin_percent)
+    #         #    else:
+    #         #        record.cte40_pICMSInter = False
+
+    #         record.cte40_pFCPUFFim = record.icmsfcp_percent
+    #         record.cte40_pICMSUFFim = record.icms_destination_percent
+
+    # cte40_vFCPUFfim = fields.Monetary(related="icmsfcp_value")
+    # cte40_vICMSUFFim = fields.Monetary(related="icms_destination_value")
+    # cte40_vICMSUFIni = fields.Monetary(related="icms_origin_value")
 
     #####################################
     # CT-e tag: infCTeNorm and infCteComp
@@ -483,42 +760,6 @@ class CTe(spec_models.StackedModel):
     #     comodel_name="l10n_br_fiscal.document.related",
     #     inverse_name="document_id",
     # )
-
-    ##########################
-    # CT-e tag: vPrest
-    # Methods
-    ##########################
-
-    cte40_vPrest = fields.Many2one(
-        comodel_name="l10n_br_fiscal.document", compute="_compute_cte40_vPrest"
-    )
-
-    cte40_vTPrest = fields.Monetary(
-        compute="_compute_cte40_vPrest",
-        string="Valor da Total Prestação Base de Cálculo",
-    )
-
-    cte40_vRec = fields.Monetary(
-        compute="_compute_cte40_vPrest",
-        string="Valor Recebido",
-    )
-
-    cte40_comp = fields.One2many(
-        comodel_name="l10n_br_fiscal.document.line",
-        inverse_name="document_id",
-        related="fiscal_line_ids",
-    )
-
-    def _compute_cte40_vPrest(self):
-        vTPrest = 0
-        vRec = 0
-        for doc in self:
-            doc.cte40_vPrest = doc
-            for line in self.fiscal_line_ids:
-                vTPrest += line.amount_total
-                vRec += line.price_gross
-            doc.cte40_vTPrest = vTPrest
-            doc.cte40_vRec = vRec
 
     ##########################
     # CT-e tag: infCarga
@@ -692,6 +933,14 @@ class CTe(spec_models.StackedModel):
         ),
     )
 
+    # TODO: avaliar
+    # def _compute_dime(self):
+    #     for record in self:
+    #         for package in record.product_id.packaging_ids:
+    #             record.cte40_xDime = (
+    #                 package.width + "X" + package.packaging_length + "X" + package.width
+    #             )
+
     cte40_CL = fields.Char(
         string="Classe",
         help=(
@@ -851,13 +1100,6 @@ class CTe(spec_models.StackedModel):
     # CT-e tag: infmodal
     # Compute Methods
     ##########################
-
-    # TODO: Fix
-    # -   def _compute_cte40_vPrest(self):
-    # -       vPrest = 0
-    # -       for record in self.fiscal_line_ids:
-    # -           vPrest += record.cte40_vTPrest
-    # -       self.cte40_vPrest = vPrest
 
     def _export_fields_cte_40_tcte_infmodal(self, xsd_fields, class_obj, export_dict):
         self = self.with_context(module="l10n_br_cte")
@@ -1201,50 +1443,4 @@ class CTe(spec_models.StackedModel):
         else:
             return False
 
-    # Complemento
-    cte40_compl = fields.Many2one(
-        comodel_name="l10n_br_fiscal.document", compute="_compute_cte40_compl"
-    )
-    cte40_xObs = fields.Text(compute="_compute_cte40_compl")
-    cte40_obsCont = fields.One2many(
-        "l10n_br_fiscal.comment", compute="_compute_cte40_obsCont"
-    )
-
-    def _compute_cte40_obsCont(self):
-        for doc in self:
-            doc.cte40_obsCont = doc.comment_ids
-
-    def _compute_cte40_compl(self):
-        for doc in self:
-            fiscal_data = (
-                doc.fiscal_additional_data if doc.fiscal_additional_data else ""
-            )
-            customer_data = (
-                doc.customer_additional_data if doc.customer_additional_data else ""
-            )
-            doc.cte40_xObs = (fiscal_data + " " + customer_data)[:256].strip()
-            doc.cte40_compl = doc.id
-
-    # Entrega
-    cte40_entrega = fields.Many2one(
-        comodel_name="l10n_br_fiscal.document", compute="_compute_cte40_entrega"
-    )
-
-    cte40_comData = fields.Many2one(
-        comodel_name="l10n_br_fiscal.document", compute="_compute_cte40_entrega"
-    )
-    cte40_tpPer = fields.Selection(
-        selection=COMDATA_TPPER, string="Tipo de data/período programado", default="2"
-    )
-    cte40_dProg = fields.Date("Data Programada", default=fields.Date.today)
-
-    cte40_semHora = fields.Many2one(
-        comodel_name="l10n_br_fiscal.document", compute="_compute_cte40_entrega"
-    )
-    cte40_tpHor = fields.Selection(SEMHORA_TPHOR, string="Tipo de hora", default="0")
-
-    def _compute_cte40_entrega(self):
-        for doc in self:
-            doc.cte40_entrega = doc
-            doc.cte40_comData = doc
-            doc.cte40_semHora = doc
+    # cte40_infAdFisco = fields.Text(related="additional_data")
