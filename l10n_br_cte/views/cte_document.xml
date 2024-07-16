@@ -103,7 +103,7 @@
                     </group>
                     <group attrs="{'invisible': [('transport_modal', '!=', '03')]}">
                             <group>
-                                <field name="cte40_vPrest" />
+                                <field name="cte40_vTPrest" />
                                 <field name="cte40_vAFRMM" />
                                 <field name="cte40_xNavio" />
                                 <field name="cte40_nViag" />

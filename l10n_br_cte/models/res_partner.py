@@ -89,7 +89,6 @@ class ResPartner(spec_models.SpecModel):
         compute="_compute_cep",
         inverse="_inverse_cte40_CEP",
         compute_sudo=True,
-        store=True,
     )
     cte40_cPais = fields.Char(
         related="country_id.bc_code",
