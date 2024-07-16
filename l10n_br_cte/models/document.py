@@ -3,6 +3,7 @@
 
 import logging
 import re
+import sys
 from datetime import datetime
 
 from erpbrasil.edoc.cte import TransmissaoCTE
@@ -43,6 +44,7 @@ from odoo.addons.l10n_br_fiscal.constants.fiscal import (
     SITUACAO_FISCAL_CANCELADO,
     SITUACAO_FISCAL_CANCELADO_EXTEMPORANEO,
 )
+from odoo.addons.l10n_br_fiscal.constants.icms import ICMS_CST, ICMS_SN_CST
 from odoo.addons.spec_driven_model.models import spec_models
 
 from ..constants.modal import CTE_MODAL_VERSION_DEFAULT
@@ -448,9 +450,7 @@ class CTe(spec_models.StackedModel):
     ##########################
 
     cte40_imp = fields.One2many(
-        comodel_name="l10n_br_fiscal.document.line",
-        inverse_name="document_id",
-        related="fiscal_line_ids",
+        comodel_name="l10n_br_fiscal.document", compute="_compute_cte40_vPrest"
     )
 
     ##########################
@@ -513,6 +513,7 @@ class CTe(spec_models.StackedModel):
         vTPrest = 0
         vRec = 0
         for doc in self:
+            doc.cte40_imp = doc
             doc.cte40_vPrest = doc
             for line in self.fiscal_line_ids:
                 vTPrest += line.amount_total
@@ -1248,3 +1249,233 @@ class CTe(spec_models.StackedModel):
             doc.cte40_entrega = doc
             doc.cte40_comData = doc
             doc.cte40_semHora = doc
+
+    ##################################################
+    # CT-e tag: ICMS
+    # Grupo N01. Grupo Tributação do ICMS= 00
+    # Grupo N02. Grupo Tributação do ICMS= 20
+    # Grupo N03. Grupo Tributação do ICMS= 45 (40, 41 e 51)
+    # Grupo N04. Grupo Tributação do ICMS= 60
+    # Grupo N05. Grupo Tributação do ICMS= 90 - ICMS outros
+    # Grupo N06. Grupo Tributação do ICMS= 90 - ICMS Outra UF
+    # Grupo N06. Grupo Tributação do ICMS= 01 - ISSN
+    #################################################
+
+    cte40_ICMS = fields.Many2one(
+        comodel_name="l10n_br_fiscal.document", compute="_compute_icms"
+    )
+    cte40_vTotTrib = fields.Monetary(compute="_compute_icms")
+
+    def _compute_icms(self):
+        for doc in self:
+            doc.cte40_ICMS = doc
+            if doc.fiscal_line_ids:
+                doc.cte40_vTotTrib = doc.fiscal_line_ids[0].estimate_tax
+
+    cte40_choice_icms = fields.Selection(
+        selection=[
+            ("cte40_ICMS00", "ICMS00"),
+            ("cte40_ICMS20", "ICMS20"),
+            ("cte40_ICMS45", "ICMS45"),
+            ("cte40_ICMS60", "ICMS60"),
+            ("cte40_ICMS90", "ICMS90"),
+            ("cte40_ICMSOutraUF", "ICMSOutraUF"),
+            ("cte40_ICMSSN", "ICMSSN"),
+        ],
+        string="Tipo de ICMS",
+        compute="_compute_choice_icms",
+        store=True,
+    )
+
+    cte40_CST = fields.Selection(
+        selection=[
+            ("00", "00 - Tributação normal ICMS"),
+            ("20", "20 - Tributação com BC reduzida do ICMS"),
+            ("45", "45 - ICMS Isento, não Tributado ou diferido"),
+            ("60", "60 - ICMS cobrado por substituição tributária"),
+            ("90", "90 - ICMS outros"),
+            ("90", "90 - ICMS Outra UF"),
+            ("01", "01 - Simples Nacional"),
+        ],
+        string="Classificação Tributária do Serviço",
+        compute="_compute_choice_icms",
+        store=True,
+    )
+
+    # cte40_pICMS = fields.Float(related="icms_percent", string="pICMS")
+
+    # cte40_vICMS = fields.Monetary(related="icms_value")
+
+    # # ICMS20 - ICMS90
+    # cte40_pRedBC = fields.Float(
+    #     related="icms_reduction",
+    # )
+
+    # cte40_vBC = fields.Monetary(related="icms_base")
+
+    # # ICMS60
+    # cte40_vBCSTRet = fields.Monetary(related="icmsst_wh_base")
+
+    # cte40_vICMSSTRet = fields.Monetary(related="icmsst_wh_value")
+
+    # TODO cte40_pICMSTRet = fields.Monetary(related="")
+
+    # ICMSSN
+    cte40_indSN = fields.Float(default=1)
+
+    # # ICMS NF
+    # cte40_vBCST = fields.Monetary(related="icmsst_base")
+
+    # # ICMSOutraUF
+    # # TODO
+
+    ##########################
+    # CT-e tag: ICMS
+    # Compute Methods
+    ##########################
+
+    @api.depends("fiscal_line_ids")
+    def _compute_choice_icms(self):
+        for record in self:
+            record.cte40_choice_icms = None
+            record.cte40_CST = None
+            if not record.fiscal_line_ids:
+                continue
+            if record.fiscal_line_ids[0].icms_cst_id.code in ICMS_CST:
+                if record.fiscal_line_ids[0].icms_cst_id.code in ["40", "41", "50"]:
+                    record.cte40_choice_icms = "cte40_ICMS45"
+                    record.cte40_CST = "45"
+                elif (
+                    record.fiscal_line_ids[0].icms_cst_id.code == "90"
+                    and record.partner_id.state_id != record.company_id.state_id
+                ):
+                    record.cte40_choice_icms = "cte40_ICMSOutraUF"
+                else:
+                    record.cte40_choice_icms = "{}{}".format(
+                        "cte40_ICMS", record.fiscal_line_ids[0].icms_cst_id.code
+                    )
+                    record.cte40_CST = record.fiscal_line_ids[0].icms_cst_id.code
+            elif record.fiscal_line_ids[0].icms_cst_id.code in ICMS_SN_CST:
+                record.cte40_choice_icms = "cte40_ICMSSN"
+                record.cte40_CST = "90"
+
+    # def _export_fields_icms(self):
+    #     icms = {
+    #         "CST": self.cte40_CST,
+    #         "vBC": str("%.02f" % self.fiscal_line_ids[0].icms_base),
+    #         "pRedBC": str("%.04f" % self.fiscal_line_ids[0].icms_reduction),
+    #         "pICMS": str("%.02f" % self.fiscal_line_ids[0].icms_percent),
+    #         "vICMS": str("%.02f" % self.fiscal_line_ids[0].icms_value),
+    #         "vICMSSubstituto": str("%.02f" % self.fiscal_line_ids[0].icms_substitute),
+    #         "indSN": int(self.cte40_indSN),
+    #         "vBCSTRet": str("%.02f" % self.fiscal_line_ids[0].icmsst_wh_base),
+    #         "vICMSSTRet": str("%.02f" % self.fiscal_line_ids[0].icmsst_wh_value),
+    #         "pICMSSTRet": str("%.02f" % self.fiscal_line_ids[0].icmsst_wh_percent),
+    #     }
+    #     return icms
+
+    def _export_fields_icms(self):
+        # Verifica se fiscal_line_ids está vazio para evitar erros
+        if not self.fiscal_line_ids:
+            return {}
+
+        first_line = self.fiscal_line_ids[0]
+
+        icms = {
+            "CST": self.cte40_CST,
+            "vBC": 0.0,
+            "pRedBC": first_line.icms_reduction,
+            "pICMS": first_line.icms_percent,
+            "vICMS": 0.0,
+            "vICMSSubstituto": 0.0,
+            "indSN": int(self.cte40_indSN),
+            "vBCSTRet": 0.0,
+            "vICMSSTRet": 0.0,
+            "pICMSSTRet": first_line.icmsst_wh_percent,
+        }
+
+        for line in self.fiscal_line_ids:
+            icms["vBC"] += line.icms_base
+            icms["vICMS"] += line.icms_value
+            icms["vICMSSubstituto"] += line.icms_substitute
+            icms["vBCSTRet"] += line.icmsst_wh_base
+            icms["vICMSSTRet"] += line.icmsst_wh_value
+
+        # Formatar os valores acumulados
+        icms["vBC"] = str("%.02f" % icms["vBC"])
+        icms["vICMS"] = str("%.02f" % icms["vICMS"])
+        icms["vICMSSubstituto"] = str("%.02f" % icms["vICMSSubstituto"])
+        icms["vBCSTRet"] = str("%.02f" % icms["vBCSTRet"])
+        icms["vICMSSTRet"] = str("%.02f" % icms["vICMSSTRet"])
+        icms["pRedBC"] = str("%.04f" % icms["pRedBC"])
+        icms["pICMS"] = str("%.02f" % icms["pICMS"])
+        icms["pICMSSTRet"] = str("%.02f" % icms["pICMSSTRet"])
+
+        return icms
+
+    def _export_fields_cte_40_timp(self, xsd_fields, class_obj, export_dict):
+        # TODO Not Implemented
+        if "cte40_ICMSOutraUF" in xsd_fields:
+            xsd_fields.remove("cte40_ICMSOutraUF")
+
+        xsd_fields = [self.cte40_choice_icms]
+        icms_tag = (
+            self.cte40_choice_icms.replace("cte40_", "")
+            .replace("ICMSSN", "Icmssn")
+            .replace("ICMS", "Icms")
+        )
+        binding_module = sys.modules[self._binding_module]
+        icms = binding_module.Timp
+        icms_binding = getattr(icms, icms_tag)
+        icms_dict = self._export_fields_icms()
+        sliced_icms_dict = {
+            key: icms_dict.get(key)
+            for key in icms_binding.__dataclass_fields__.keys()
+            if icms_dict.get(key)
+        }
+        export_dict[icms_tag.upper()] = icms_binding(**sliced_icms_dict)
+
+    # ##########################
+    # # CT-e tag: ICMSUFFim
+    # ##########################
+
+    # cte40_vBCUFFim = fields.Monetary(related="icms_destination_base")
+    # cte40_pFCPUFFim = fields.Monetary(compute="_compute_cte40_ICMSUFFim", store=True)
+    # cte40_pICMSUFFim = fields.Monetary(compute="_compute_cte40_ICMSUFFim", store=True)
+    # # TODO
+    # # cte40_pICMSInter = fields.Selection(
+    # #    selection=[("0", "Teste")],
+    # #    compute="_compute_cte40_ICMSUFFim")
+
+    # def _compute_cte40_ICMSUFFim(self):
+    #     for record in self:
+    #         #    if record.icms_origin_percent:
+    #         #        record.cte40_pICMSInter = str("%.02f" % record.icms_origin_percent)
+    #         #    else:
+    #         #        record.cte40_pICMSInter = False
+
+    #         record.cte40_pFCPUFFim = record.icmsfcp_percent
+    #         record.cte40_pICMSUFFim = record.icms_destination_percent
+
+    # cte40_vFCPUFfim = fields.Monetary(related="icmsfcp_value")
+    # cte40_vICMSUFFim = fields.Monetary(related="icms_destination_value")
+    # cte40_vICMSUFIni = fields.Monetary(related="icms_origin_value")
+
+    ##########################
+    # CT-e tag: natCarga
+    ##########################
+
+    # cte40_xDime = fields.Char(compute="_compute_dime", store=True)
+
+    # def _compute_dime(self):
+    #     for record in self:
+    #         for package in record.product_id.packaging_ids:
+    #             record.cte40_xDime = (
+    #                 package.width + "X" + package.packaging_length + "X" + package.width
+    #             )
+
+    ##########################
+    # CT-e tag: infAdFisco
+    ##########################
+
+    # cte40_infAdFisco = fields.Text(related="additional_data")
