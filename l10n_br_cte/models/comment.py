@@ -29,13 +29,11 @@ class CTeComment(spec_models.StackedModel):
         if xsd_field == "cte40_xCampo":
             return self.name[:20].strip()
         if xsd_field == "cte40_xTexto":
-            if self.env.context["params"]["model"] == "l10n_br_fiscal.document":
-                doc = self.env["l10n_br_fiscal.document"].browse(
-                    self.env.context["params"]["id"]
-                )
-                vals = {"user": self.env.user, "ctx": self._context, "doc": doc}
-                message = self.compute_message(vals).strip()
-                if self.comment_type == "fiscal":
-                    return message[:60]
-                return message[:160]
+            active_id = self.env.context["active_id"]
+            doc = self.env["l10n_br_fiscal.document"].browse(active_id)
+            vals = {"user": self.env.user, "ctx": self._context, "doc": doc}
+            message = self.compute_message(vals).strip()
+            if self.comment_type == "fiscal":
+                return message[:60]
+            return message[:160]
         return super()._export_field(xsd_field, class_obj, member_spec, export_value)
