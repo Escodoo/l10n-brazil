@@ -4,6 +4,8 @@
 import logging
 import re
 import sys
+
+# import base64
 from datetime import datetime
 
 from erpbrasil.edoc.cte import TransmissaoCTE
@@ -48,6 +50,10 @@ from odoo.addons.l10n_br_fiscal.constants.icms import ICMS_CST, ICMS_SN_CST
 from odoo.addons.spec_driven_model.models import spec_models
 
 from ..constants.modal import CTE_MODAL_VERSION_DEFAULT
+
+# TODO: https://github.com/Engenere/BrazilFiscalReport/pull/23
+# from brazilfiscalreport.dacte import Dacte
+
 
 _logger = logging.getLogger(__name__)
 try:
@@ -1444,3 +1450,33 @@ class CTe(spec_models.StackedModel):
             return False
 
     # cte40_infAdFisco = fields.Text(related="additional_data")
+
+    # def make_pdf(self):
+    #     if not self.filtered(filter_processador_edoc_cte):
+    #         return super().make_pdf()
+
+    #     file_pdf = self.file_report_id
+    #     self.file_report_id = False
+    #     file_pdf.unlink()
+
+    #     if self.authorization_file_id:
+    #         arquivo = self.authorization_file_id
+    #         xml_string = base64.b64decode(arquivo.datas).decode()
+    #     else:
+    #         arquivo = self.send_file_id
+    #         xml_string = base64.b64decode(arquivo.datas).decode()
+    #         # TODO: implementar temp_xml_autorizacao igual nfe ?
+    #         # xml_string = self.temp_xml_autorizacao(xml_string)
+
+    #     pdf = Dacte(xml=xml_string).output()
+
+    #     self.file_report_id = self.env["ir.attachment"].create(
+    #         {
+    #             "name": self.document_key + ".pdf",
+    #             "res_model": self._name,
+    #             "res_id": self.id,
+    #             "datas": base64.b64encode(pdf),
+    #             "mimetype": "application/pdf",
+    #             "type": "binary",
+    #         }
+    #     )
