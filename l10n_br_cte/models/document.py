@@ -1,17 +1,19 @@
 # Copyright 2023 KMEE INFORMATICA LTDA
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 
+import base64
 import logging
 import re
 import sys
-
-# import base64
 from datetime import datetime
 
 from erpbrasil.edoc.cte import TransmissaoCTE
+from lxml import etree
 from nfelib.cte.bindings.v4_0.cte_v4_00 import Cte
+from nfelib.cte.bindings.v4_0.proc_cte_v4_00 import CteProc
 from nfelib.nfe.ws.edoc_legacy import CTeAdapter as edoc_cte
 from requests import Session
+from xsdata.formats.dataclass.parsers import XmlParser
 
 from odoo import _, api, fields
 from odoo.exceptions import UserError
@@ -50,6 +52,8 @@ from odoo.addons.l10n_br_fiscal.constants.icms import ICMS_CST, ICMS_SN_CST
 from odoo.addons.spec_driven_model.models import spec_models
 
 from ..constants.modal import CTE_MODAL_VERSION_DEFAULT
+
+CTE_XML_NAMESPACE = {"cte": "http://www.portalfiscal.inf.br/cte"}
 
 # TODO: https://github.com/Engenere/BrazilFiscalReport/pull/23
 # from brazilfiscalreport.dacte import Dacte
@@ -442,7 +446,7 @@ class CTe(spec_models.StackedModel):
 
     cte40_CRT = fields.Selection(
         related="company_tax_framework",
-        string="Código de Regime Tributário (NFe)",
+        string="Código de Regime Tributário",
     )
 
     ##########################
@@ -1241,6 +1245,7 @@ class CTe(spec_models.StackedModel):
 
         if infProt.cStat in AUTORIZADO:
             state = SITUACAO_EDOC_AUTORIZADA
+            self._cte_response_add_proc(processo)
         elif infProt.cStat in DENEGADO:
             state = SITUACAO_EDOC_DENEGADA
         else:
@@ -1258,7 +1263,7 @@ class CTe(spec_models.StackedModel):
                 response=infProt.xMotivo,
                 protocol_date=protocol_date,
                 protocol_number=infProt.nProt,
-                file_response_xml=processo.retorno.text,
+                file_response_xml=processo.processo_xml.decode("utf-8"),
             )
         self.write(
             {
@@ -1480,3 +1485,58 @@ class CTe(spec_models.StackedModel):
     #             "type": "binary",
     #         }
     #     )
+
+    def _cte_response_add_proc(self, ws_response_process):
+        """
+        Inject the final NF-e, tag `cteProc`, into the response.
+        """
+        xml_soap = ws_response_process.retorno.content
+        tree_soap = etree.fromstring(xml_soap)
+        prot_element = tree_soap.xpath("//cte:protCTe", namespaces=CTE_XML_NAMESPACE)[0]
+        proc_xml = self._cte_create_proc(prot_element)
+        if proc_xml:
+            # it is not always possible to create cteProc.
+            parser = XmlParser()
+            proc = parser.from_string(proc_xml.decode(), CteProc)
+            ws_response_process.processo = proc
+            ws_response_process.processo_xml = proc_xml
+
+    def _cte_create_proc(self, prot_element):
+        """
+        Create the `cteProc` XML by combining the CT-e and the authorization protocol.
+
+        This method decodes the saved `enviCTe` message, extracts the CTe> tag,
+        and combines it with the provided authorization protocol element to create
+        the `cteProc` XML, which represents the finalized CT-e document.
+
+        Args:
+            prot_element: The XML element containing the authorization protocol.
+
+        Returns:
+            The assembled `cteProc` XML, or None if the `send_file_id` data is not
+            found.
+
+        Note:
+            Useful for recreating the final CT-e XML, as SEFAZ does not provide the
+            complete XML upon consultation, only the authorization protocol.
+        """
+        self.ensure_one()
+
+        if not self.send_file_id.datas:
+            _logger.info(
+                "CT-e data not found when trying to assemble the "
+                "xml with the authorization protocol (cteProc)"
+            )
+            return None
+
+        processor = self._processador()
+
+        # Extract the <CTe> tag from the `enviCTe` message, which represents the CT-e
+        xml_send = base64.b64decode(self.send_file_id.datas)
+        tree_send = etree.fromstring(xml_send)
+        doc_element = tree_send.xpath("//cte:CTe", namespaces=CTE_XML_NAMESPACE)[0]
+
+        # Assemble the `cteProc` using the erpbrasil.edoc library.
+        proc_xml = processor.monta_cte_proc(doc=doc_element, prot=prot_element)
+
+        return proc_xml
