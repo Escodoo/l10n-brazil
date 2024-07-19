@@ -227,17 +227,17 @@ class CTe(spec_models.StackedModel):
         default="1",
     )
 
-    cte40_cMunIni = fields.Char(compute="_compute_cte40_data", store=True)
+    cte40_cMunIni = fields.Char(compute="_compute_cte40_data")
 
-    cte40_xMunIni = fields.Char(compute="_compute_cte40_data", store=True)
+    cte40_xMunIni = fields.Char(compute="_compute_cte40_data")
 
-    cte40_UFIni = fields.Char(compute="_compute_cte40_data", store=True)
+    cte40_UFIni = fields.Char(compute="_compute_cte40_data")
 
-    cte40_cMunFim = fields.Char(compute="_compute_cte40_data", store=True)
+    cte40_cMunFim = fields.Char(compute="_compute_cte40_data")
 
-    cte40_xMunFim = fields.Char(compute="_compute_cte40_data", store=True)
+    cte40_xMunFim = fields.Char(compute="_compute_cte40_data")
 
-    cte40_UFFim = fields.Char(compute="_compute_cte40_data", store=True)
+    cte40_UFFim = fields.Char(compute="_compute_cte40_data")
 
     cte40_retira = fields.Selection(selection=[("0", "Sim"), ("1", "Não")], default="1")
 
