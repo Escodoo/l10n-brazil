@@ -441,7 +441,7 @@ class CTe(spec_models.StackedModel):
         comodel_name="res.company",
         compute="_compute_emit_data",
         readonly=True,
-        string="Emit",
+        string="Emitente",
     )
 
     cte40_CRT = fields.Selection(
@@ -467,7 +467,7 @@ class CTe(spec_models.StackedModel):
         compute="_compute_rem_data",
         readonly=False,
         store=True,
-        string="Rem",
+        string="Remetente",
     )
 
     ##########################
@@ -488,7 +488,7 @@ class CTe(spec_models.StackedModel):
         compute="_compute_exped_data",
         readonly=False,
         store=True,
-        string="Exped",
+        string="Expedidor",
     )
 
     ##########################
@@ -508,7 +508,7 @@ class CTe(spec_models.StackedModel):
         comodel_name="res.partner",
         compute="_compute_dest_data",
         readonly=True,
-        string="Dest",
+        string="Destinatário",
     )
 
     ##########################
@@ -528,7 +528,7 @@ class CTe(spec_models.StackedModel):
         comodel_name="res.partner",
         compute="_compute_receb_data",
         readonly=True,
-        string="Receb",
+        string="Recebedor",
     )
 
     ##########################
