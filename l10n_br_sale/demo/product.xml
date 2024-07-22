@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <odoo>
+    <record id="pricelist_br_simple" model="product.pricelist">
+        <field name="name">Public Pricelist</field>
+        <field name="sequence">1</field>
+        <field name="currency_id" ref="base.BRL" />
+    </record>
 
     <!-- Products -->
     <record id="product.product_product_27" model="product.product">

@@ -10,6 +10,7 @@ class L10nBrSaleDiscount(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.company = cls.env.ref("base.main_company")
+        cls.company.country_id = cls.env.ref("base.br")
         cls.group_total_discount_id = cls.env.ref(
             "l10n_br_sale.group_total_discount"
         ).id
@@ -19,7 +20,8 @@ class L10nBrSaleDiscount(TransactionCase):
 
         sale_manager_user = cls.env.ref("sales_team.group_sale_manager")
         fiscal_user = cls.env.ref("l10n_br_fiscal.group_user")
-        user_groups = [sale_manager_user.id, fiscal_user.id]
+        discount_per_line_user = cls.env.ref("product.group_discount_per_so_line")
+        user_groups = [sale_manager_user.id, fiscal_user.id, discount_per_line_user.id]
         cls.user = (
             cls.env["res.users"]
             .with_user(cls.env.user)

@@ -4,7 +4,8 @@
 from odoo import SUPERUSER_ID, api, tools
 
 
-def post_init_hook(cr, registry):
+def post_init_hook(env):
+    cr = env.cr
     cr.execute("select demo from ir_module_module where name='l10n_br_sale';")
     if cr.fetchone()[0]:
         env = api.Environment(cr, SUPERUSER_ID, {})
@@ -34,7 +35,7 @@ def post_init_hook(cr, registry):
             ]
         ):
             tools.convert_file(
-                cr,
+                env,
                 "l10n_br_sale",
                 "demo/fiscal_operation_simple.xml",
                 None,
@@ -55,7 +56,7 @@ def post_init_hook(cr, registry):
             ]
         ):
             tools.convert_file(
-                cr,
+                env,
                 "l10n_br_sale",
                 "demo/fiscal_operation_generic.xml",
                 None,

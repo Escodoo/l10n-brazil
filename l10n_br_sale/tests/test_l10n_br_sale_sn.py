@@ -14,3 +14,4 @@ class TestL10nBrSaleSN(L10nBrSaleBaseTest):
         cls.so_products = cls.env.ref("l10n_br_sale.sn_so_only_products")
         cls.so_services = cls.env.ref("l10n_br_sale.sn_so_only_services")
         cls.so_product_service = cls.env.ref("l10n_br_sale.sn_so_product_service")
+        cls._set_products_default_property_accounts()

@@ -24,6 +24,7 @@ class L10nBrSaleBaseTest(TransactionCase):
         cls.so_products = cls.env.ref("l10n_br_sale.lc_so_only_products")
         cls.so_services = cls.env.ref("l10n_br_sale.lc_so_only_services")
         cls.so_product_service = cls.env.ref("l10n_br_sale.lc_so_product_service")
+        cls._set_products_default_property_accounts()
         cls.fsc_op_sale = cls.env.ref("l10n_br_fiscal.fo_venda")
         # Testa os Impostos Dedutiveis
         cls.fsc_op_sale.deductible_taxes = True
@@ -143,14 +144,28 @@ class L10nBrSaleBaseTest(TransactionCase):
                 },
             },
         }
+    
+    @classmethod
+    def _set_products_default_property_accounts(cls):
+        for product in (
+            cls.so_product_service + cls.so_products + cls.so_services
+        ).order_line.product_id.product_tmpl_id.with_company(cls.company):
+            product.write(dict(
+                property_account_income_id=cls.env["account.account"].search([
+                    ("company_id", "=", cls.company.id),
+                    ("account_type", "=", "income"),
+                ], limit=1).ensure_one().id,
+                property_account_expense_id=cls.env["account.account"].search([
+                    ("company_id", "=", cls.company.id),
+                    ("account_type", "=", "expense"),
+                ], limit=1).ensure_one().id,
+            ))
 
     def _change_user_company(self, company):
         self.env.user.company_ids += company
         self.env.user.company_id = company
 
     def _run_sale_order_onchanges(self, sale_order):
-        sale_order.onchange_partner_id()
-        sale_order.onchange_partner_shipping_id()
         sale_order._onchange_fiscal_operation_id()
 
     def _run_sale_line_onchanges(self, sale_line):
@@ -159,7 +174,6 @@ class L10nBrSaleBaseTest(TransactionCase):
             return
         sale_line._onchange_product_id_fiscal()
         sale_line._onchange_fiscal_operation_id()
-        sale_line._onchange_fiscal_operation_line_id()
         sale_line._onchange_fiscal_taxes()
         sale_line._onchange_fiscal_tax_ids()
 
@@ -238,7 +252,6 @@ class L10nBrSaleBaseTest(TransactionCase):
             )
 
             for line in invoice.invoice_line_ids:
-                line._onchange_price_subtotal()
                 self.assertTrue(
                     line.fiscal_operation_line_id,
                     "Error to included Operation Line from Sale Order Line.",
@@ -523,7 +536,7 @@ class L10nBrSaleBaseTest(TransactionCase):
         # Devem existir duas Faturas/Documentos Fiscais
         self.assertEqual(2, self.so_product_service.invoice_count)
 
-    def test_fields_freight_insurance_other_costs(self):
+    def test_fields_freight_insurance_other_costs_by_line(self):
         """Test fields Freight, Insurance and Other Costs when
         defined or By Line or By Total in Sale Order.
         """
@@ -556,6 +569,17 @@ class L10nBrSaleBaseTest(TransactionCase):
             "Unexpected value for the field Amount Other in Sale Order.",
         )
 
+    def test_fields_freight_insurance_other_costs_by_total(self):
+        """Test fields Freight, Insurance and Other Costs when
+        defined or By Line or By Total in Sale Order.
+        """
+        self._change_user_company(self.company)
+
+        for line in self.so_products.order_line:
+            line.price_unit = 100.0
+            line.freight_value = 10.0
+            line.insurance_value = 10.0
+            line.other_value = 10.0
         # Teste definindo os valores Por Total
         # Por padrão a definição dos campos está por Linha
         self.so_products.company_id.delivery_costs = "total"

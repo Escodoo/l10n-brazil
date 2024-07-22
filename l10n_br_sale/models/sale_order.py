@@ -30,15 +30,8 @@ class SaleOrder(models.Model):
 
     fiscal_operation_id = fields.Many2one(
         comodel_name="l10n_br_fiscal.operation",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
         default=_default_fiscal_operation,
         domain=lambda self: self._fiscal_operation_domain(),
-    )
-
-    ind_pres = fields.Selection(
-        readonly=True,
-        states={"draft": [("readonly", False)]},
     )
 
     copy_note = fields.Boolean(
@@ -63,8 +56,6 @@ class SaleOrder(models.Model):
 
     discount_rate = fields.Float(
         string="Discount",
-        readonly=True,
-        states={"draft": [("readonly", False)], "sent": [("readonly", False)]},
     )
 
     comment_ids = fields.Many2many(
@@ -75,35 +66,21 @@ class SaleOrder(models.Model):
         string="Comments",
     )
 
-    amount_freight_value = fields.Monetary(
-        inverse="_inverse_amount_freight",
-    )
-
-    amount_insurance_value = fields.Monetary(
-        inverse="_inverse_amount_insurance",
-    )
-
-    amount_other_value = fields.Monetary(
-        inverse="_inverse_amount_other",
-    )
-
     operation_name = fields.Char(
         copy=False,
     )
 
-    def _get_amount_lines(self):
-        """Get object lines instaces used to compute fields"""
-        return self.mapped("order_line")
+    def _get_lines_field_name(self):
+        return "order_line"
 
-    @api.depends("order_line")
+    @api.depends(lambda s: s._get_compute_amount_dependencies())
     def _compute_amount(self):
         return super()._compute_amount()
 
     @api.depends("order_line.price_total")
     def _amount_all(self):
         """Compute the total amounts of the SO."""
-        for order in self:
-            order._compute_amount()
+        self._compute_amount()
 
     @api.model
     def _get_view(self, view_id=None, view_type="form", **options):
@@ -125,8 +102,7 @@ class SaleOrder(models.Model):
             # preciso apagar o campo na Linha, sem isso acontece um looping porque
             # ao apagar no Pedido o campo fica invisivel na Linha e quando está
             # visivel ele é requirido.
-            for line in self.order_line:
-                line.fiscal_operation_id = False
+            self.order_line.fiscal_operation_id = False
 
         return result
 
@@ -137,37 +113,32 @@ class SaleOrder(models.Model):
             # O caso Brasil se caracteriza por ter a Operação Fiscal
             return lines
         document_type_id = self._context.get("document_type_id")
-
-        return [
-            line
-            for line in lines
-            if not line.display_type
-            and line.fiscal_operation_line_id.get_document_type(line.company_id).id
-            == document_type_id
-        ]
+        return lines.filtered(lambda l: (
+            not l.display_type
+            and l.fiscal_operation_line_id.get_document_type(
+                l.company_id
+            ).id == document_type_id
+        ))
 
     # pylint: disable=except-pass
     def _create_invoices(self, grouped=False, final=False, date=None):
         if not self.fiscal_operation_id:
             return super()._create_invoices(grouped=grouped, final=final, date=date)
-        document_types = {
-            line.fiscal_operation_line_id.get_document_type(line.company_id)
-            for sale in self
-            for line in sale.order_line
-            if not line.display_type
-        }
-
+        document_types = self.order_line.filtered(lambda l: not l.display_type).mapped(
+            lambda r: (
+                r.fiscal_operation_line_id.get_document_type(r.company_id) 
+                if r 
+                else r.fiscal_operation_line_id.document_type_id
+            )
+        )
         moves = self.env["account.move"]
         for document_type in document_types:
-            self = self.with_context(document_type_id=document_type.id)
-            try:
-                moves |= super()._create_invoices(
-                    grouped=grouped, final=final, date=date
-                )
-            except UserError:
-                # TODO: Avoid only when it is "nothing to invoice error"
-                pass
-
+            moves |= super(SaleOrder, self.with_context(
+                document_type_id=document_type.id,
+                raise_if_nothing_to_invoice=False,
+            ))._create_invoices(
+                grouped=grouped, final=final, date=date
+            )
         if not moves:
             raise self._nothing_to_invoice_error()
 
@@ -175,10 +146,10 @@ class SaleOrder(models.Model):
 
     def _prepare_invoice(self):
         self.ensure_one()
-        result = super()._prepare_invoice()
+        inv_vals = super()._prepare_invoice()
         # O caso Brasil se caracteriza por ter a Operação Fiscal
         if self.fiscal_operation_id:
-            result.update(self._prepare_br_fiscal_dict())
+            inv_vals.update(self._prepare_br_fiscal_dict())
 
             document_type_id = self._context.get("document_type_id")
 
@@ -191,48 +162,55 @@ class SaleOrder(models.Model):
             )
 
             if document_type:
-                result["document_type_id"] = document_type_id
+                inv_vals["document_type_id"] = document_type_id
                 document_serie = document_type.get_document_serie(
                     self.company_id, self.fiscal_operation_id
                 )
                 if document_serie:
-                    result["document_serie_id"] = document_serie.id
+                    inv_vals["document_serie_id"] = document_serie.id
 
             if self.fiscal_operation_id.journal_id:
-                result["journal_id"] = self.fiscal_operation_id.journal_id.id
+                inv_vals["journal_id"] = self.fiscal_operation_id.journal_id.id
 
-        return result
+        return inv_vals
 
     def _amount_by_group(self):
-        for order in self:
-            currency = order.currency_id or order.company_id.currency_id
-            fmt = partial(
-                formatLang,
-                self.with_context(lang=order.partner_id.lang).env,
-                currency_obj=currency,
-            )
-            res = {}
-            for line in order.order_line:
-                taxes = line._compute_taxes(line.fiscal_tax_ids)["taxes"]
-                for tax in line.fiscal_tax_ids:
-                    computed_tax = taxes.get(tax.tax_domain)
-                    pr = order.currency_id.rounding
-                    if computed_tax and not float_is_zero(
-                        computed_tax.get("tax_value", 0.0), precision_rounding=pr
-                    ):
-                        group = tax.tax_group_id
-                        res.setdefault(group, {"amount": 0.0, "base": 0.0})
-                        res[group]["amount"] += computed_tax.get("tax_value", 0.0)
-                        res[group]["base"] += computed_tax.get("base", 0.0)
-            res = sorted(res.items(), key=lambda line: line[0].sequence)
-            order.amount_by_group = [
-                (
-                    line[0].name,
-                    line[1]["amount"],
-                    line[1]["base"],
-                    fmt(line[1]["amount"]),
-                    fmt(line[1]["base"]),
-                    len(res),
-                )
-                for line in res
-            ]
+        # A forma de calculo de impostos no l10n-brazil é satisfeita a partir
+        # de _compute_taxes_for_single_line, que cai em compute_all.
+        # A refatoração do 16 abstraiu o cálculo totalmente para account.tax,
+        # fazendo com que modelos como move, sale order e purchase order acabem
+        # nos mesmos métodos centrais para cálculo e agrupamento de impostos.
+        # Essa função nem existe nesse versão
+        pass
+        #for order in self:
+        #    currency = order.currency_id or order.company_id.currency_id
+        #    fmt = partial(
+        #        formatLang,
+        #        self.with_context(lang=order.partner_id.lang).env,
+        #        currency_obj=currency,
+        #    )
+        #    res = {}
+        #    for line in order.order_line:
+        #        taxes = line._compute_taxes(line.fiscal_tax_ids)["taxes"]
+        #        for tax in line.fiscal_tax_ids:
+        #            computed_tax = taxes.get(tax.tax_domain)
+        #            pr = order.currency_id.rounding
+        #            if computed_tax and not float_is_zero(
+        #                computed_tax.get("tax_value", 0.0), precision_rounding=pr
+        #            ):
+        #                group = tax.tax_group_id
+        #                res.setdefault(group, {"amount": 0.0, "base": 0.0})
+        #                res[group]["amount"] += computed_tax.get("tax_value", 0.0)
+        #                res[group]["base"] += computed_tax.get("base", 0.0)
+        #    res = sorted(res.items(), key=lambda line: line[0].sequence)
+        #    order.amount_by_group = [
+        #        (
+        #            line[0].name,
+        #            line[1]["amount"],
+        #            line[1]["base"],
+        #            fmt(line[1]["amount"]),
+        #            fmt(line[1]["base"]),
+        #            len(res),
+        #        )
+        #        for line in res
+        #    ]

@@ -8,7 +8,7 @@ from odoo.addons.sale.tests.common import TestSaleCommon
 class TestSaleOrderPriceList(TestSaleCommon):
     @classmethod
     def setUpClass(
-        cls, chart_template_ref="l10n_br_coa_generic.l10n_br_coa_generic_template"
+        cls, chart_template_ref="br_oca_generic"
     ):
         super().setUpClass(chart_template_ref=chart_template_ref)
 
@@ -43,8 +43,6 @@ class TestSaleOrderPriceList(TestSaleCommon):
 
         sale_form = Form(SaleOrder)
         sale_form.partner_id = cls.partner_a
-        sale_form.partner_invoice_id = cls.partner_a
-        sale_form.partner_shipping_id = cls.partner_a
         sale_form.fiscal_operation_id = cls.env.ref("l10n_br_fiscal.fo_venda")
 
         with sale_form.order_line.new() as line_form:

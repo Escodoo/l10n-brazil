@@ -73,7 +73,11 @@ class SaleOrderLine(models.Model):
 
     # Add Fields in model sale.order.line
     price_gross = fields.Monetary(
-        compute="_compute_amount", string="Gross Amount", compute_sudo=True
+        compute="_compute_amount", 
+        compute_sudo=True, 
+        precompute=True,
+        store=True,
+        string="Gross Amount", 
     )
 
     comment_ids = fields.Many2many(
@@ -95,6 +99,7 @@ class SaleOrderLine(models.Model):
     discount_value = fields.Monetary(
         compute="_compute_discounts",
         store=True,
+        precompute=True,
     )
 
     ind_final = fields.Selection(related="order_id.ind_final")
@@ -109,9 +114,18 @@ class SaleOrderLine(models.Model):
     )
 
     # Fields compute need parameter compute_sudo
-    price_subtotal = fields.Monetary(compute_sudo=True, precompute=True)
-    price_tax = fields.Monetary(compute_sudo=True)
-    price_total = fields.Monetary(compute_sudo=True)
+    price_subtotal = fields.Monetary(
+        compute="_compute_amount",
+        compute_sudo=True, 
+        precompute=True,
+        store=True,
+    )
+    price_tax = fields.Monetary(
+        compute_sudo=True, 
+    )
+    price_total = fields.Monetary(
+        compute_sudo=True, 
+    )
 
     user_total_discount = fields.Boolean(compute="_compute_user_total_discount")
     user_discount_value = fields.Boolean(compute="_compute_user_discount_value")
@@ -147,12 +161,9 @@ class SaleOrderLine(models.Model):
     @api.model
     def _cnae_domain(self):
         company = self.env.company
-        domain = []
-        if company.cnae_main_id and company.cnae_secondary_ids:
-            cnae_main_id = (company.cnae_main_id.id,)
-            cnae_secondary_ids = company.cnae_secondary_ids.ids
-            domain = ["|", ("id", "in", cnae_secondary_ids), ("id", "=", cnae_main_id)]
-        return domain
+        if not (cnaes := (company.cnae_secondary_ids | company.cnae_main_id)):
+            return []
+        return [("id", "in", cnaes.ids)]
 
     def _get_protected_fields(self):
         protected_fields = super()._get_protected_fields()
@@ -163,16 +174,12 @@ class SaleOrderLine(models.Model):
         ]
 
     @api.depends(
-        "product_uom_qty",
-        "price_unit",
-        "discount",
         "fiscal_price",
         "fiscal_quantity",
         "discount_value",
         "freight_value",
         "insurance_value",
         "other_value",
-        "tax_id",
     )
     def _compute_amount(self):
         """Compute the amounts of the SO line."""
@@ -210,12 +217,7 @@ class SaleOrderLine(models.Model):
         the price and fiscal quantity."""
         self._onchange_commercial_quantity()
 
-    @api.depends(
-        "qty_delivered_method",
-        "analytic_line_ids.so_line",
-        "analytic_line_ids.unit_amount",
-        "analytic_line_ids.product_uom_id",
-    )
+    @api.depends()
     def _compute_qty_delivered(self):
         result = super()._compute_qty_delivered()
         for line in self:
@@ -259,16 +261,15 @@ class SaleOrderLine(models.Model):
 
     @api.onchange("fiscal_tax_ids")
     def _onchange_fiscal_tax_ids(self):
-        if self.product_id and self.fiscal_operation_line_id:
-            res = super()._onchange_fiscal_tax_ids()
-            self.tax_id = self.fiscal_tax_ids.account_taxes(
-                user_type="sale", fiscal_operation=self.fiscal_operation_id
-            )
-        else:
-            res = None
+        if not self.product_id or not self.fiscal_operation_line_id:
+            return
+        res = super()._onchange_fiscal_tax_ids()
+        self.tax_id = self.fiscal_tax_ids.account_taxes(
+            user_type="sale", fiscal_operation=self.fiscal_operation_id
+        )
         return res
 
-    def _get_product_price(self):
+    def _compute_product_price(self):
         self.ensure_one()
 
         if (
@@ -282,7 +283,7 @@ class SaleOrderLine(models.Model):
                 self.order_id.date_order,
                 "sale",
                 fiscal_position=self.order_id.fiscal_position_id,
-                product_price_unit=self._get_display_price(self.product_id),
+                product_price_unit=self._get_display_price(),
                 product_currency=self.order_id.currency_id,
             )
         elif self.fiscal_operation_id.default_price_unit == "cost_price":
