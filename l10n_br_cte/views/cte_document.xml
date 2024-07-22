@@ -22,14 +22,13 @@
             <field name="document_serie_id" position="after">
                 <field name="service_provider" />
                 <field name="cte40_tpServ" />
-                <field name="cte40_rem" />
-                <field name="cte40_exped" />
                 <field name="cte40_tpPer" />
                 <field name="cte40_dProg" />
                 <field name="cte40_tpHor" />
             </field>
-            <field name="cte40_exped" position="after">
-                <field name="partner_shipping_id" position="move" />
+            <field name="partner_shipping_id" position="before">
+                <field name="cte40_rem" />
+                <field name="cte40_exped" />
             </field>
             <field name="partner_shipping_id" position="after">
                 <field name="cte40_receb" />
