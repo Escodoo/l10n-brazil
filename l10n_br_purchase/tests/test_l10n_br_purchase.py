@@ -4,7 +4,7 @@
 
 from lxml import etree
 
-from odoo.tests import TransactionCase
+from odoo.tests import TransactionCase, Form
 
 from odoo.addons.l10n_br_fiscal.constants.fiscal import (
     CFOP_DESTINATION_EXTERNAL,
@@ -26,6 +26,7 @@ class L10nBrPurchaseBaseTest(TransactionCase):
         #     'l10n_br_purchase.main_po_only_services')
         # cls.po_prod_srv = cls.env.ref(
         #     'l10n_br_purchase.main_po_product_service')
+        cls._set_products_default_property_accounts()
         cls.fsc_op_purchase = cls.env.ref("l10n_br_fiscal.fo_compras")
         # Testa os Impostos Dedutiveis
         cls.fsc_op_purchase.deductible_taxes = True
@@ -149,6 +150,22 @@ class L10nBrPurchaseBaseTest(TransactionCase):
             },
         }
 
+    @classmethod
+    def _set_products_default_property_accounts(cls):
+        for product in (
+            cls.po_products
+        ).order_line.product_id.product_tmpl_id.with_company(cls.company):
+            product.write(dict(
+                property_account_income_id=cls.env["account.account"].search([
+                    ("company_id", "=", cls.company.id),
+                    ("account_type", "=", "income"),
+                ], limit=1).ensure_one().id,
+                property_account_expense_id=cls.env["account.account"].search([
+                    ("company_id", "=", cls.company.id),
+                    ("account_type", "=", "expense"),
+                ], limit=1).ensure_one().id,
+            ))
+
     def _change_user_company(self, company):
         self.env.user.company_ids += company
         self.env.user.company_id = company
@@ -167,44 +184,9 @@ class L10nBrPurchaseBaseTest(TransactionCase):
     def _invoice_purchase_order(self, order):
         order.with_context(tracking_disable=True).button_confirm()
 
-        invoice_values = {
-            "partner_id": order.partner_id.id,
-            "move_type": "in_invoice",
-        }
-
-        invoice_values.update(order._prepare_br_fiscal_dict())
-        document_type_id = order._context.get("document_type_id")
-
-        if document_type_id:
-            document_type = self.env["l10n_br_fiscal.document.type"].browse(
-                document_type_id
-            )
-        else:
-            document_type = order.company_id.document_type_id
-            document_type_id = order.company_id.document_type_id.id
-
-        document_serie = document_type.get_document_serie(
-            order.company_id, order.fiscal_operation_id
+        invoice = self.env["account.move"].browse(
+            order.action_create_invoice()["res_id"]
         )
-
-        invoice_values["document_serie_id"] = document_serie.id
-        invoice_values["document_type_id"] = document_type_id
-        invoice_values["issuer"] = DOCUMENT_ISSUER_PARTNER
-        self.invoice = (
-            self.env["account.move"]
-            .with_context(tracking_disable=True)
-            .create(invoice_values)
-        )
-
-        invoice_lines = self.env["account.move.line"]
-        for line in order.order_line:
-            invoice_line = invoice_lines.new(
-                line._prepare_account_move_line(self.invoice)
-            )
-            invoice_lines += invoice_line
-        self.invoice.invoice_line_ids += invoice_lines
-        self.invoice._onchange_purchase_auto_complete()
-        self.invoice.write({"purchase_id": order.id})
 
         self.assertEqual(
             order.order_line.mapped("qty_invoiced"),
@@ -282,7 +264,7 @@ class L10nBrPurchaseBaseTest(TransactionCase):
             )
 
             for line in invoice.invoice_line_ids:
-                line._onchange_price_subtotal()
+                #line._onchange_price_subtotal()
                 self.assertTrue(
                     line.fiscal_operation_line_id,
                     "Error to included Operation " "Line from Purchase Order Line.",
@@ -435,10 +417,10 @@ class L10nBrPurchaseBaseTest(TransactionCase):
 
     def test_fields_view_get(self):
         """Test Purchase Order fields_view_get."""
-        view_arch = etree.fromstring(self.po_products.fields_view_get()["arch"])
+        arch, _ = self.po_products._get_view()
 
         self.assertTrue(
-            view_arch.findall(".//field[@name='fiscal_operation_id']"),
+            arch.findall(".//field[@name='fiscal_operation_id']"),
             "Error to included Operation " "Line from Purchase Order Line.",
         )
 
@@ -450,14 +432,14 @@ class L10nBrPurchaseBaseTest(TransactionCase):
         self._change_user_company(self.company)
         # Por padrão a definição dos campos está por Linha
         self.po_products.company_id.delivery_costs = "line"
-        self._run_purchase_order_onchanges(self.po_products)
-        # Teste definindo os valores Por Linha
-        for line in self.po_products.order_line:
-            line.price_unit = 100.0
-            line.freight_value = 10.0
-            line.insurance_value = 10.0
-            line.other_value = 10.0
-            self._run_purchase_line_onchanges(line)
+        with Form(self.po_products) as order_form:
+            order_form.company_id = self.po_products.company_id
+            for i in range(len(order_form.order_line)):
+                with order_form.order_line.edit(i) as line:
+                    line.freight_value = 10.0
+                    line.insurance_value = 10.0
+                    line.other_value = 10.0
+                    line.price_unit = 100.0
 
         self._invoice_purchase_order(self.po_products)
 

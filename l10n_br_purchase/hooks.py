@@ -4,10 +4,9 @@
 from odoo import SUPERUSER_ID, api, tools
 
 
-def post_init_hook(cr, registry):
-    cr.execute("select demo from ir_module_module where name='l10n_br_purchase';")
-    if cr.fetchone()[0]:
-        env = api.Environment(cr, SUPERUSER_ID, {})
+def post_init_hook(env):
+    env.cr.execute("select demo from ir_module_module where name='l10n_br_purchase';")
+    if env.cr.fetchone()[0]:
         purchase_orders = env["purchase.order"].search(
             [("company_id", "!=", env.ref("base.main_company").id)]
         )
@@ -37,7 +36,7 @@ def post_init_hook(cr, registry):
             ]
         ):
             tools.convert_file(
-                cr,
+                env,
                 "l10n_br_purchase",
                 "demo/fiscal_operation_simple.xml",
                 None,
@@ -58,7 +57,7 @@ def post_init_hook(cr, registry):
             ]
         ):
             tools.convert_file(
-                cr,
+                env,
                 "l10n_br_purchase",
                 "demo/fiscal_operation_generic.xml",
                 None,

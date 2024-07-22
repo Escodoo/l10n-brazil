@@ -24,8 +24,6 @@ class PurchaseOrderLine(models.Model):
     # Adapt Mixin's fields
     fiscal_operation_id = fields.Many2one(
         comodel_name="l10n_br_fiscal.operation",
-        readonly=True,
-        states={"draft": [("readonly", False)]},
         default=_default_fiscal_operation,
         domain=lambda self: self._fiscal_operation_domain(),
     )
@@ -109,35 +107,33 @@ class PurchaseOrderLine(models.Model):
             )
         return result
 
-    @api.onchange("product_qty", "product_uom")
-    def _onchange_quantity(self):
+    @api.depends()
+    def _compute_price_unit_and_date_planned_and_name(self):
         """To call the method in the mixin to update
         the price and fiscal quantity."""
-        result = super()._onchange_quantity()
-        self._onchange_commercial_quantity()
-        return result
+        super()._compute_price_unit_and_date_planned_and_name()
+        for rec in self:
+            rec._onchange_commercial_quantity()
 
     def _compute_tax_id(self):
-        for line in self:
-            if line.fiscal_operation_line_id:
-                res = super()._compute_tax_id()
-                line.taxes_id = line.fiscal_tax_ids.account_taxes(
-                    user_type="purchase", fiscal_operation=line.fiscal_operation_id
-                )
-            else:
-                res = None
-            return res
+        super()._compute_tax_id()
+        self._compute_br_taxes_id()
 
     @api.onchange("fiscal_tax_ids")
     def _onchange_fiscal_tax_ids(self):
-        if self.fiscal_operation_line_id:
-            res = super()._onchange_fiscal_tax_ids()
-            self.taxes_id = self.fiscal_tax_ids.account_taxes(
-                user_type="purchase", fiscal_operation=self.fiscal_operation_id
-            )
-        else:
-            res = None
+        if not self.fiscal_operation_line_id:
+            return
+        res = super()._onchange_fiscal_tax_ids()
+        self._compute_br_taxes_id()
         return res
+    
+    def _compute_br_taxes_id(self):
+        for rec in self:
+            if not rec.fiscal_operation_line_id:
+                return
+            rec.taxes_id = rec.fiscal_tax_ids.account_taxes(
+                user_type="purchase", fiscal_operation=rec.fiscal_operation_id
+            )
 
     def _prepare_account_move_line(self, move=False):
         values = super()._prepare_account_move_line(move)
