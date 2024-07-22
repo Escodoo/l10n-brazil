@@ -131,7 +131,7 @@ class Lead(models.Model):
         self.update(result)
         return result
 
-    def _prepare_customer_values(self, name, is_company, parent_id=False):
+    def _prepare_customer_values(self, name, is_company=False, parent_id=False):
         """Extract data from lead to create a partner.
         :param name : furtur name of the partner
         :param is_company : True if the partner is a company
