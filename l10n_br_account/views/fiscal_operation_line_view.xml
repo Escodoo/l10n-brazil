@@ -14,7 +14,7 @@
             <field name="ind_ie_dest" position="after">
                 <field
                     name="fiscal_position_id"
-                    attrs="{'readonly': [('state', '!=', 'draft')]}"
+                    readonly="state != 'draft'"
                 />
             </field>
         </field>

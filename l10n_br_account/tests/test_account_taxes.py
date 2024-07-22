@@ -16,20 +16,11 @@ class TestAccountTaxes(TransactionCase):
 
     def test_account_taxes(self):
         """Test if account taxes are related with fiscal taxes"""
-        l10n_br_coa_charts = (
-            self.env["account.chart.template"]
-            .search([])
-            .filtered(
-                lambda chart: chart.get_external_id()
-                .get(chart.id)
-                .split(".")[0]
-                .startswith("l10n_br_coa_")
-                if chart.get_external_id().get(chart.id)
-                else False
-            )
-        )
-        for l10n_br_coa_chart in l10n_br_coa_charts:
-            l10n_br_coa_chart.try_loading()
+        template = self.env["account.chart.template"]
+        for chart in template._get_chart_template_mapping().keys():
+            if "br_oca" not in template._get_parent_template(chart):
+                continue
+            template.try_loading(chart, self.l10n_br_company)
             account_taxes = self.env["account.tax"].search(
                 [("company_id", "=", self.l10n_br_company.id)]
             )

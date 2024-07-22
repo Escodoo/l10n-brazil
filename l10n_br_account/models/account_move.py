@@ -103,7 +103,7 @@ class AccountMove(models.Model):
 
     def _compute_fiscal_operation_type(self):
         for inv in self:
-            if inv.move_type == "entry":
+            if inv.is_entry():
                 # if it is a Journal Entry there is nothing to do.
                 inv.fiscal_operation_type = False
                 continue
@@ -113,10 +113,9 @@ class AccountMove(models.Model):
                 )
             else:
                 inv.fiscal_operation_type = MOVE_TO_OPERATION[inv.move_type]
-
-    def _get_amount_lines(self):
-        """Get object lines instances used to compute fields"""
-        return self.mapped("invoice_line_ids")
+    
+    def _get_lines_field_name(self):
+        return "invoice_line_ids"
 
     @api.model
     def _inherits_check(self):
@@ -126,9 +125,16 @@ class AccountMove(models.Model):
         """
         with InheritsCheckMuteLogger("odoo.models"):  # mute spurious warnings
             res = super()._inherits_check()
-        field = self._fields.get("fiscal_document_id")
-        field.required = False  # unset the required = True assignement
+        # unset the required = True assignement
+        self._fields["fiscal_document_id"].required = False  
         return res
+
+    @api.model
+    def _get_optional_delegation_inherit_fields(self):
+        return (
+            super()._get_optional_delegation_inherit_fields()
+            | set(["fiscal_document_id"])
+        )
 
     @api.model
     def _shadowed_fields(self):
@@ -160,7 +166,6 @@ class AccountMove(models.Model):
                 )
                 self.env["account.move.line"].inject_fiscal_fields(sub_form_node)
 
-                # TODO FIXME test this part:
                 for original_sub_form_node in arch.xpath(
                     "//field[@name='invoice_line_ids']/form"
                 ):
@@ -175,124 +180,44 @@ class AccountMove(models.Model):
                     self.env["account.move.line"].inject_fiscal_fields(sub_form_node)
                 for sub_form_node in arch.xpath("//field[@name='line_ids']/tree"):
                     self.env["account.move.line"].inject_fiscal_fields(sub_form_node)
-                    # TODO kanban??
-        #                for sub_form_node in arch.xpath("//field[@name='line_ids']/kanban"):
-        #                    self.env["account.move.line"].inject_fiscal_fields(sub_form_node)
-        #
 
         return arch, view
 
     @api.depends(
-        "line_ids.matched_debit_ids.debit_move_id.move_id.payment_id.is_matched",
-        "line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.amount_residual",
-        "line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.amount_residual_currency",
-        "line_ids.matched_credit_ids.credit_move_id.move_id.payment_id.is_matched",
-        "line_ids.matched_credit_ids.credit_move_id.move_id.line_ids.amount_residual",
-        "line_ids.matched_credit_ids.credit_move_id.move_id.line_ids.amount_residual_currency",
-        "line_ids.balance",
-        "line_ids.currency_id",
-        "line_ids.amount_currency",
-        "line_ids.amount_residual",
-        "line_ids.amount_residual_currency",
-        "line_ids.payment_id.state",
-        "line_ids.full_reconcile_id",
-        "state",
+        "line_ids.amount_untaxed",
+        "line_ids.amount_tax",
         "ind_final",
     )
     def _compute_amount(self):
-        for move in self.filtered(lambda m: m.company_id.country_id.code == "BR"):
-            for line in move.line_ids:
-                if (
-                    move.is_invoice(include_receipts=True)
-                    #                    and not line.exclude_from_invoice_tab
-                ):
-                    line._update_fiscal_taxes()
+        br_moves = self.filtered(
+            lambda m: (
+                m.company_id.country_id.code == "BR"
+                and not m.is_entry()
+            )
+        )
+        super(AccountMove, self - br_moves)._compute_amount()
 
-        result = super()._compute_amount()
+        lines_to_update = br_moves.filtered(
+            lambda m: m.is_invoice(include_receipts=True)
+        ).line_ids.filtered(lambda r: r.display_type == "product")
+        lines_to_update._update_fiscal_taxes()
 
-        for move in self:
-            if not move.invoice_line_ids:
-                continue
+        super(AccountMove, br_moves)._compute_amount()
 
-            # print(
-            #     "1111111111 BEFORE",
-            #     move.name,
-            #     move.amount_total,
-            #     move.amount_untaxed_signed,
-            #     move.amount_tax_signed,
-            #     move.amount_residual_signed,
-            #     move.amount_total_in_currency_signed,
-            # )
-            # print("    total debit:", sum(move.line_ids.mapped("debit")))
-            # print("    total credit:", sum(move.line_ids.mapped("credit")))
-            # print(
-            #     "    amount_tax BR",
-            #     sum(move.invoice_line_ids.mapped("amount_tax")),
-            #     sum(move.line_ids.mapped("amount_tax")),
-            # )
-
-            # here is the v14/v15 computation:
-            # if move.move_type == "entry" or move.is_outbound():
-            #     sign = -1
-            # else:
-            #     sign = 1
-            # inv_line_ids = move.invoice_line_ids
-            # move.amount_untaxed = sum(inv_line_ids.mapped("amount_untaxed"))
-            # move.amount_tax = sum(inv_line_ids.mapped("amount_tax"))
-            # move.amount_untaxed_signed = sign * sum(
-            #     inv_line_ids.mapped("amount_untaxed")
-            # )
-            # move.amount_tax_signed = sign * sum(inv_line_ids.mapped("amount_tax"))
-            #
-            # print("22222222 AFTER", move.amount_total, move.amount_untaxed_signed,
-            # move.amount_tax_signed, move.amount_residual_signed,
-            # move.amount_total_in_currency_signed)
-            # print("    total debit:", sum(move.line_ids.mapped("debit")))
-            # print("    total credit:", sum(move.line_ids.mapped("credit")))
-            # print("    amount_tax BR", sum(move.invoice_line_ids.mapped("amount_tax")),
-            # sum(move.line_ids.mapped("amount_tax")))
-
-        # for move in self.filtered(lambda m: m.company_id.country_id.code == "BR"):
-        # these amount_tax(_signed) and amount_untaxed)_signed) totals are required
-        # for BR sale but super result (with patch) is OK for remessa and KO with
-        # the code in the loop here:
-        if False:  # required for move totals but screws the remessa payment term values
-            if move.move_type == "entry" or move.is_outbound():
-                sign = -1
-            else:
-                sign = 1
-            br_amount_untaxed = 0
-            br_amount_untaxed_signed = 0
-            br_amount_tax = 0
-            br_amount_tax_signed = 0
-
-            for line in move.invoice_line_ids:
-                if not line.cfop_id or line.cfop_id and line.cfop_id.finance_move:
-                    # if True:
-                    br_amount_tax += line.amount_tax
-                    br_amount_tax_signed += sign * line.amount_tax
-                    br_amount_untaxed += line.amount_untaxed
-                    br_amount_untaxed_signed += sign * line.amount_untaxed
-
-            if br_amount_tax > 0 or br_amount_untaxed > 0:
-                # FIXME / TODO: this is a ugly hack to get the tests
-                # quickly running for the v16 migration.
-                # but a rewrite is needed for moves with more
-                # than 1 remessa line!!
-                move.amount_untaxed = br_amount_untaxed
-                move.amount_untaxed_signed = br_amount_untaxed_signed
-                move.amount_tax = br_amount_tax
-                move.amount_tax_signed = br_amount_tax_signed
-
-        return result
-
-    # @api.onchange("ind_final")
-    # def _onchange_ind_final(self):
-    #     """Trigger the recompute of the taxes when the ind_final is changed"""
-    #     for line in self.invoice_line_ids:
-    #         line._onchange_fiscal_operation_id()
-    #     return self._recompute_dynamic_lines(recompute_all_taxes=True)
-    # FIXME no _recompute_dynamic_lines in v16!
+        for move in br_moves:
+            sign = -move.direction_sign
+            inv_line_ids = move.line_ids.filtered(lambda l: (
+                (
+                    l.display_type == "product"
+                    or l.display_type == "rounding" and not l.tax_repartition_line_id
+                )
+            ))
+            get_sum_of = lambda f: sum(inv_line_ids.mapped(f))
+        
+            move.amount_untaxed = get_sum_of("amount_untaxed")
+            move.amount_tax = get_sum_of("amount_tax")
+            move.amount_untaxed_signed = sign * get_sum_of("amount_untaxed")
+            move.amount_tax_signed = sign * get_sum_of("amount_tax")
 
     @api.model
     def default_get(self, fields_list):
@@ -306,33 +231,17 @@ class AccountMove(models.Model):
                 defaults["issuer"] = DOCUMENT_ISSUER_PARTNER
         return defaults
 
-    @api.model
-    def TODO_move_autocomplete_invoice_lines_create(
-        self, vals_list
-    ):  # no such meth in v16
-        new_vals_list = super(
-            AccountMove, self.with_context(lines_compute_amounts=True)
-        )._move_autocomplete_invoice_lines_create(vals_list)
-        for vals in new_vals_list:
-            if not vals.get("document_type_id"):
-                vals[
-                    "fiscal_document_id"
-                ] = False  # self.env.company.fiscal_dummy_id.id
-        return new_vals_list
-
-    def TODO_move_autocomplete_invoice_lines_values(self):  # no such meth in v16
-        self.ensure_one()
-        if self._context.get("lines_compute_amounts"):
-            self.line_ids._compute_amounts()
-        return super()._move_autocomplete_invoice_lines_values()
-
     @api.model_create_multi
     def create(self, vals_list):
         self._inject_shadowed_fields(vals_list)
-        invoice = super(AccountMove, self.with_context(create_from_move=True)).create(
+
+        for vals in vals_list:
+            if not vals.get("document_type_id"):
+                vals["fiscal_document_id"] = False
+        
+        return super(AccountMove, self.with_context(create_from_move=True)).create(
             vals_list
         )
-        return invoice
 
     def write(self, values):
         self._inject_shadowed_fields([values])
@@ -351,124 +260,37 @@ class AccountMove(models.Model):
             unlink_moves |= move
         result = super(AccountMove, unlink_moves).unlink()
         unlink_documents.unlink()
-        self.clear_caches()
+        self.env.registry.clear_cache()
         return result
 
-    # @api.model
-    # def TODO_serialize_tax_grouping_key(self, grouping_dict):  # no such meth in v16
-    #     return "-".join(str(v) for v in grouping_dict.values())
-    #
-    # @api.model
-    # def _compute_taxes_mapped(self, base_line):
-    #     move = base_line.move_id
-    #
-    #     if move.is_invoice(include_receipts=True):
-    #         handle_price_include = True
-    #         sign = -1 if move.is_inbound() else 1
-    #         quantity = base_line.quantity
-    #         is_refund = move.move_type in ("out_refund", "in_refund")
-    #         price_unit_wo_discount = (
-    #             sign * base_line.price_unit * (1 - (base_line.discount / 100.0))
-    #         )
-    #     else:
-    #         handle_price_include = False
-    #         quantity = 1.0
-    #         tax_type = base_line.tax_ids[0].type_tax_use if base_line.tax_ids else None
-    #         is_refund = (tax_type == "sale" and base_line.debit) or (
-    #             tax_type == "purchase" and base_line.credit
-    #         )
-    #         price_unit_wo_discount = base_line.amount_currency
-    #
-    #     balance_taxes_res = base_line.tax_ids._origin.with_context(
-    #         force_sign=move._get_tax_force_sign()
-    #     ).compute_all(
-    #         price_unit_wo_discount,
-    #         currency=base_line.currency_id,
-    #         quantity=quantity,
-    #         product=base_line.product_id,
-    #         partner=base_line.partner_id,
-    #         is_refund=is_refund,
-    #         handle_price_include=handle_price_include,
-    #         fiscal_taxes=base_line.fiscal_tax_ids,
-    #         operation_line=base_line.fiscal_operation_line_id,
-    #         ncm=base_line.ncm_id,
-    #         nbs=base_line.nbs_id,
-    #         nbm=base_line.nbm_id,
-    #         cest=base_line.cest_id,
-    #         discount_value=base_line.discount_value,
-    #         insurance_value=base_line.insurance_value,
-    #         other_value=base_line.other_value,
-    #         ii_customhouse_charges=base_line.ii_customhouse_charges,
-    #         cfop=base_line.cfop_id,
-    #         freight_value=base_line.freight_value,
-    #         fiscal_price=base_line.fiscal_price,
-    #         fiscal_quantity=base_line.fiscal_quantity,
-    #         uot_id=base_line.uot_id,
-    #         icmssn_range=base_line.icmssn_range_id,
-    #         icms_origin=base_line.icms_origin,
-    #         ind_final=base_line.ind_final,
-    #     )
-    #
-    #     return balance_taxes_res
-    #
-    # def TODO_preprocess_taxes_map(self, taxes_map):  # no such meth in v16
-    #     """Useful in case we want to pre-process taxes_map"""
-    #
-    #     taxes_mapped = super()._preprocess_taxes_map(taxes_map=taxes_map)
-    #
-    #     for line in self.line_ids.filtered(
-    #         lambda line: not line.tax_repartition_line_id
-    #     ):
-    #         if not line.tax_ids or not line.fiscal_tax_ids:
-    #             continue
-    #
-    #         compute_all_vals = self._compute_taxes_mapped(line)
-    #
-    #         for tax_vals in compute_all_vals["taxes"]:
-    #             grouping_dict = self._get_tax_grouping_key_from_base_line(
-    #                 line, tax_vals
-    #             )
-    #             grouping_key = self._serialize_tax_grouping_key(grouping_dict)
-    #
-    #             tax_repartition_line = self.env["account.tax.repartition.line"].browse(
-    #                 tax_vals["tax_repartition_line_id"]
-    #             )
-    #
-    #             if taxes_mapped[grouping_key]:
-    #                 taxes_mapped[grouping_key]["amount"] += tax_vals["amount"]
-    #                 taxes_mapped[grouping_key][
-    #                     "tax_base_amount"
-    #                 ] += self._get_base_amount_to_display(
-    #                     tax_vals["base"], tax_repartition_line, tax_vals["group"]
-    #                 )
-    #
-    #     return taxes_mapped
+    @api.depends("fiscal_operation_id")
+    def _compute_invoice_payment_term_id(self):
+        super()._compute_invoice_payment_term_id()
+        self.filtered("fiscal_operation_id").invoice_payment_term_id = False
 
-    def TODO_recompute_payment_terms_lines(self):  # no such meth in v16
+    @api.depends("document_number")
+    def _compute_needed_terms(self):
         """Compute the dynamic payment term lines of the journal entry.
         overwritten this method to change aml's field name.
         """
-
-        # TODO - esse método é executado em um onchange, na emissão de um novo
-        # documento fiscal o numero do documento pode estar em branco
-        # atualizar esse dado ao validar a fatura, ou atribuir o número da NFe
-        # antes de salva-la.
-        result = super()._recompute_payment_terms_lines()
-        if self.document_number:
-            terms_lines = self.line_ids.filtered(
-                lambda line: line.account_id.user_type_id.type
-                in ("receivable", "payable")
-                and line.move_id.document_type_id
-            )
-            terms_lines.sorted(lambda line: line.date_maturity)
-            for idx, terms_line in enumerate(terms_lines):
-                # TODO TODO pegar o método do self.fiscal_document_id.with_context(
-                # fiscal_document_no_company=True
-                # )._compute_document_name()
-                terms_line.name = "{}/{}-{}".format(
-                    self.document_number, idx + 1, len(terms_lines)
-                )
-        return result
+        super()._compute_needed_terms()
+        for invoice in self:
+            if not (
+                invoice.is_invoice(True) 
+                and invoice.fiscal_document_id
+                and invoice.invoice_line_ids 
+                and invoice.invoice_payment_term_id
+            ):
+                continue
+            name = invoice.fiscal_document_id.with_context(
+                fiscal_document_no_company=True
+            )._compute_document_name()
+            length = len(invoice.needed_terms)
+            for idx, (_, term_values) in enumerate(sorted(
+                invoice.needed_terms.items(), 
+                key=lambda i: i[0]["date_maturity"]
+            )):
+                term_values["name"] = f"{name}/{idx + 1}-{length}"
 
     @api.onchange("fiscal_operation_id")
     def _onchange_fiscal_operation_id(self):
@@ -496,77 +318,68 @@ class AccountMove(models.Model):
         return action
 
     def button_draft(self):
-        for i in self.filtered(lambda d: d.document_type_id):
-            if i.state_edoc == SITUACAO_EDOC_CANCELADA:
-                if i.issuer == DOCUMENT_ISSUER_COMPANY:
-                    raise UserError(
-                        _(
-                            "You can't set this document number: {} to draft "
-                            "because this document is cancelled in SEFAZ"
-                        ).format(i.document_number)
-                    )
-            if i.state_edoc != SITUACAO_EDOC_EM_DIGITACAO:
-                i.fiscal_document_id.action_document_back2draft()
+        docs_to_back = self.fiscal_document_id.browse()
+        for rec in self.filtered("document_type_id"):
+            if (
+                rec.state_edoc == SITUACAO_EDOC_CANCELADA 
+                and rec.issuer == DOCUMENT_ISSUER_COMPANY
+            ):
+                raise UserError(
+                    _(
+                        "You can't set this document number: {} to draft "
+                        "because this document is cancelled in SEFAZ"
+                    ).format(rec.document_number)
+                )
+            if rec.state_edoc != SITUACAO_EDOC_EM_DIGITACAO:
+                docs_to_back |= rec.fiscal_document_id
+        docs_to_back.action_document_back2draft()
         return super().button_draft()
 
     def action_document_send(self):
-        invoices = self.filtered(lambda d: d.document_type_id)
-        if invoices:
-            invoices.mapped("fiscal_document_id").action_document_send()
-            # FIXME: na migração para a v14 foi permitido o post antes do envio
-            #  para destravar a migração, mas poderia ser cogitado de obrigar a
-            #  transmissão antes do post novamente como na v12.
-            # for invoice in invoices:
-            #     invoice.move_id.post(invoice=invoice)
+        self.filtered("document_type_id").fiscal_document_id.action_document_send()
+        # FIXME: na migração para a v14 foi permitido o post antes do envio
+        #  para destravar a migração, mas poderia ser cogitado de obrigar a
+        #  transmissão antes do post novamente como na v12.
+        # for invoice in invoices:
+        #     invoice.move_id.post(invoice=invoice)
 
     def action_document_cancel(self):
-        for i in self.filtered(lambda d: d.document_type_id):
-            return i.fiscal_document_id.action_document_cancel()
+        self.ensure_one()
+        if self.document_type_id:
+            return self.fiscal_document_id.action_document_cancel()
 
     def action_document_correction(self):
-        for i in self.filtered(lambda d: d.document_type_id):
-            return i.fiscal_document_id.action_document_correction()
+        self.ensure_one()
+        if self.document_type_id:
+            return self.fiscal_document_id.action_document_correction()
 
     def action_document_invalidate(self):
-        for i in self.filtered(lambda d: d.document_type_id):
-            return i.fiscal_document_id.action_document_invalidate()
+        self.ensure_one()
+        if self.document_type_id:
+            return self.fiscal_document_id.action_document_invalidate()
 
     def action_document_back2draft(self):
         """Sets fiscal document to draft state and cancel and set to draft
         the related invoice for both documents remain equivalent state."""
-        for i in self.filtered(lambda d: d.document_type_id):
-            i.button_cancel()
-            i.button_draft()
+        recs = self.filtered("document_type_id")
+        recs.button_cancel()
+        recs.button_draft()
 
     def action_post(self):
-        result = super().action_post()
+        res = super().action_post()
 
-        self.mapped("fiscal_document_id").filtered(
-            lambda d: d.document_type_id
-        ).action_document_confirm()
+        for doc in self.filtered("document_type_id").fiscal_document_id:
+            doc.action_document_confirm()
+            doc.action_document_send()
 
-        # TODO FIXME
-        # Deixar a migração das funcionalidades do refund por último.
-        # Verificar se ainda haverá necessidade desse código.
-
-        # for record in self.filtered(lambda i: i.refund_move_id):
-        #     if record.state == "open":
-        #         # Ao confirmar uma fatura/documento fiscal se é uma devolução
-        #         # é feito conciliado com o documento de origem para abater
-        #         # o valor devolvido pelo documento de refund
-        #         to_reconcile_lines = self.env["account.move.line"]
-        #         for line in record.move_id.line_ids:
-        #             if line.account_id.id == record.account_id.id:
-        #                 to_reconcile_lines += line
-        #             if line.reconciled:
-        #                 line.remove_move_reconcile()
-        #         for line in record.refund_move_id.move_id.line_ids:
-        #             if line.account_id.id == record.refund_move_id.account_id.id:
-        #                 to_reconcile_lines += line
-
-        #         to_reconcile_lines.filtered(lambda l: l.reconciled).reconcile()
-
-        return result
+        self.filtered(lambda r: (
+            r.is_sale_document(include_receipts=True)
+            and r.document_type_id
+            and r.document_electronic
+            and r.issuer == DOCUMENT_ISSUER_COMPANY
+            and r.state_edoc != SITUACAO_EDOC_AUTORIZADA
+        )).button_cancel()
+        return res
 
     def view_xml(self):
         self.ensure_one()
@@ -644,10 +457,11 @@ class AccountMove(models.Model):
 
         return new_moves
 
-    def _prepare_wh_invoice(self, move_line, fiscal_group):
+    def _prepare_wh_invoice(self, move_line):
+        fiscal_group = move_line.tax_line_id.tax_group_id.fiscal_tax_group_id
         wh_date_invoice = move_line.move_id.date
         wh_due_invoice = wh_date_invoice.replace(day=fiscal_group.wh_due_day)
-        values = {
+        return {
             "partner_id": fiscal_group.partner_id.id,
             "date": wh_date_invoice,
             "date_due": wh_due_invoice + relativedelta(months=1),
@@ -655,24 +469,24 @@ class AccountMove(models.Model):
             "account_id": fiscal_group.partner_id.property_account_payable_id.id,
             "journal_id": move_line.journal_id.id,
             "origin": move_line.move_id.name,
+            "line_ids": [(0, 0, self._prepare_wh_invoice_line(move_line))]
         }
-        return values
 
-    def _prepare_wh_invoice_line(self, invoice, move_line):
-        values = {
+    def _prepare_wh_invoice_line(self, move_line):
+        return {
             "name": move_line.name,
             "quantity": move_line.quantity,
             "uom_id": move_line.product_uom_id,
             "price_unit": abs(move_line.balance),
-            "move_id": invoice.id,
             "account_id": move_line.account_id.id,
             "wh_move_line_id": move_line.id,
             "account_analytic_id": move_line.analytic_account_id.id,
         }
-        return values
 
-    def _finalize_invoices(self, invoices):
-        for invoice in invoices:
+    def _finalize_invoices(self):
+        # Esse método está desatualizado, nenhuma dos métodos chamados 
+        # aqui existem pelo menos desde a v14
+        for invoice in self:
             invoice.compute_taxes()
             for line in invoice.line_ids:
                 # Use additional field helper function (for account extensions)
@@ -680,55 +494,33 @@ class AccountMove(models.Model):
             invoice._onchange_cash_rounding()
 
     def create_wh_invoices(self):
-        for move in self:
-            for line in move.line_ids.filtered(lambda line: line.tax_line_id):
-                # Create Wh Invoice only for supplier invoice
-                if line.move_id and line.move_id.type != "in_invoice":
-                    continue
+        # Create Wh Invoice only for supplier invoice
+        lines = self.filtered(
+            lambda r: r.type == "in_invoice"
+        ).line_ids.filtered(
+            lambda r: r.tax_line_id.tax_group_id.fiscal_tax_group_id.tax_withholding
+        )
+        invoices = self.env["account.move"].create([
+            self._prepare_wh_invoice(line) for line in lines
+        ])
 
-                account_tax_group = line.tax_line_id.tax_group_id
-                if account_tax_group and account_tax_group.fiscal_tax_group_id:
-                    fiscal_group = account_tax_group.fiscal_tax_group_id
-                    if fiscal_group.tax_withholding:
-                        invoice = self.env["account.move"].create(
-                            self._prepare_wh_invoice(line, fiscal_group)
-                        )
-
-                        self.env["account.move.line"].create(
-                            self._prepare_wh_invoice_line(invoice, line)
-                        )
-
-                        self._finalize_invoices(invoice)
-                        invoice.action_post()
+        invoices._finalize_invoices()
+        invoices.action_post()
 
     def _withholding_validate(self):
-        for m in self:
-            invoices = (
-                self.env["account.move.line"]
-                .search([("wh_move_line_id", "in", m.mapped("line_ids").ids)])
-                .mapped("move_id")
-            )
-            invoices.filtered(lambda i: i.state == "open").button_cancel()
-            invoices.filtered(lambda i: i.state == "cancel").button_draft()
-            invoices.invalidate_cache()
-            invoices.filtered(lambda i: i.state == "draft").unlink()
-
-    def post(self, invoice=False):
-        # TODO FIXME migrate: no more invoice keyword
-        result = super().post()
-        if invoice:
-            if (
-                invoice.document_type_id
-                and invoice.document_electronic
-                and invoice.issuer == DOCUMENT_ISSUER_COMPANY
-                and invoice.state_edoc != SITUACAO_EDOC_AUTORIZADA
-            ):
-                self.button_cancel()
-        return result
+        if not (lines := self.line_ids):
+            return
+        invoices = self.env["account.move.line"].search([
+            ("wh_move_line_id", "in", lines.ids)
+        ]).move_id
+        invoices.filtered(lambda i: i.state == "open").button_cancel()
+        invoices.filtered(lambda i: i.state == "cancel").button_draft()
+        invoices.invalidate_recordset()
+        invoices.filtered(lambda i: i.state == "draft").unlink()
 
     def button_cancel(self):
-        for doc in self.filtered(lambda d: d.document_type_id):
-            doc.fiscal_document_id.action_document_cancel()
+        for doc in self.filtered("document_type_id").fiscal_document_id:
+            doc.action_document_cancel()
         # Esse método é responsavel por verificar se há alguma fatura de impostos
         # retidos associada a essa fatura e cancela-las também.
         self._withholding_validate()

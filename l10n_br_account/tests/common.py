@@ -3,8 +3,26 @@
 
 from odoo import fields
 from odoo.tests.common import Form
+from freezegun import freeze_time
 
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon
+
+from odoo.addons.account.tests import common
+
+instantiate_accountman_orig = common.instantiate_accountman
+
+def instantiate_accountman(cls):
+    def get_group(xmlid):
+        return cls.env.ref(xmlid, False) or cls.env["res.groups"]
+
+    # Copiado para adicionar grupos da localização necessários
+    instantiate_accountman_orig(cls)
+    cls.user.groups_id |= (
+        get_group("l10n_br_fiscal.group_manager")
+        | get_group("l10n_br_fiscal.group_data_maintenance")
+        | get_group("analytic.group_analytic_accounting")
+        | get_group("account.group_account_invoice")
+    )
 
 
 class AccountMoveBRCommon(AccountTestInvoicingCommon):
@@ -14,7 +32,8 @@ class AccountMoveBRCommon(AccountTestInvoicingCommon):
     """
 
     @classmethod
-    def setUpClass(cls, chart_template_ref=None):
+    def setUpClass(cls, chart_template_ref="br_oca_generic"):
+        common.instantiate_accountman = instantiate_accountman
         super().setUpClass(chart_template_ref)
 
         # super().setUpClass() would duplicate some random IPI tax
@@ -151,14 +170,11 @@ class AccountMoveBRCommon(AccountTestInvoicingCommon):
         """
         if company_name == "company_2_data":
             company_name = "empresa 2 Simples Nacional"
-            chart_template = cls.env.ref(
-                "l10n_br_coa_simple.l10n_br_coa_simple_chart_template"
-            )
+            chart_template = "br_oca_simple"
         elif company_name == "company_1_data":
             company_name = "empresa 1 Lucro Presumido"
-            chart_template = cls.env.ref(
-                "l10n_br_coa_generic.l10n_br_coa_generic_template"
-            )
+            chart_template = "br_oca_generic"
+        chart_template = "br_oca_generic"
         return super().setup_company_data(
             company_name,
             chart_template,
@@ -168,6 +184,7 @@ class AccountMoveBRCommon(AccountTestInvoicingCommon):
         )
 
     @classmethod
+    @freeze_time("2019-01-01")
     def init_invoice(
         cls,
         move_type,
@@ -191,7 +208,9 @@ class AccountMoveBRCommon(AccountTestInvoicingCommon):
         products = [] if products is None else products
         amounts = [] if amounts is None else amounts
         move_form = Form(
-            cls.env["account.move"].with_context(
+            cls.env["account.move"].with_company(
+                cls.company_data["company"]
+            ).with_context(
                 default_move_type=move_type,
                 account_predictive_bills_disable_prediction=True,
             )
@@ -269,3 +288,9 @@ class AccountMoveBRCommon(AccountTestInvoicingCommon):
             lines[index].account_id.name,
         )
         return log
+
+    def _get_record_by_name(self, model, name):
+        return self.env[model].search([
+            ("name", "=ilike", name),
+            ("company_id", "=", self.env.company.id),
+        ]).ensure_one()

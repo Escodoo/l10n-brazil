@@ -6,6 +6,9 @@ import logging
 from odoo.tests.common import tagged
 from odoo.tests.suite import OdooSuite
 
+from odoo.addons.account.tests import common
+from .common import instantiate_accountman
+
 _logger = logging.getLogger(__name__)
 
 
@@ -52,12 +55,11 @@ class MultiLocalizationsInvoice(TestAccountMoveOutInvoiceOnchanges):
 
     @classmethod
     def setUpClass(cls, chart_template_ref=None):
-        res = super().setUpClass(chart_template_ref)
-        # FIXME the following line should not be required but as for
-        # now if we don't add this group, creating a refund will result
-        # in an attempt to create a l10n_br_fiscal.subsequent.document record.
-        cls.env.user.groups_id |= cls.env.ref("l10n_br_fiscal.group_manager")
-        return res
+        def instantiate(cls):
+            instantiate_accountman(cls)
+            cls.user.lang = "en_US"
+        common.instantiate_accountman = instantiate
+        return super().setUpClass(chart_template_ref)
 
     # The following tests list is taken with
     # cat addons/account/tests/test_account_move_out_invoice.py | grep "def test_"

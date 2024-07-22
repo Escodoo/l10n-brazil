@@ -4,12 +4,15 @@
 from odoo import SUPERUSER_ID, api
 
 
-def post_init_hook(cr, registry):
+def post_init_hook(env):
     """Relate fiscal taxes to account taxes."""
-    env = api.Environment(cr, SUPERUSER_ID, {})
-    l10n_br_coa_charts = env["account.chart.template"].search(
-        [("parent_id", "=", env.ref("l10n_br_coa.l10n_br_coa_template").id)]
-    )
+    for company in env["res.company"].with_context(
+        active_test=False
+    ).search([]):
+        if "br_oca" in env["account.chart.template"]._get_parent_template(
+            company.chart_template
+        ):
+            env["account.chart.template"].try_loading(
+                company.chart_template, company
+            )
 
-    for l10n_br_coa_chart in l10n_br_coa_charts:
-        l10n_br_coa_chart.load_fiscal_taxes()

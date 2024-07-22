@@ -13,11 +13,11 @@ class AccountMoveReversal(models.TransientModel):
         comodel_name="l10n_br_fiscal.operation", string="Force Fiscal Operation"
     )
 
-    def reverse_moves(self):
+    def reverse_moves(self, is_modify=False):
         self.ensure_one()
         return super(
             AccountMoveReversal,
             self.with_context(
                 force_fiscal_operation_id=self.force_fiscal_operation_id.id
             ),
-        ).reverse_moves()
+        ).reverse_moves(is_modify=is_modify)
