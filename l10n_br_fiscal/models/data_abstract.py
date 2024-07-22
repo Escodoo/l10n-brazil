@@ -15,6 +15,7 @@ class DataAbstract(models.AbstractModel):
     _name = "l10n_br_fiscal.data.abstract"
     _description = "Fiscal Data Abstract"
     _order = "code"
+    _rec_names_search = ["name", "code", "code_unmasked"]
 
     code = fields.Char(required=True, index=True)
 
@@ -43,53 +44,16 @@ class DataAbstract(models.AbstractModel):
             r.code_unmasked = misc.punctuation_rm(r.code)
 
     @api.model
-    def fields_view_get(
-        self, view_id=None, view_type="form", toolbar=False, submenu=False
-    ):
-        model_view = super().fields_view_get(view_id, view_type, toolbar, submenu)
-
+    def _get_view(self, view_id=None, view_type="form", **options):
+        arch, view = super()._get_view(view_id, view_type, **options)
         if view_type == "search":
-            doc = etree.XML(model_view["arch"])
-            for node in doc.xpath("//field[@name='code']"):
-                modifiers = json.loads(node.get("modifiers", "{}"))
-                modifiers["filter_domain"] = (
+            for node in arch.xpath("//field[@name='code']"):
+                node.attrib["filter_domain"] = (
                     "['|', '|', ('code', 'ilike', self), "
                     "('code_unmasked', 'ilike', self + '%'),"
                     "('name', 'ilike', self + '%')]"
                 )
-                node.set("modifiers", json.dumps(modifiers))
-            model_view["arch"] = etree.tostring(doc)
-
-        return model_view
-
-    @api.model
-    def _name_search(
-        self, name, args=None, operator="ilike", limit=100, name_get_uid=None
-    ):
-        if operator == "ilike" and not (name or "").strip():
-            domain = []
-        elif operator in ("ilike", "like", "=", "=like", "=ilike"):
-            domain = expression.AND(
-                [
-                    args or [],
-                    [
-                        "|",
-                        "|",
-                        ("name", operator, name),
-                        ("code", operator, name),
-                        ("code_unmasked", "ilike", name + "%"),
-                    ],
-                ]
-            )
-            return self._search(
-                expression.AND([domain, args]),
-                limit=limit,
-                access_rights_uid=name_get_uid,
-            )
-
-        return super()._name_search(
-            name, args=args, operator=operator, limit=limit, name_get_uid=name_get_uid
-        )
+        return arch, view
 
     @api.depends("name", "code")
     @api.depends_context("show_code_only")

@@ -1,5 +1,7 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
+from . import base
+from . import ir_rule
 from . import data_abstract
 from . import data_product_abstract
 from . import data_ncm_nbs_abstract

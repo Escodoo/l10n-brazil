@@ -177,18 +177,18 @@ class DataNcmNbsAbstract(models.AbstractModel):
         )
 
     @api.model
-    def fields_view_get(
-        self, view_id=None, view_type="form", toolbar=False, submenu=False
-    ):
-        res = super().fields_view_get(view_id, view_type, toolbar, submenu)
+    def _get_view(self, view_id=None, view_type="form", **options):
+        arch, view = super()._get_view(view_id, view_type, **options)
         if view_type == "form":
-            xml = etree.XML(res["arch"])
-            xml_button = xml.xpath("//button[@name='action_ibpt_inquiry']")
+            xml_button = arch.xpath("//button[@name='action_ibpt_inquiry']")
             if xml_button and not self.env.company.ibpt_api:
-                modifiers = json.loads(xml_button[0].get("modifiers", "{}"))
-                modifiers["invisible"] = 1
-                xml_button[0].set("modifiers", json.dumps(modifiers))
-                res["arch"] = etree.tostring(xml, pretty_print=True)
-        if res.get("toolbar") and not self.env.company.ibpt_api:
-            res["toolbar"]["action"] = []
+                xml_button[0].attrib["invisible"] = 1
+        return arch, view
+
+    @api.model
+    def get_views(self, views, options=None):
+        res = super().get_views(views, options)
+        if options and options.get("toolbar") and not self.env.company.ibpt_api:
+            for view_type in res['views']:
+                res["views"][view_type]["toolbar"]["action"] = []
         return res

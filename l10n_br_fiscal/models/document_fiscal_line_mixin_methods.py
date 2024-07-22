@@ -65,7 +65,6 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
         fsc_doc = etree.fromstring(
             fiscal_view.with_context(inherit_branding=True).get_combined_arch()
         )
-        doc = etree.fromstring(view_arch)
 
         if xpath_mappings is None:
             xpath_mappings = (
@@ -88,7 +87,7 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
             )
         for placeholder_xpath, fiscal_xpath in xpath_mappings:
             fiscal_nodes = fsc_doc.xpath(fiscal_xpath)
-            for target_node in doc.findall(placeholder_xpath):
+            for target_node in view_arch.findall(placeholder_xpath):
                 if len(fiscal_nodes) == 1:
                     # replace unique placeholder
                     # (deepcopy is required to inject fiscal nodes in possible
@@ -102,27 +101,14 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
                         if not field.attrib.get("optional"):
                             field.attrib["invisible"] = "1"
                         target_node.append(field)
-        return doc
+        return view_arch
 
     @api.model
-    def fields_view_get(
-        self, view_id=None, view_type="form", toolbar=False, submenu=False
-    ):
-        model_view = super().fields_view_get(view_id, view_type, toolbar, submenu)
+    def _get_view(self, view_id=None, view_type="form", **options):
+        arch, view = super()._get_view(view_id, view_type, **options)
         if view_type == "form":
-            arch_tree = self.inject_fiscal_fields(model_view["arch"])
-            View = self.env["ir.ui.view"]
-            # Override context for postprocessing
-            if view_id and model_view.get("base_model", self._name) != self._name:
-                View = View.with_context(base_model_name=model_view["base_model"])
-
-            # Apply post processing, groups and modifiers etc...
-            xarch, xfields = View.postprocess_and_fields(
-                node=arch_tree, model=self._name
-            )
-            model_view["arch"] = xarch
-            model_view["fields"] = xfields
-        return model_view
+            self.inject_fiscal_fields(arch)
+        return arch, view
 
     @api.depends(
         "fiscal_price",
@@ -285,14 +271,16 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
 
     def _update_fiscal_taxes(self):
         for line in self:
-            compute_result = self._compute_taxes(line.fiscal_tax_ids)
+            compute_result = line._compute_taxes(line.fiscal_tax_ids)
             computed_taxes = compute_result.get("taxes", {})
-            line.amount_tax_included = compute_result.get("amount_included", 0.0)
-            line.amount_tax_not_included = compute_result.get(
-                "amount_not_included", 0.0
-            )
-            line.amount_tax_withholding = compute_result.get("amount_withholding", 0.0)
-            line.estimate_tax = compute_result.get("estimate_tax", 0.0)
+            (line.write if line.id == line._origin.id else line.update)(dict(
+                amount_tax_included=compute_result.get("amount_included", 0.0),
+                amount_tax_not_included=compute_result.get(
+                    "amount_not_included", 0.0
+                ),
+                amount_tax_withholding=compute_result.get("amount_withholding", 0.0),
+                estimate_tax=compute_result.get("estimate_tax", 0.0),
+            ))
             for tax in line.fiscal_tax_ids:
                 computed_tax = computed_taxes.get(tax.tax_domain, {})
                 if hasattr(line, "%s_tax_id" % (tax.tax_domain,)):
@@ -301,19 +289,21 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
                     # NewId records with an origin pointing back to the original
                     # tax. tax.ids[0] is a way to the the single original tax back.
                     setattr(line, "%s_tax_id" % (tax.tax_domain,), tax.ids[0])
-                    method = getattr(self, "_set_fields_%s" % (tax.tax_domain,))
+                    method = getattr(line, "_set_fields_%s" % (tax.tax_domain,))
                     if method:
                         method(computed_tax)
 
-    def _get_product_price(self):
+    def _compute_product_price(self):
         self.ensure_one()
         price = {
-            "sale_price": self.product_id.list_price,
+            "sale_price": self.product_id.lst_price,
             "cost_price": self.product_id.standard_price,
         }
-
-        self.price_unit = price.get(self.fiscal_operation_id.default_price_unit, 0.00)
-
+        self.price_unit = price.get(
+            self.fiscal_operation_id.default_price_unit,
+            0.00
+        )
+    
     def __document_comment_vals(self):
         self.ensure_one()
         return {
@@ -332,8 +322,8 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
     @api.onchange("fiscal_operation_id")
     def _onchange_fiscal_operation_id(self):
         if self.fiscal_operation_id:
-            if not self.price_unit:
-                self._get_product_price()
+            if not self.price_unit and self.product_id:
+                self._compute_product_price()
             self._onchange_commercial_quantity()
             self.fiscal_operation_line_id = self.fiscal_operation_id.line_definition(
                 company=self.company_id,
@@ -395,6 +385,7 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
                 if city_id:
                     self.city_taxation_code_id = city_id
                     self.issqn_fg_city_id = company_city_id
+            self._compute_product_price()
         else:
             self.name = False
             self.fiscal_type = False
@@ -410,7 +401,6 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
             self.city_taxation_code_id = False
             self.uot_id = False
 
-        self._get_product_price()
         self._onchange_fiscal_operation_id()
 
     def _set_fields_issqn(self, tax_dict):
