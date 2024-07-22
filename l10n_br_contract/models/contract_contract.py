@@ -20,8 +20,7 @@ class ContractContract(models.Model):
 
     @api.model
     def _fiscal_operation_domain(self):
-        domain = [("state", "=", "approved")]
-        return domain
+        return [("state", "=", "approved")]
 
     @api.model
     def default_get(self, fields_list):
@@ -77,9 +76,8 @@ class ContractContract(models.Model):
         copy=False,
     )
 
-    def _get_amount_lines(self):
-        """Get object lines instaces used to compute fields"""
-        return self.mapped("contract_line_ids")
+    def _get_lines_field_name(self):
+        return "contract_line_ids"
 
     @api.depends("contract_line_ids")
     def _compute_amount(self):
@@ -87,9 +85,9 @@ class ContractContract(models.Model):
 
     def _prepare_invoice(self, date_invoice, journal=None):
         self.ensure_one()
-        invoice_vals, move_form = super()._prepare_invoice(date_invoice, journal)
+        invoice_vals = super()._prepare_invoice(date_invoice, journal)
         invoice_vals.update(self._prepare_br_fiscal_dict())
-        return invoice_vals, move_form
+        return invoice_vals
 
     def _recurring_create_invoice(self, date_ref=False):
         moves = super()._recurring_create_invoice(date_ref)
@@ -97,7 +95,7 @@ class ContractContract(models.Model):
         for move in moves:
             move.fiscal_document_id._onchange_document_serie_id()
             move.fiscal_document_id._onchange_company_id()
-            move._onchange_invoice_line_ids()
+            #move._onchange_invoice_line_ids()
 
         return moves
 
@@ -113,9 +111,6 @@ class ContractContract(models.Model):
             for inv_val in super_inv_vals:
                 inv_val["document_type_id"] = False
             return super_inv_vals
-
-        if not isinstance(super_inv_vals, list):
-            super_inv_vals = [super_inv_vals]
 
         inv_vals = []
         document_type_list = []

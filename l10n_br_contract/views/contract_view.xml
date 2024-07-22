@@ -13,11 +13,11 @@
                 <field
                     name="fiscal_operation_id"
                     options="{'no_create': True}"
-                    attrs="{'invisible': [('country_id', '!=', %(base.br)d)]}"
+                    invisible="country_id != %(base.br)d"
                 />
                 <field
                     name="contract_recalculate_taxes_before_invoice"
-                    attrs="{'invisible': [('country_id', '!=', %(base.br)d)]}"
+                    invisible="country_id != %(base.br)d"
                 />
             </field>
             <xpath
@@ -40,8 +40,8 @@
                 <attribute name="editable" />
             </xpath>
             <xpath
-                expr="//field[@name='contract_line_fixed_ids']/tree/button"
-                position="before"
+                expr="//field[@name='contract_line_fixed_ids']/tree/field[last()]"
+                position="after"
             >
                 <field name="country_id" invisible="1" />
                 <field
@@ -49,7 +49,7 @@
                     widget="many2many_tags"
                     options="{'no_create': True}"
                     optional="hide"
-                    attrs="{'invisible': [('country_id', '!=', %(base.br)d)]}"
+                    invisible="country_id != %(base.br)d"
                 />
             </xpath>
             <xpath
@@ -62,7 +62,7 @@
                     widget="many2many_tags"
                     options="{'no_create': True}"
                     optional="hide"
-                    attrs="{'invisible': [('country_id', '!=', %(base.br)d)]}"
+                    invisible="country_id != %(base.br)d"
                 />
             </xpath>
         </field>

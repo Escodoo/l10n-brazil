@@ -1,27 +1,39 @@
 # Copyright 2020 KMEE
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-from odoo.tests.common import Form, TransactionCase
+from odoo.tests.common import Form
+from odoo.tests.common import tagged
+from odoo.addons.l10n_br_account.tests.common import AccountMoveBRCommon
 
 
-class TestL10nBrContract(TransactionCase):
+@tagged("post_install", "-at_install")
+class TestL10nBrContract(AccountMoveBRCommon):
     @classmethod
     def setUpClass(cls):
         super(TestL10nBrContract, cls).setUpClass()
 
+        cls.env.company.write(dict(
+            contract_sale_fiscal_operation_id=
+                cls.env.ref("l10n_br_fiscal.fo_venda").id,
+            contract_purchase_fiscal_operation_id=
+                cls.env.ref("l10n_br_fiscal.fo_compras").id,
+            document_type_id=
+                cls.env.ref("l10n_br_fiscal.document_55").id
+        ))
+
         # Create contract with 3 lines, two resale products and one service
         contract_form = Form(cls.env["contract.contract"])
         contract_form.name = "Test Contract"
-        contract_form.partner_id = cls.env.ref("l10n_br_base.res_partner_kmee")
+        contract_form.partner_id = cls.partner_a
 
         cls.contract_id = contract_form.save()
 
         with Form(cls.contract_id) as contract:
-            with contract.contract_line_ids.new() as line:
-                line.product_id = cls.env.ref("product.product_delivery_01")
-            with contract.contract_line_ids.new() as line:
-                line.product_id = cls.env.ref("product.product_delivery_02")
-            with contract.contract_line_ids.new() as line:
+            with contract.contract_line_fixed_ids.new() as line:
+                line.product_id = cls.product_a
+            with contract.contract_line_fixed_ids.new() as line:
+                line.product_id = cls.product_b
+            with contract.contract_line_fixed_ids.new() as line:
                 line.product_id = cls.env.ref(
                     "l10n_br_fiscal.customized_development_sale"
                 )
@@ -59,8 +71,6 @@ class TestL10nBrContract(TransactionCase):
                 )
 
             else:
-                product_1_id = self.env.ref("product.product_delivery_01")
-                product_2_id = self.env.ref("product.product_delivery_02")
                 document_type_id = self.env.ref("l10n_br_fiscal.document_55")
 
                 products_ids = []
@@ -74,7 +84,7 @@ class TestL10nBrContract(TransactionCase):
                 )
 
                 self.assertEqual(
-                    [product_1_id.id, product_2_id.id],
+                    [self.product_a.id, self.product_b.id],
                     products_ids,
                     "The products of the Fiscal Document does not"
                     " correspond with the expected",
@@ -100,9 +110,6 @@ class TestL10nBrContract(TransactionCase):
                 )
 
             else:
-                product_1_id = self.env.ref("product.product_delivery_01")
-                product_2_id = self.env.ref("product.product_delivery_02")
-
                 products_ids = []
                 for line in invoice.invoice_line_ids:
                     products_ids.append(line.product_id.id)
@@ -110,7 +117,7 @@ class TestL10nBrContract(TransactionCase):
                 products_ids.sort()
 
                 self.assertEqual(
-                    [product_1_id.id, product_2_id.id],
+                    [self.product_a.id, self.product_b.id],
                     products_ids,
                     "The products of the Fiscal Document does not"
                     " correspond with the expected",
