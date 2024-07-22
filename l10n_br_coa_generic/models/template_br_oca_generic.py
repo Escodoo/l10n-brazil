@@ -48,6 +48,7 @@ class AccountChartTemplate(models.AbstractModel):
         """
         if template_code != 'br_oca_generic':
             return super()._get_tax_group_accounts(template_code)
+    
         return {
             'tax_group_icms': {
                 'account_id': 'coa_generic_217103',
@@ -63,13 +64,13 @@ class AccountChartTemplate(models.AbstractModel):
             },
             'tax_group_pis': {
                 'account_id': 'coa_generic_217105',
-                'refund_account_id': 'coa_generic_114101',
+                'refund_account_id': 'coa_generic_114105',
                 'ded_account_id': 'coa_generic_611206',
                 'ded_refund_account_id': 'coa_generic_611226',
             },
             'tax_group_cofins': {
                 'account_id': 'coa_generic_217104',
-                'refund_account_id': 'coa_generic_114101',
+                'refund_account_id': 'coa_generic_114104',
                 'ded_account_id': 'coa_generic_611205',
                 'ded_refund_account_id': 'coa_generic_611225',
             }
