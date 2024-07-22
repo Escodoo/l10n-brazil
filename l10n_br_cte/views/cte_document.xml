@@ -28,6 +28,12 @@
                 <field name="cte40_dProg" />
                 <field name="cte40_tpHor" />
             </field>
+            <field name="cte40_exped" position="after">
+                <field name="partner_shipping_id" position="move" />
+            </field>
+            <field name="partner_shipping_id" position="after">
+                <field name="cte40_receb" />
+            </field>
             <page name="delivery" position="inside">
                 <separator name="cargo_infos_sep" string="Cargo Infos" />
                 <group name="cargo_infos">
