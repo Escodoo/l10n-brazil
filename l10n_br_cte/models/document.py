@@ -361,12 +361,12 @@ class CTe(spec_models.StackedModel):
                 doc.cte40_xMunEnv = doc.company_id.partner_id.city_id.name
                 doc.cte40_cMunEnv = doc.company_id.partner_id.city_id.ibge_code
                 doc.cte40_UFEnv = doc.company_id.partner_id.state_id.code
-                doc.cte40_xMunIni = doc.cte40_exped.city_id.name
-                doc.cte40_cMunIni = doc.cte40_exped.city_id.ibge_code
-                doc.cte40_UFIni = doc.cte40_exped.state_id.code
-                doc.cte40_xMunFim = doc.cte40_receb.city_id.name
-                doc.cte40_cMunFim = doc.cte40_receb.city_id.ibge_code
-                doc.cte40_UFFim = doc.cte40_receb.state_id.code
+                doc.cte40_xMunIni = doc.cte40_rem.city_id.name
+                doc.cte40_cMunIni = doc.cte40_rem.city_id.ibge_code
+                doc.cte40_UFIni = doc.cte40_rem.state_id.code
+                doc.cte40_xMunFim = doc.cte40_dest.city_id.name
+                doc.cte40_cMunFim = doc.cte40_dest.city_id.ibge_code
+                doc.cte40_UFFim = doc.cte40_dest.state_id.code
             else:
                 doc.cte40_UFIni = "EX"
                 doc.cte40_UFEnv = "EX"
@@ -456,7 +456,7 @@ class CTe(spec_models.StackedModel):
 
     def _compute_emit_data(self):
         for doc in self:  # TODO if out
-            doc.cte40_emit = doc.company_id
+            doc.cte40_emit = doc.company_id  # TODO: verificar o caso de entrada de CTE
 
     ##########################
     # CT-e tag: rem
@@ -464,7 +464,7 @@ class CTe(spec_models.StackedModel):
 
     cte40_rem = fields.Many2one(
         comodel_name="res.partner",
-        compute="_compute_rem_data",
+        # compute="_compute_rem_data",
         readonly=False,
         store=True,
         string="Remetente",
@@ -475,9 +475,13 @@ class CTe(spec_models.StackedModel):
     # Compute Methods
     ##########################
 
-    def _compute_rem_data(self):
-        for doc in self:  # TODO if out
-            doc.cte40_rem = doc.company_id.partner_id
+    # @api.depends("partner_sendering_id", "company_id")
+    # def _compute_rem_data(self):
+    #     for doc in self:  # TODO if out
+    #         if self.partner_sendering_id:
+    #             doc.cte40_rem = doc.partner_sendering_id
+    #         else:
+    #             doc.cte40_rem = doc.company_id.partner_id
 
     ##########################
     # CT-e tag: exped
@@ -485,7 +489,7 @@ class CTe(spec_models.StackedModel):
 
     cte40_exped = fields.Many2one(
         comodel_name="res.partner",
-        compute="_compute_exped_data",
+        # compute="_compute_exped_data",
         readonly=False,
         store=True,
         string="Expedidor",
@@ -496,9 +500,13 @@ class CTe(spec_models.StackedModel):
     # Compute Methods
     ##########################
 
-    def _compute_exped_data(self):
-        for doc in self:  # TODO if out
-            doc.cte40_exped = doc.company_id.partner_id
+    # @api.depends("partner_sendering_id", "partner_shippering_id")
+    # def _compute_exped_data(self):
+    #     for doc in self:  # TODO if out
+    #         if doc.partner_shippering_id:
+    #             doc.cte40_exped = doc.partner_shippering_id
+    #         else:
+    #             doc.cte40_exped = doc.cte40_rem
 
     ##########################
     # CT-e tag: dest
@@ -508,6 +516,7 @@ class CTe(spec_models.StackedModel):
         comodel_name="res.partner",
         compute="_compute_dest_data",
         readonly=True,
+        store=True,
         string="Destinatário",
     )
 
@@ -516,9 +525,13 @@ class CTe(spec_models.StackedModel):
     # Compute Methods
     ##########################
 
+    @api.depends("partner_shipping_id", "partner_id")
     def _compute_dest_data(self):
         for doc in self:  # TODO if out
-            doc.cte40_dest = doc.partner_id
+            if doc.partner_shipping_id:
+                doc.cte40_dest = doc.partner_shipping_id
+            else:
+                doc.cte40_dest = doc.partner_id
 
     ##########################
     # CT-e tag: receb
@@ -526,8 +539,9 @@ class CTe(spec_models.StackedModel):
 
     cte40_receb = fields.Many2one(
         comodel_name="res.partner",
-        compute="_compute_receb_data",
-        readonly=True,
+        # compute="_compute_receb_data",
+        readonly=False,
+        store=True,
         string="Recebedor",
     )
 
@@ -536,12 +550,13 @@ class CTe(spec_models.StackedModel):
     # Compute Methods
     ##########################
 
-    def _compute_receb_data(self):
-        for doc in self:
-            if doc.partner_shipping_id:
-                doc.cte40_receb = doc.partner_shipping_id
-            else:
-                doc.cte40_receb = doc.partner_id
+    # @api.depends("partner_shipping_id", "partner_receivering_id")
+    # def _compute_receb_data(self):
+    #     for doc in self:
+    #         if doc.partner_receivering_id:
+    #             doc.cte40_receb = doc.partner_receivering_id
+    #         else:
+    #             doc.cte40_receb = doc.cte40_dest
 
     ##########################
     # CT-e tag: vPrest
