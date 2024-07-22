@@ -24,14 +24,14 @@ class FiscalDocumentMixinMethods(models.AbstractModel):
             return {"default_%s" % (k,): vals[k] for k in vals.keys()}
         return vals
 
-    def _get_amount_lines(self):
-        """Get object lines instaces used to compute fields"""
-        return self.mapped("fiscal_line_ids")
+    def _get_lines_field_name(self):
+        return "fiscal_line_ids"
 
     def _get_product_amount_lines(self):
         """Get object lines instaces used to compute fields"""
-        fiscal_line_ids = self._get_amount_lines()
-        return fiscal_line_ids.filtered(lambda line: line.product_id.type != "service")
+        return self[self._get_lines_field_name()].filtered(
+            lambda l: l.product_id and l.product_id.type != "service"
+        )
 
     @api.model
     def _get_amount_fields(self):
@@ -39,23 +39,45 @@ class FiscalDocumentMixinMethods(models.AbstractModel):
         fields = self.env["l10n_br_fiscal.document.mixin"]._fields.keys()
         amount_fields = [f for f in fields if f.startswith("amount_")]
         return amount_fields
+    
+    @api.model
+    def _get_matched_line_amount_field(self, field_name):
+        line_model_fs = self[self._get_lines_field_name()]._fields
+        if field_name in line_model_fs:
+            return field_name
+        if (f := field_name.replace("amount_", "")) in line_model_fs:
+            return f
+        return None
+    
+    def _get_compute_amount_dependencies(self):
+        lines_fname = self._get_lines_field_name()
+        amount_fs = self._get_amount_fields()
+        return (
+            "company_id",
+            "force_compute_delivery_costs_by_total",
+            *(
+                f"{lines_fname}.{line_f}" 
+                for f in amount_fs 
+                if (line_f := self._get_matched_line_amount_field(f))
+            )
+        )
 
     def _compute_amount(self):
         fields = self._get_amount_fields()
         for doc in self:
             values = {key: 0.0 for key in fields}
-            for line in doc._get_amount_lines():
-                for field in fields:
-                    if field in line._fields.keys():
-                        values[field] += line[field]
-                    if field.replace("amount_", "") in line._fields.keys():
-                        # FIXME this field creates an error in invoice form
-                        if field == "amount_financial_discount_value":
-                            values[
-                                "amount_financial_discount_value"
-                            ] += 0  # line.financial_discount_value
-                        else:
-                            values[field] += line[field.replace("amount_", "")]
+            for field in fields:
+                line_field = self._get_matched_line_amount_field(field)
+                if not line_field:
+                    continue
+                for line in doc[doc._get_lines_field_name()]:
+                    # FIXME this field creates an error in invoice form
+                    if field == "amount_financial_discount_value":
+                        values[
+                            "amount_financial_discount_value"
+                        ] += 0  # line.financial_discount_value
+                    else:
+                        values[field] += line[line_field]
 
             # Valores definidos pelo Total e não pela Linha
             if (
@@ -96,7 +118,7 @@ class FiscalDocumentMixinMethods(models.AbstractModel):
     def _onchange_partner_id_fiscal(self):
         if self.partner_id:
             self.ind_final = self.partner_id.ind_final
-            for line in self._get_amount_lines():
+            for line in self[self._get_lines_field_name()]:
                 # reload fiscal data, operation line, cfop, taxes, etc.
                 line._onchange_fiscal_operation_id()
 
@@ -108,41 +130,33 @@ class FiscalDocumentMixinMethods(models.AbstractModel):
 
     def _inverse_amount_freight(self):
         for record in self.filtered(lambda doc: doc._get_product_amount_lines()):
+            product_lines = record._get_product_amount_lines()
             if (
                 record.delivery_costs == "total"
                 or record.force_compute_delivery_costs_by_total
             ):
                 amount_freight_value = record.amount_freight_value
-                if all(record._get_product_amount_lines().mapped("freight_value")):
+                if all(product_lines.mapped("freight_value")):
                     amount_freight_old = sum(
-                        record._get_product_amount_lines().mapped("freight_value")
+                        product_lines.mapped("freight_value")
                     )
-                    for line in record._get_product_amount_lines()[:-1]:
-                        line.freight_value = amount_freight_value * (
-                            line.freight_value / amount_freight_old
-                        )
-                    record._get_product_amount_lines()[
-                        -1
-                    ].freight_value = amount_freight_value - sum(
-                        line.freight_value
-                        for line in record._get_product_amount_lines()[:-1]
-                    )
+                    for line in product_lines[:-1]:
+                        line.freight_value *= amount_freight_value / amount_freight_old
                 else:
                     amount_total = sum(
-                        record._get_product_amount_lines().mapped("price_gross")
+                        product_lines.mapped("price_gross")
                     )
-                    for line in record._get_product_amount_lines()[:-1]:
+                    for line in product_lines[:-1]:
                         if line.price_gross and amount_total:
                             line.freight_value = amount_freight_value * (
                                 line.price_gross / amount_total
                             )
-                    record._get_product_amount_lines()[
-                        -1
-                    ].freight_value = amount_freight_value - sum(
-                        line.freight_value
-                        for line in record._get_product_amount_lines()[:-1]
-                    )
-                for line in record._get_product_amount_lines():
+                product_lines[
+                    -1
+                ].freight_value = amount_freight_value - sum(
+                    product_lines[:-1].mapped("freight_value")
+                )
+                for line in product_lines:
                     line._onchange_fiscal_taxes()
                 record._fields["amount_total"].compute_value(record)
                 record.write(

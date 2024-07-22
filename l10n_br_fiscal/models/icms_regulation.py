@@ -1642,22 +1642,14 @@ class ICMSRegulation(models.Model):
     )
 
     @api.model
-    def fields_view_get(
-        self, view_id=None, view_type="form", toolbar=False, submenu=False
-    ):
-        view_super = super().fields_view_get(view_id, view_type, toolbar, submenu)
-
+    def _get_view(self, view_id=None, view_type="form", **options):
+        arch, view = super()._get_view(view_id, view_type, **options)
         if view_type == "form":
-            doc = etree.fromstring(view_super.get("arch"))
-
-            for node in doc.xpath("//notebook"):
+            for node in arch.xpath("//notebook"):
                 br_states = self.env["res.country.state"].search(
                     [("country_id", "=", self.env.ref("base.br").id)], order="code"
                 )
-
-                i = 0
-                for state in br_states:
-                    i += 1
+                for i, state in enumerate(br_states):
                     state_page = VIEW.format(
                         state.code.lower(),
                         state.name,
@@ -1668,10 +1660,7 @@ class ICMSRegulation(models.Model):
                     )
                     node_page = etree.fromstring(state_page)
                     node.insert(i, node_page)
-
-            view_super["arch"] = etree.tostring(doc, encoding="unicode")
-
-        return view_super
+        return arch, view
 
     def _build_map_tax_def_domain(
         self,

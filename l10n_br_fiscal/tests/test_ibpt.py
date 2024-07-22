@@ -9,7 +9,7 @@ from decorator import decorate
 from erpbrasil.base import misc
 from unittest import mock
 
-from odoo.tests import TransactionCase
+from odoo.tests import TransactionCase, Form
 
 from odoo.addons.l10n_br_fiscal.models.ibpt import (
     DeOlhoNoImposto,

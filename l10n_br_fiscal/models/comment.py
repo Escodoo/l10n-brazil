@@ -21,6 +21,7 @@ class Comment(models.Model):
     _description = "Fiscal Comment"
     _order = "sequence"
     _rec_name = "comment"
+    _rec_names_search = ["name", "comment"]
 
     sequence = fields.Integer(
         default=10,
@@ -60,31 +61,6 @@ class Comment(models.Model):
         selection=FISCAL_COMMENT_OBJECTS,
         ondelete="set null",
     )
-
-    @api.model
-    def _name_search(
-        self, name, args=None, operator="ilike", limit=100, name_get_uid=None
-    ):
-        args = args or []
-        if name:
-            domain = [
-                "|",
-                ("comment", "ilike", "%" + name + "%"),
-                ("name", operator, name),
-            ]
-            return super()._name_search(
-                args=AND([args, domain]),
-                operator=operator,
-                limit=limit,
-                name_get_uid=name_get_uid,
-            )
-        return super()._name_search(
-            name=name,
-            args=args,
-            operator=operator,
-            limit=limit,
-            name_get_uid=name_get_uid,
-        )
 
     @api.depends("name")
     def _compute_display_name(self):
