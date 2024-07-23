@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Copyright 2024 - TODAY, Marcel Savegnago <marcel.savegnago@escodoo.com.br>
+     License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl). -->
+<odoo>
+
+    <record model="ir.ui.view" id="l10n_br_fiscal_document_form_view">
+        <field name="model">l10n_br_fiscal.document</field>
+        <field name="priority">10</field>
+        <field name="inherit_id" ref="l10n_br_cte.cte_document_form_inherit" />
+        <field name="arch" type="xml">
+            <field name="partner_shipping_id" position="before">
+                <field name="partner_sendering_id" />
+                <field name="partner_shippering_id" />
+            </field>
+            <field name="partner_shipping_id" position="after">
+                <field name="partner_receivering_id" />
+            </field>
+            <field name="cte40_rem" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </field>
+            <field name="cte40_exped" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </field>
+            <field name="cte40_receb" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </field>
+
+            <field name="cte40_vCarga" position="after">
+                <field name="tms_main_product" />
+                <field name="tms_other_product_features" />
+                <field name="tms_cargo_value" />
+                <field name="tms_insured_value" />
+                <field name="partner_insurance_id" />
+            </field>
+
+            <field name="cte40_vCarga" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </field>
+            <field name="cte40_proPred" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </field>
+            <field name="cte40_xOutCat" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </field>
+            <field name="cte40_vCargaAverb" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </field>
+
+            <field name="cte40_dProg" position="after">
+                <field
+                    name="commitment_date"
+                    attrs="{'invisible': [('commitment_date', '=', False)]}"
+                />
+                <field
+                    name="expected_date"
+                    attrs="{'invisible': [('commitment_date', '!=', False)]}"
+                />
+            </field>
+
+            <field name="cte40_dProg" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </field>
+
+        </field>
+    </record>
+
+</odoo>
