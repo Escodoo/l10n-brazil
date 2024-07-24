@@ -354,19 +354,41 @@ class CTe(spec_models.StackedModel):
             if rec.document_key:
                 rec.cte40_cCT = rec.document_key[35:43]
 
-    @api.depends("partner_id", "company_id")
+    @api.depends(
+        "partner_id",
+        "company_id",
+        "cte40_rem",
+        "cte40_dest",
+        "cte40_exped",
+        "cte40_receb",
+    )
     def _compute_cte40_data(self):
         for doc in self:
             if doc.company_id.partner_id.country_id == doc.partner_id.country_id:
-                doc.cte40_xMunEnv = doc.company_id.partner_id.city_id.name
+                doc.cte40_xMunEnv = (
+                    doc.company_id.partner_id.city_id.name
+                )  # TODO: provavelmente vai depender de quem é o emissor
                 doc.cte40_cMunEnv = doc.company_id.partner_id.city_id.ibge_code
                 doc.cte40_UFEnv = doc.company_id.partner_id.state_id.code
-                doc.cte40_xMunIni = doc.cte40_rem.city_id.name
-                doc.cte40_cMunIni = doc.cte40_rem.city_id.ibge_code
-                doc.cte40_UFIni = doc.cte40_rem.state_id.code
-                doc.cte40_xMunFim = doc.cte40_dest.city_id.name
-                doc.cte40_cMunFim = doc.cte40_dest.city_id.ibge_code
-                doc.cte40_UFFim = doc.cte40_dest.state_id.code
+                doc.cte40_xMunIni = (
+                    doc.cte40_exped.city_id.name or doc.cte40_rem.city_id.name
+                )
+                doc.cte40_cMunIni = (
+                    doc.cte40_exped.city_id.ibge_code or doc.cte40_rem.city_id.ibge_code
+                )
+                doc.cte40_UFIni = (
+                    doc.cte40_exped.state_id.code or doc.cte40_rem.state_id.code
+                )
+                doc.cte40_xMunFim = (
+                    doc.cte40_receb.city_id.name or doc.cte40_dest.city_id.name
+                )
+                doc.cte40_cMunFim = (
+                    doc.cte40_receb.city_id.ibge_code
+                    or doc.cte40_dest.city_id.ibge_code
+                )
+                doc.cte40_UFFim = (
+                    doc.cte40_receb.state_id.code or doc.cte40_dest.state_id.code
+                )
             else:
                 doc.cte40_UFIni = "EX"
                 doc.cte40_UFEnv = "EX"
@@ -456,7 +478,11 @@ class CTe(spec_models.StackedModel):
 
     def _compute_emit_data(self):
         for doc in self:  # TODO if out
-            doc.cte40_emit = doc.company_id  # TODO: verificar o caso de entrada de CTE
+            if doc.issuer == DOCUMENT_ISSUER_COMPANY:
+                doc.cte40_emit = doc.company_id
+            else:
+                # TODO avaliar se os dados do emitente estão em parceiro ou empresa
+                doc.cte40_emit = doc.partner_id
 
     ##########################
     # CT-e tag: rem
@@ -464,24 +490,8 @@ class CTe(spec_models.StackedModel):
 
     cte40_rem = fields.Many2one(
         comodel_name="res.partner",
-        # compute="_compute_rem_data",
-        readonly=False,
-        store=True,
         string="Remetente",
     )
-
-    ##########################
-    # CT-e tag: rem
-    # Compute Methods
-    ##########################
-
-    # @api.depends("partner_sendering_id", "company_id")
-    # def _compute_rem_data(self):
-    #     for doc in self:  # TODO if out
-    #         if self.partner_sendering_id:
-    #             doc.cte40_rem = doc.partner_sendering_id
-    #         else:
-    #             doc.cte40_rem = doc.company_id.partner_id
 
     ##########################
     # CT-e tag: exped
@@ -489,49 +499,16 @@ class CTe(spec_models.StackedModel):
 
     cte40_exped = fields.Many2one(
         comodel_name="res.partner",
-        # compute="_compute_exped_data",
-        readonly=False,
-        store=True,
         string="Expedidor",
     )
-
-    ##########################
-    # CT-e tag: exped
-    # Compute Methods
-    ##########################
-
-    # @api.depends("partner_sendering_id", "partner_shippering_id")
-    # def _compute_exped_data(self):
-    #     for doc in self:  # TODO if out
-    #         if doc.partner_shippering_id:
-    #             doc.cte40_exped = doc.partner_shippering_id
-    #         else:
-    #             doc.cte40_exped = doc.cte40_rem
 
     ##########################
     # CT-e tag: dest
     ##########################
 
     cte40_dest = fields.Many2one(
-        comodel_name="res.partner",
-        compute="_compute_dest_data",
-        readonly=True,
-        store=True,
-        string="Destinatário",
+        comodel_name="res.partner", string="Destinatário", related="partner_shipping_id"
     )
-
-    ##########################
-    # CT-e tag: dest
-    # Compute Methods
-    ##########################
-
-    @api.depends("partner_shipping_id", "partner_id")
-    def _compute_dest_data(self):
-        for doc in self:  # TODO if out
-            if doc.partner_shipping_id:
-                doc.cte40_dest = doc.partner_shipping_id
-            else:
-                doc.cte40_dest = doc.partner_id
 
     ##########################
     # CT-e tag: receb
@@ -539,24 +516,8 @@ class CTe(spec_models.StackedModel):
 
     cte40_receb = fields.Many2one(
         comodel_name="res.partner",
-        # compute="_compute_receb_data",
-        readonly=False,
-        store=True,
         string="Recebedor",
     )
-
-    ##########################
-    # CT-e tag: receb
-    # Compute Methods
-    ##########################
-
-    # @api.depends("partner_shipping_id", "partner_receivering_id")
-    # def _compute_receb_data(self):
-    #     for doc in self:
-    #         if doc.partner_receivering_id:
-    #             doc.cte40_receb = doc.partner_receivering_id
-    #         else:
-    #             doc.cte40_receb = doc.cte40_dest
 
     ##########################
     # CT-e tag: vPrest
@@ -805,6 +766,9 @@ class CTe(spec_models.StackedModel):
     cte40_infQ = fields.One2many(
         comodel_name="l10n_br_cte.cargo.quantity.infos",
         inverse_name="document_id",
+        compute="_compute_cte40_infQ",
+        readonly=False,
+        store=True,
     )
 
     cte40_vCargaAverb = fields.Monetary(
@@ -1112,7 +1076,15 @@ class CTe(spec_models.StackedModel):
     cte40_RNTRC = fields.Char(
         string="RNTRC",
         help="Registro Nacional de Transportadores Rodoviários de Carga",
+        compute="_compute_cte40_RNTRC",
     )
+
+    def _compute_cte40_RNTRC(self):
+        for record in self:
+            if record.issuer == DOCUMENT_ISSUER_COMPANY:
+                record.cte40_RNTRC = record.company_id.partner_id.rntrc_code
+            else:
+                record.cte40_RNTRC = record.partner_id.rntrc
 
     cte40_occ = fields.One2many(
         comodel_name="l10n_br_cte.modal.rodo.occ",
@@ -1354,14 +1326,14 @@ class CTe(spec_models.StackedModel):
         )
 
         resposta = processo.resposta.infEvento
+
+        if resposta.cStat not in CANCELADO:
+            mensagem = "Erro no cancelamento"
+            mensagem += "\nCódigo: " + resposta.cStat
+            mensagem += "\nMotivo: " + resposta.xMotivo
+            raise UserError(mensagem)
+
         if resposta.chCTe == self.document_key:
-
-            if resposta.cStat not in CANCELADO:
-                mensagem = "Erro no cancelamento"
-                mensagem += "\nCódigo: " + resposta.cStat
-                mensagem += "\nMotivo: " + resposta.xMotivo
-                raise UserError(mensagem)
-
             if resposta.cStat in CANCELADO_FORA_PRAZO:
                 self.state_fiscal = SITUACAO_FISCAL_CANCELADO_EXTEMPORANEO
             elif resposta.cStat in CANCELADO_DENTRO_PRAZO:
@@ -1457,6 +1429,25 @@ class CTe(spec_models.StackedModel):
         # serialized_doc = self.serialize()[0]
         # xml = processador.assina_raiz(serialized_doc, serialized_doc.infNFe.Id)
         # return processador._generate_qrcode_contingency(serialized_doc, xml)
+
+    # TODO: nao esta rodando direto.. corrigir
+    def _compute_cte40_infQ(self):
+        for record in self:
+            cargo_info_vals = [
+                {"cte40_cUnid": "01", "cte40_tpMed": "Peso Bruto", "cte40_qCarga": 0},
+                {
+                    "cte40_cUnid": "01",
+                    "cte40_tpMed": "Peso Base Calculado",
+                    "cte40_qCarga": 0,
+                },
+                {"cte40_cUnid": "01", "cte40_tpMed": "Peso Aferido", "cte40_qCarga": 0},
+                {"cte40_cUnid": "00", "cte40_tpMed": "Cubagem", "cte40_qCarga": 0},
+                {"cte40_cUnid": "03", "cte40_tpMed": "Unidade", "cte40_qCarga": 0},
+            ]
+
+            record.cte40_infQ = self.env["l10n_br_cte.cargo.quantity.infos"].create(
+                cargo_info_vals
+            )
 
     def _need_compute_cte_tags(self):
         if (
