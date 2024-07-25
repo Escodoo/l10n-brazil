@@ -15,12 +15,12 @@ class SaleOrderLine(models.Model):
 
     _inherit = "sale.order.line"
 
-    def _get_eval_context(self, profile=None):
+    def _get_eval_context(self, rule=None):
         """Prepare the context used when evaluating python code, like the
         python formulas or code server actions.
 
-        :param profile: the current sqi profile
-        :type profile: browse record
+        :param rule: the current price rule
+        :type rule: browse record
         :returns: dict -- evaluation context given to (safe_)safe_eval"""
 
         def log(message, level="info"):
@@ -38,9 +38,9 @@ class SaleOrderLine(models.Model):
                         __name__,
                         level,
                         message,
-                        "profile",
-                        profile.id,
-                        profile.name,
+                        "rule",
+                        rule.id,
+                        rule.name,
                     ),
                 )
 
@@ -58,8 +58,18 @@ class SaleOrderLine(models.Model):
 
         model_name = self._name
         model = self.env[model_name]
-        record = self.id
+        record = self
         records = None
+        if self._context.get("active_model") == model_name and self._context.get(
+            "active_id"
+        ):
+            record = model.browse(self._context["active_id"])
+        if self._context.get("active_model") == model_name and self._context.get(
+            "active_ids"
+        ):
+            records = model.browse(self._context["active_ids"])
+        if self._context.get("onchange_self"):
+            record = self._context["onchange_self"]
         eval_context.update(
             {
                 # orm
@@ -79,6 +89,9 @@ class SaleOrderLine(models.Model):
 
     def _get_display_price(self, product):
         result = super()._get_display_price(product)
+        if not product:
+            return result
+
         product_context = dict(
             self.env.context,
             partner_id=self.order_id.partner_id.id,
@@ -94,8 +107,9 @@ class SaleOrderLine(models.Model):
         )
         rule = self.env["product.pricelist.item"].browse(rule_id)
         if rule.compute_price == "python":
-            eval_context = self._get_eval_context(profile=rule)
+            eval_context = self._get_eval_context(rule=rule)
             code = rule.code.strip()
             safe_eval(code, eval_context, mode="exec", nocopy=True)
-            result = eval_context.get("result")
+            if eval_context.get("result"):
+                result = eval_context.get("result")
         return result
