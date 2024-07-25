@@ -13,6 +13,8 @@
         "l10n_br_sale",
     ],
     "data": [
+        "views/product_pricelist_item.xml",
+        "views/sale_order_line.xml",
         "views/sale_order.xml",
     ],
     "demo": [],
