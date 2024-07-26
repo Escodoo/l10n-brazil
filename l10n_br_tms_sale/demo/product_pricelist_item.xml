@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data>
+        <record id="product_pricelist_item_tms" model="product.pricelist.item">
+            <field name="pricelist_id" ref="product.list0" />
+            <field name="applied_on">1_product</field>
+            <field
+                eval="obj().env.ref('l10n_br_tms_sale.transport_service_sale').product_tmpl_id.id"
+                model="product.template"
+                name="product_tmpl_id"
+            />
+            <field name="min_quantity">1</field>
+            <field name="compute_price">python</field>
+            <field name="code">
+if model._name == 'sale.order.line':
+    result = (record.order_id.tms_units or 1) * (record.order_id.tms_product_transported_id.lst_price or record.product_id.lst_price) + (record.order_id.tms_distance * 0.57)
+else:
+    result = False
+            </field>
+            <field name="base">list_price</field>
+        </record>
+    </data>
+</odoo>

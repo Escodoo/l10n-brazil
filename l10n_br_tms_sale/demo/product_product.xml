@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data>
+        <!-- Service products -->
+        <!-- Transport Service-->
+        <record id="transport_service_sale" model="product.product">
+            <field name="name">FRETE INTERMUNCIPAL</field>
+            <field name="list_price">100.0</field>
+            <field name="standard_price">0.0</field>
+            <field name="type">service</field>
+            <field name="default_code">FRETE</field>
+            <field name="uom_id" ref="uom.product_uom_unit" />
+            <field name="uom_po_id" ref="uom.product_uom_unit" />
+            <field name="categ_id" ref="product.product_category_3" />
+            <field name="ncm_id" ref="l10n_br_fiscal.ncm_00000000" />
+            <field name="fiscal_type">99</field>
+            <field name="tax_icms_or_issqn">icms</field>
+            <field name="fiscal_genre_id" ref="l10n_br_fiscal.product_genre_00" />
+        </record>
+        <!-- fiscal_type property for customized_development_sale for simples nacional company -->
+        <record
+            forcecreate="True"
+            id="fiscal_type_transport_service_sale_sn"
+            model="ir.property"
+        >
+            <field name="name">fiscal_type</field>
+            <field
+                name="fields_id"
+                ref="l10n_br_fiscal.field_product_template__fiscal_type"
+            />
+            <field name="value">99</field>
+            <field name="type">selection</field>
+            <field
+                eval="'product.template,'+str(obj().env.ref('l10n_br_tms_sale.transport_service_sale').product_tmpl_id.id)"
+                model="product.template"
+                name="res_id"
+            />
+            <field name="company_id" ref="l10n_br_base.empresa_simples_nacional" />
+        </record>
+        <!-- fiscal_type property for customized_development_sale for lucro presumido company -->
+        <record
+            forcecreate="True"
+            id="fiscal_type_transport_service_sale_lp"
+            model="ir.property"
+        >
+            <field name="name">fiscal_type</field>
+            <field
+                name="fields_id"
+                ref="l10n_br_fiscal.field_product_template__fiscal_type"
+            />
+            <field name="value">99</field>
+            <field name="type">selection</field>
+            <field
+                eval="'product.template,'+str(obj().env.ref('l10n_br_tms_sale.transport_service_sale').product_tmpl_id.id)"
+                model="product.template"
+                name="res_id"
+            />
+            <field name="company_id" ref="l10n_br_base.empresa_lucro_presumido" />
+        </record>
+
+    </data>
+</odoo>
