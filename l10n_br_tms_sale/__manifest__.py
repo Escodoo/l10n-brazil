@@ -17,5 +17,8 @@
         "views/sale_order_line.xml",
         "views/sale_order.xml",
     ],
-    "demo": [],
+    "demo": [
+        "demo/product_product.xml",
+        "demo/product_pricelist_item.xml",
+    ],
 }
