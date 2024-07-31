@@ -25,7 +25,7 @@
                     <field name="show_l10n_br" invisible="1" />
                     <field name="pix_key_ids" nolabel="1">
                         <tree editable="bottom">
-                            <field name="partner_id" invisible="1" />
+                            <field name="partner_id" column_invisible="1" />
                             <field name="sequence" widget="handle" />
                             <field name="key_type" />
                             <field name="key" />

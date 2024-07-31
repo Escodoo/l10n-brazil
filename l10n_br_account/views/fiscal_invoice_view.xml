@@ -28,13 +28,13 @@
         <field name="mode">primary</field>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='document_number']" position="after">
-                <field name="name" string="Account Number" invisible="1" />
-                <field name="commercial_partner_id" invisible="1" />
-                <field name="name" invisible="1" />
-                <field name="journal_id" invisible="1" />
-                <field name="move_type" invisible="context.get('move_type',True)" />
-                <field name="currency_id" invisible="1" />
-                <field name="company_currency_id" invisible="1" />
+                <field name="name" string="Account Number" column_invisible="1" />
+                <field name="commercial_partner_id" column_invisible="1" />
+                <field name="name" column_invisible="1" />
+                <field name="journal_id" column_invisible="1" />
+                <field name="move_type" column_invisible="context.get('move_type',True)" />
+                <field name="currency_id" column_invisible="1" />
+                <field name="company_currency_id" column_invisible="1" />
             </xpath>
         </field>
     </record>

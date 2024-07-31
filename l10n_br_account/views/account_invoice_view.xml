@@ -31,7 +31,7 @@
         <field name="inherit_id" ref="account.view_invoice_tree" />
         <field name="arch" type="xml">
             <field name="name" position="before">
-                <field name="document_type_id" invisible="1" />
+                <field name="document_type_id" column_invisible="1" />
                 <field name="document_number" />
                 <button
                     name="open_fiscal_document"
