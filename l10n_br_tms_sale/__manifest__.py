@@ -10,6 +10,7 @@
     "author": "Escodoo,Odoo Community Association (OCA)",
     "website": "https://github.com/OCA/l10n-brazil",
     "depends": [
+        "tms_sale",
         "l10n_br_sale",
     ],
     "data": [

@@ -7,31 +7,33 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_form" />
         <field name="arch" type="xml">
-            <field name="partner_shipping_id" position="after">
+            <field name="partner_shipping_id" position="before">
                 <field name="partner_sendering_id" />
+                <field name="partner_shippering_id" />
             </field>
-            <notebook position="inside">
-                <page string="TMS">
-                    <group name="tms_general_info" string="General Info">
-                        <field name="tms_transport_modal" />
-                        <field name="tms_product_transported_id" />
-                        <field name="tms_main_product" />
-                        <field name="tms_other_product_features" />
-                        <field name="tms_units" />
-                        <field name="tms_units_description" />
-                        <field name="tms_volume" />
-                        <field name="tms_weight" />
-                        <field name="tms_cargo_value" />
-                        <field name="tms_insured_value" />
-                        <field name="partner_insurance_id" />
-                        <field name="tms_distance" />
-                    </group>
-                    <group name="tms_partners" string="Partners">
-                        <field name="partner_shippering_id" />
-                        <field name="partner_receivering_id" />
-                    </group>
-                </page>
-            </notebook>
+            <field name="partner_shipping_id" position="after">
+                <field name="partner_receivering_id" />
+            </field>
+            <page name="tms_sale_page" position="inside">
+                <hr />
+                <group name="tms_general_info" string="Other Info">
+                    <field name="tms_transport_modal" />
+                    <field name="tms_product_transported_id" />
+                    <field name="tms_main_product" />
+                    <field name="tms_other_product_features" />
+                    <field name="tms_units" />
+                    <field name="tms_units_description" />
+                    <field name="tms_volume" />
+                    <field name="tms_weight" />
+                    <field name="tms_cargo_value" />
+                    <field name="tms_insured_value" />
+                    <field name="partner_insurance_id" />
+                    <field name="tms_distance" />
+                </group>
+                <group name="tms_partners" string="Others Partners">
+
+                </group>
+            </page>
         </field>
     </record>
 
