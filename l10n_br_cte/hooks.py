@@ -13,9 +13,9 @@ def post_init_hook(cr, registry):
         "odoo.addons.l10n_br_cte_spec.models.v4_0.cte_tipos_basico_v4_00",
     )
 
-    hooks.post_init_hook(
-        cr,
-        registry,
-        "l10n_br_cte",
-        "odoo.addons.l10n_br_cte_spec.models.v4_0.cte_tipos_basico_v4_00",
-    )
+    # hooks.post_init_hook(
+    #     cr,
+    #     registry,
+    #     "l10n_br_cte",
+    #     "odoo.addons.l10n_br_cte_spec.models.v4_0.cte_tipos_basico_v4_00",
+    # )
