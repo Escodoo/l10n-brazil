@@ -17,6 +17,7 @@
         "views/product_pricelist_item.xml",
         "views/sale_order_line.xml",
         "views/sale_order.xml",
+        "data/l10n_br_fiscal_operation_line.xml",
     ],
     "demo": [
         "demo/product_product.xml",
