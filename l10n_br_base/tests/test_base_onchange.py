@@ -81,7 +81,7 @@ class L10nBrBaseOnchangeTest(TransactionCase):
             display_address,
             "Akretion Sao Paulo\n"
             "Avenida Paulista, 807 CJ 2315\nCentro"
-            "\n01311-915 - São Paulo-SP\nBrazil",
+            "\n01311-915 - São Paulo-SP\nBrasil",
             "The function _display_address failed.",
         )
 
@@ -93,7 +93,7 @@ class L10nBrBaseOnchangeTest(TransactionCase):
             display_address,
             "Akretion Rio de Janeiro\n"
             "Rua Acre, 47 sala 1310\nCentro"
-            "\n20081-000 - Rio de Janeiro-RJ\nBrazil",
+            "\n20081-000 - Rio de Janeiro-RJ\nBrasil",
             "The function _display_address with parent_id failed.",
         )
 
@@ -115,6 +115,6 @@ class L10nBrBaseOnchangeTest(TransactionCase):
         self.assertEqual(
             display_address,
             "Avenida Paulista, 807 CJ 2315\nCentro"
-            "\n01311-915 - São Paulo-SP\nBrazil",
+            "\n01311-915 - São Paulo-SP\nBrasil",
             "The function _display_address with parameter" " without_company failed.",
         )

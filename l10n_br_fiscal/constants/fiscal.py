@@ -80,6 +80,7 @@ TAX_DOMAIN_ICMS = "icms"
 TAX_DOMAIN_ICMS_SN = "icmssn"
 TAX_DOMAIN_ICMS_ST = "icmsst"
 TAX_DOMAIN_ICMS_FCP = "icmsfcp"
+TAX_DOMAIN_ICMS_FCP_ST = "icmsfcpst"
 TAX_DOMAIN_PIS = "pis"
 TAX_DOMAIN_PIS_ST = "pisst"
 TAX_DOMAIN_PIS_WH = "pis_wh"
@@ -111,6 +112,7 @@ TAX_DOMAIN = [
     (TAX_DOMAIN_ICMS_SN, "ICMS - Simples Nacional"),
     (TAX_DOMAIN_ICMS_FCP, "ICMS FCP - Fundo de Combate a Pobreza"),
     (TAX_DOMAIN_ICMS_ST, "ICMS - Subistituição Tributária"),
+    (TAX_DOMAIN_ICMS_FCP_ST, "ICMS FCP ST- Fundo de Combate a Pobreza ST"),
     (TAX_DOMAIN_PIS, "PIS"),
     (TAX_DOMAIN_PIS_ST, "PIS ST"),
     (TAX_DOMAIN_PIS_WH, "pis_wh"),
@@ -349,11 +351,11 @@ MODELO_FISCAL_EMISSAO_SERVICO = [
 ]
 
 AUTORIZADO = ("100", "150")
-DENEGADO = ("110", "301", "302")
+DENEGADO = ("110", "301", "302", "303")
 LOTE_RECEBIDO = ["103"]
 LOTE_PROCESSADO = ["104"]
 LOTE_EM_PROCESSAMENTO = ["105"]
-CONTINGENCIA = ("108", "109")
+SERVICO_PARALIZADO = ("108", "109")
 
 CANCELAMENTO_HOMOLOGADO = ["101", "151"]
 

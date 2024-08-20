@@ -214,10 +214,6 @@ class AccountMoveLine(models.Model):
         result = super().unlink()
         to_unlink.unlink()
 
-        # Não entendi o que tem de particular aqui para ser
-        # necessário limpar os caches via ormcache
-        self.env.registry.clear_all_caches()
-
         return result
 
     @contextmanager
@@ -259,7 +255,7 @@ class AccountMoveLine(models.Model):
             ):
                 amount_currency = line.move_id.direction_sign * line.currency_id.round(
                     line._get_balance_unsigned_for_invoice_type(
-                        default=line._get_price_subtotal_with_extras()
+                        default=line.price_subtotal
                     )
                     # CHANGED
                 )
@@ -287,9 +283,7 @@ class AccountMoveLine(models.Model):
         self.env.add_to_compute(self._fields["debit"], container["records"])
         self.env.add_to_compute(self._fields["credit"], container["records"])
 
-    @api.depends(
-        "quantity", "discount", "price_unit", "tax_ids", "currency_id", "discount"
-    )
+    @api.depends("icms_relief_value", "freight_value", "other_value", "insurance_value")
     def _compute_totals(self):
         """
         Overriden to pass all the Brazilian parameters we need
@@ -307,10 +301,7 @@ class AccountMoveLine(models.Model):
 
             if line.tax_ids:
                 taxes_res = line.tax_ids._origin.with_context(
-                    aml_tax_extra_vals=dict(
-                        fiscal_taxes=line.fiscal_tax_ids,
-                        move_line=line,
-                    )
+                    taxes_compute_origin_document_line_mixin=line,
                 ).compute_all(
                     line_discount_price_unit,
                     currency=line.currency_id,
@@ -323,23 +314,11 @@ class AccountMoveLine(models.Model):
 
                 line.price_subtotal = taxes_res["total_excluded"]
                 line.price_total = taxes_res["total_included"]
-                line._compute_balance()
 
-            line.price_total += (
-                line.insurance_value + line.other_value + line.freight_value
-            )
+            line.price_total += line._get_extras_amount()
         return result
 
-    @api.depends(
-        "tax_ids",
-        "currency_id",
-        "partner_id",
-        "analytic_distribution",
-        "balance",
-        "partner_id",
-        "move_id.partner_id",
-        "price_unit",
-    )
+    @api.depends()
     def _compute_all_tax(self):
         """
         Overriden to pass all the extra Brazilian parameters we need
@@ -350,32 +329,18 @@ class AccountMoveLine(models.Model):
         for rec in with_fiscal_op:
             super(
                 AccountMoveLine, 
-                rec.with_context(aml_tax_extra_vals=dict(
-                    fiscal_taxes=rec.fiscal_tax_ids,
-                    move_line=rec,
-                ))
+                rec.with_context(
+                    taxes_compute_origin_document_line_mixin=rec,
+                )
             )._compute_all_tax()
 
-    def _get_compute_taxes_extra_kwargs(self, product, qty, price_unit):
-        return dict(
-            operation_line=self.fiscal_operation_line_id,
-            ncm=self.ncm_id or product.ncm_id,
-            nbs=self.nbs_id or product.nbs_id,
-            nbm=self.nbm_id or product.nbm_id,
-            cest=self.cest_id or product.cest_id,
-            cfop=self.cfop_id or None,
-            discount_value=self.discount_value,
-            insurance_value=self.insurance_value,
-            other_value=self.other_value,
-            ii_customhouse_charges=self.ii_customhouse_charges,
-            freight_value=self.freight_value,
-            fiscal_price=self.fiscal_price or price_unit,
-            fiscal_quantity=self.fiscal_quantity or qty,
-            uot_id=self.uot_id or product.uot_id,
-            icmssn_range=self.icmssn_range_id,
-            icms_origin=self.icms_origin or product.icms_origin,
-            ind_final=self.ind_final or FINAL_CUSTOMER_NO,
-        )
+    @api.onchange("fiscal_document_line_id")
+    def _onchange_fiscal_document_line_id(self):
+        if self.fiscal_document_line_id:
+            for field in self._shadowed_fields():
+                self[field] = self.fiscal_document_line_id[field]
+            # override the default product uom (set by the onchange):
+            self.product_uom_id = self.fiscal_document_line_id.uom_id.id
 
     @api.onchange("fiscal_tax_ids")
     def _onchange_fiscal_tax_ids(self):
@@ -383,34 +348,22 @@ class AccountMoveLine(models.Model):
         são atualizados os impostos contábeis relacionados"""
         result = super()._onchange_fiscal_tax_ids()
 
-        # Atualiza os impostos contábeis relacionados aos impostos fiscais
+        self.tax_ids = self._get_computed_taxes()
+
+        return result
+    
+    def _get_computed_taxes(self):
+        if not self.fiscal_operation_id:
+            return super()._get_computed_taxes()
         user_type = (
             "sale" 
             if self.move_id.is_sale_document(include_receipts=True) 
             else "purchase"
         )
-
-        self.tax_ids = self.fiscal_tax_ids.account_taxes(
+        return self.fiscal_tax_ids.account_taxes(
             user_type=user_type, fiscal_operation=self.fiscal_operation_id
         )
 
-        return result
-
-    @api.depends("move_id")
-    def _compute_balance(self):
-        # Substitui _get_amount_credit_debit_model
-        res = super()._compute_balance()
-
-        for line in self:
-            if not line.move_id.is_invoice(
-                include_receipts=True
-            ) or line.display_type in ("line_section", "line_note"):
-                continue  # handled in super method
-
-            if (balance := line._get_balance_unsigned_for_invoice_type()) is not None:
-                line.balance = balance * line.move_id.direction_sign
-        return res
-    
     def _get_balance_unsigned_for_invoice_type(self, default=None):
         self.ensure_one()
         if self._get_is_void_amount():
@@ -420,19 +373,23 @@ class AccountMoveLine(models.Model):
         # Com certeza tem uma forma mais coesa de computar o balance
         # do que essa. É possível que a forma feita aqui seja
         # um bug para certas situações.
-        subtotal_with_extras = self._get_price_subtotal_with_extras()
+        amount_currency = self.amount_total + self.amount_tax_withholding
         if fiscal_op.deductible_taxes:
-            return subtotal_with_extras 
-        return subtotal_with_extras - self.amount_tax_included
+            return amount_currency 
+        return (
+            amount_currency 
+            + self.amount_tax_withholding
+            - self.amount_tax_included 
+            - self.amount_tax_not_included
+        )
     
     def _get_is_void_amount(self):
         return self.cfop_id and not self.cfop_id.finance_move
     
-    def _get_price_subtotal_with_extras(self):
+    def _get_extras_amount(self):
         return (
-            self.ensure_one().price_subtotal
-            + self.freight_value
+            self.freight_value
             + self.other_value
-            + self.freight_value
+            + self.insurance_value
             - self.icms_relief_value
         )

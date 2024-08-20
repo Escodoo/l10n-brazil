@@ -10,7 +10,11 @@
     "author": "KMEE,Odoo Community Association (OCA)",
     "maintainers": ["mileo", "marcelsavegnago"],
     "website": "https://github.com/OCA/l10n-brazil",
-    "depends": ["l10n_br_account", "contract"],
+    "depends": [
+        "l10n_br_account", 
+        "l10n_br_fiscal_certificate",
+        "contract", 
+    ],
     "data": [
         "data/company.xml",
         "views/res_company.xml",

@@ -80,7 +80,7 @@
                             <field name="payment_method_id" readonly="state != 'draft'" />
                             <field name="cnab_format" invisible="True" />
                             <field name="payment_type" invisible="True" />
-                            <field name="batch_ids" invisible="True" />
+                            <field name="batch_ids" />
                             <field name="content_source_model_id" invisible="True" />
                         </group>
                     </group>

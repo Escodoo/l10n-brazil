@@ -68,7 +68,7 @@ class TestCustomerInvoice(TransactionCase):
                                     ),
                                 ],
                                 limit=1,
-                            )
+                            ).ensure_one()
                             .id,
                             "name": "product test 5",
                             "uom_id": cls.env.ref("uom.product_uom_unit").id,

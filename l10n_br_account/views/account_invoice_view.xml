@@ -271,7 +271,7 @@
                     name="context"
                 >{'append_type_to_tax_name': not parent.invoice_filter_type_domain}</attribute>
                 <attribute name="options">{'no_create': True}</attribute>
-                <attribute name="invisible">1</attribute>
+                <attribute name="invisible">(not context.get("force_show_invoice_tax_ids", False))</attribute>
             </xpath>
 
             <xpath

@@ -10,7 +10,7 @@
 
 import logging
 
-from odoo import _, fields, models
+from odoo import _, fields, models, api
 from odoo.exceptions import UserError
 
 from ..constants import (
@@ -136,16 +136,14 @@ class AccountPaymentOrder(models.Model):
                 ):
                     raise UserError(
                         _(
-                            "The payment mode '%s' has the option "
-                            "'Disallow Debit Before Maturity Date'. The "
-                            "payment line %s has a maturity date %s "
-                            "which is after the computed payment date %s."
-                        )
-                        % (
-                            order.payment_mode_id.name,
-                            payline.name,
-                            payline.ml_maturity_date,
-                            requested_date,
+                            "The payment mode '%(payment_mode)s' has the option "
+                            "'Disallow Debit Before Maturity Date'. The payment line "
+                            "'%(payline)s' has a maturity date %(maturity_date)s which "
+                            "is after the computed payment date %(requested_date)s.",
+                            payment_mode=order.payment_mode_id.name,
+                            payline=payline.name,
+                            maturity_date=payline.ml_maturity_date,
+                            requested_date=requested_date,
                         )
                     )
                 payline.date = requested_date
@@ -169,8 +167,13 @@ class AccountPaymentOrder(models.Model):
                 # Block if a bank payment line is <= 0
                 if paydict["total"] <= 0:
                     raise UserError(
-                        _("The amount for Partner '%s' is negative " "or null (%.2f) !")
-                        % (paydict["paylines"][0].partner_id.name, paydict["total"])
+                        _(
+                            "The amount for Partner '%(name)s' "
+                            "is negative "
+                            "or null (%(total).2f) !",
+                            name=paydict["paylines"][0].partner_id.name,
+                            total=paydict["total"],
+                        )
                     )
                 payment_vals.append(paydict["paylines"]._prepare_account_payment_vals())
             # TODO: Por enquanto evitando a criação do account.payment no caso CNAB
@@ -178,26 +181,19 @@ class AccountPaymentOrder(models.Model):
         self.write({"state": "open"})
         return True
 
-    def unlink(self):
+    @api.ondelete(at_uninstall=False)
+    def _unlink_except_cnab_order(self):
         for order in self:
-            # TODO: Existe o caso de se apagar uma Ordem de Pagto
-            #  no caso CNAB ? O que deveria ser feito nesse caso ?
             if (
                 order.payment_method_code in BR_CODES_PAYMENT_ORDER
                 and order.payment_mode_id.payment_method_id.payment_type == "inbound"
             ):
                 raise UserError(_("You cannot delete CNAB order."))
-        return super().unlink()
 
     def action_done_cancel(self):
-        for order in self:
-            # TODO: Existe o caso de se Cancelar uma Ordem de Pagto
-            #  no caso CNAB ? O que deveria ser feito nesse caso ?
-            if (
-                order.payment_method_code in BR_CODES_PAYMENT_ORDER
-                and order.payment_mode_id.payment_method_id.payment_type == "inbound"
-            ):
-                raise UserError(_("You cannot Cancel CNAB order."))
+        # TODO: Existe o caso de se Cancelar uma Ordem de Pagto
+        #  no caso CNAB ? O que deveria ser feito nesse caso ?
+        self._unlink_except_cnab_order()
         return super().unlink()
 
     def generate_payment_file(self):

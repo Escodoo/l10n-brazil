@@ -12,14 +12,14 @@
     "website": "https://github.com/OCA/l10n-brazil",
     "external_dependencies": {
         "python": [
-            "erpbrasil.edoc",
-            "erpbrasil.assinatura",
-            "erpbrasil.transmissao",
-            "erpbrasil.base",
+            "erpbrasil.edoc>=2.5.2",
+            "erpbrasil.transmissao>=1.1.0",
+            "erpbrasil.base>=2.3.0",
         ],
     },
     "depends": [
         "l10n_br_fiscal",
+        "l10n_br_fiscal_certificate",
     ],
     "data": [
         "security/ir.model.access.csv",

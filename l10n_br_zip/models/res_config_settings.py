@@ -20,6 +20,6 @@ class ResConfigSettings(models.TransientModel):
         ],
         string="ZIP Search Provider",
         required=True,
-        default="apicep",
+        default="viacep",
         config_parameter="l10n_zip.cep_ws_provider",
     )

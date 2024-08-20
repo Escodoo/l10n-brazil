@@ -859,6 +859,14 @@ msgid "WH Account Move Line"
 msgstr ""
 
 #. module: l10n_br_account
+#: model:ir.model.fields,help:l10n_br_account.field_account_move__fiscal_document_ids
+msgid ""
+"In some rare cases (NFS-e, CT-e...) a single account.move\n"
+"        may have several different fiscal documents related to its account.move.lines.\n"
+"        "
+msgstr ""
+
+#. module: l10n_br_account
 #: code:addons/l10n_br_account/models/account_move.py:0
 #, python-format
 msgid ""

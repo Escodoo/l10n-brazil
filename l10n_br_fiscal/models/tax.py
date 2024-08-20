@@ -2,7 +2,6 @@
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
 from odoo import api, fields, models
-from odoo.tools import float_is_zero
 
 from ..constants.fiscal import (
     CFOP_DESTINATION_EXPORT,
@@ -21,6 +20,7 @@ from ..constants.fiscal import (
 from ..constants.icms import (
     ICMS_BASE_TYPE,
     ICMS_BASE_TYPE_DEFAULT,
+    ICMS_CST_RELIEF,
     ICMS_DIFAL_DOUBLE_BASE,
     ICMS_DIFAL_PARTITION,
     ICMS_DIFAL_UNIQUE_BASE,
@@ -182,48 +182,57 @@ class Tax(models.Model):
         return cst
 
     @api.model
-    def _compute_tax_base(self, tax, tax_dict, **kwargs):
-        company = kwargs.get("company", tax.env.company)
-        currency = kwargs.get("currency", company.currency_id)
-        fiscal_price = kwargs.get("fiscal_price", 0.00)
-        fiscal_quantity = kwargs.get("fiscal_quantity", 0.00)
-        compute_reduction = kwargs.get("compute_reduction", True)
-        discount_value = kwargs.get("discount_value", 0.00)
-        insurance_value = kwargs.get("insurance_value", 0.00)
-        freight_value = kwargs.get("freight_value", 0.00)
-        other_value = kwargs.get("other_value", 0.00)
+    def _compute_tax_base(
+        self, 
+        tax, 
+        tax_dict, 
+        compute_reduction=True,
+        fiscal_quantity=0,
+        fiscal_price=0,
+        discount_value=0,
+        freight_value=0,
+        insurance_value=0,
+        other_value=0,
+        **kwargs,
+    ):
+        """Calculates the base, percentage, and tax amount."""
+
+        tax_dict["percent_amount"] = percent_amount = (
+            tax_dict.get("percent_amount") or tax.percent_amount
+        )
+        tax_dict["value_amount"] = value_amount = (
+            tax_dict.get("value_amount") or tax.value_amount
+        )
+
+        if tax_dict.get("base_manual"):
+            tax_dict["base"] = tax_dict["base_manual"]
+            return tax_dict
 
         if tax.tax_group_id.base_with_additional_values:
             tax_dict["add_to_base"] += sum(
                 [freight_value, insurance_value, other_value]
             )
-        tax_dict["remove_from_base"] += sum([discount_value])
+        tax_dict["remove_from_base"] += discount_value
 
-        base = 0.00
+        if not percent_amount and not value_amount:
+            tax_dict["base"] = 0.0 
+            return tax_dict
 
-        if not tax_dict.get("percent_amount") and tax.percent_amount:
-            tax_dict["percent_amount"] = tax.percent_amount
+        company = kwargs.get("company", tax.env.company)
+        currency = kwargs.get("currency", company.currency_id)
 
-        if not tax_dict.get("value_amount") and tax.value_amount:
-            tax_dict["value_amount"] = tax.value_amount
-
+        base = 0.0
         if tax_dict["base_type"] == "percent":
-            # Compute initial Tax Base for base_type Percent
             base = currency.round(fiscal_price * fiscal_quantity)
-
-        if tax_dict["base_type"] == "quantity":
-            # Compute initial Tax Base for base_type Quantity
+        elif tax_dict["base_type"] == "quantity":
             base = fiscal_quantity
-
-        if tax_dict["base_type"] == "fixed":
-            # Compute initial Tax Base
-            base = currency.round(tax_dict["value_amount"] * fiscal_quantity)
+        elif tax_dict["base_type"] == "fixed":
+            base = currency.round(value_amount * fiscal_quantity)
 
         # Update Base Value
         base_amount = currency.round(
-            (base + tax_dict["add_to_base"]) - tax_dict["remove_from_base"]
+            base + tax_dict["add_to_base"] - tax_dict["remove_from_base"]
         )
-
         # Compute Tax Base Reduction
         base_reduction = base_amount * abs(tax.percent_reduction / 100)
 
@@ -238,19 +247,9 @@ class Tax(models.Model):
 
         if tax_dict.get("compute_with_tax_value"):
             base_amount = currency.round(
-                base_amount / (1 - (tax_dict["percent_amount"] / 100))
+                base_amount / (1 - (percent_amount / 100))
             )
-
-        if (
-            not tax.percent_amount
-            and not tax.value_amount
-            and not tax_dict.get("percent_amount")
-            and not tax_dict.get("value_amount")
-        ):
-            tax_dict["base"] = 0.00
-        else:
-            tax_dict["base"] = base_amount
-
+        tax_dict["base"] = base_amount
         return tax_dict
 
     @api.model
@@ -263,6 +262,11 @@ class Tax(models.Model):
         fiscal_operation_type = operation_line.fiscal_operation_type or FISCAL_OUT
 
         tax_dict = taxes_dict.get(tax.tax_domain)
+
+        # extract manual values
+        base_manual = kwargs.get(f"{tax.tax_domain}_base_manual")
+        tax_value_manual = kwargs.get(f"{tax.tax_domain}_value_manual")
+
         tax_dict.update(
             {
                 "name": tax.name,
@@ -274,6 +278,8 @@ class Tax(models.Model):
                 "percent_reduction": tax.percent_reduction,
                 "percent_amount": tax_dict.get("percent_amount", tax.percent_amount),
                 "cst_id": tax.cst_from_tax(fiscal_operation_type),
+                "base_manual": base_manual,
+                "tax_value_manual": tax_value_manual,
             }
         )
 
@@ -282,18 +288,20 @@ class Tax(models.Model):
             tax_dict_icms = taxes_dict.get("icms", {})
             tax_dict["remove_from_base"] += tax_dict_icms.get("tax_value", 0.00)
 
-        # TODO futuramente levar em consideração outros tipos de base de calculo
-        if float_is_zero(tax_dict.get("base", 0.00), currency.decimal_places):
-            tax_dict = self._compute_tax_base(tax, tax_dict, **kwargs)
+        ## TODO futuramente levar em consideração outros tipos de base de calculo
+        #if float_is_zero(tax_dict.get("base", 0.00), currency.decimal_places):
+        #    tax_dict = self._compute_tax_base(tax, tax_dict, **kwargs)
+        tax_dict = self._compute_tax_base(tax, tax_dict, **kwargs)
 
         base_amount = tax_dict.get("base", 0.00)
 
-        if tax_dict["base_type"] == "percent":
+        if tax_dict.get("tax_value_manual"):
+            tax_dict["tax_value"] = tax_dict["tax_value_manual"]
+        elif tax_dict["base_type"] == "percent":
             tax_dict["tax_value"] = currency.round(
                 base_amount * (tax_dict["percent_amount"] / 100)
             )
-
-        if tax_dict["base_type"] in ("quantity", "fixed"):
+        elif tax_dict["base_type"] in ("quantity", "fixed"):
             tax_dict["tax_value"] = currency.round(
                 base_amount * tax_dict["value_amount"]
             )
@@ -348,6 +356,7 @@ class Tax(models.Model):
         cfop = kwargs.get("cfop")
         fiscal_operation_type = operation_line.fiscal_operation_type or FISCAL_OUT
         ind_final = kwargs.get("ind_final", FINAL_CUSTOMER_NO)
+        cst = kwargs.get("cst", self.env["l10n_br_fiscal.cst"])
 
         # Get Computed IPI Tax
         tax_dict_ipi = taxes_dict.get("ipi", {})
@@ -376,10 +385,11 @@ class Tax(models.Model):
             tax_dict["add_to_base"] += kwargs.get("ii_customhouse_charges", 0.00)
 
             other_value = kwargs.get("other_value", 0.00)
-            tax_dict["remove_from_base"] += sum([other_value])
+            tax_dict["remove_from_base"] += other_value
             tax_dict["compute_with_tax_value"] = True
 
         tax_dict.update(self._compute_tax(tax, taxes_dict, **kwargs))
+        tax_dict["icms_base_type"] = tax.icms_base_type
 
         # DIFAL
         # TODO
@@ -387,9 +397,11 @@ class Tax(models.Model):
         if (
             cfop
             and cfop.destination == CFOP_DESTINATION_EXTERNAL
-            and operation_line.fiscal_operation_type == FISCAL_OUT
             and partner.ind_ie_dest == NFE_IND_IE_DEST_9
             and tax_dict.get("tax_value")
+            and operation_line.fiscal_operation_type == FISCAL_OUT
+            or operation_line.fiscal_operation_id.fiscal_type == "return_in"
+            and operation_line.fiscal_operation_type == FISCAL_IN
         ):
             icms_tax_difal, _ = company.icms_regulation_id.map_tax_def_icms_difal(
                 company, partner, product, ncm, nbm, cest, operation_line, ind_final
@@ -465,6 +477,28 @@ class Tax(models.Model):
                 }
             )
 
+        if not kwargs.get("icms_relief_id") or cst.code not in ICMS_CST_RELIEF:
+            tax_dict["icms_relief"] = 0
+            return taxes_dict
+
+        icms_base = kwargs.get("price_unit", 0.00) * kwargs.get("quantity", 0.00)
+        icms_percent = tax_dict.get("percent_amount", 0.00) / 100
+        icms_reduction = tax_dict.get("percent_reduction", 0.00) / 100
+        if cst.code in ["30", "40"]:
+            icms_relief = icms_base * icms_percent
+            tax_dict["icms_relief"] = icms_relief
+        elif cst.code in ["20", "70"]:
+            icms_relief = (
+                icms_base
+                * (1 - (icms_percent * (1 - icms_reduction)))
+                / (1 - icms_percent)
+                - icms_base
+            )
+            tax_dict["icms_relief"] = icms_relief
+        else:
+            icms_relief = (icms_base / (1 - icms_percent)) * icms_percent
+            tax_dict["icms_relief"] = icms_relief
+
         return taxes_dict
 
     @api.model
@@ -473,7 +507,7 @@ class Tax(models.Model):
         tax_dict = taxes_dict.get(tax.tax_domain)
         partner = kwargs.get("partner")
         company = kwargs.get("company")
-        icms_cst_id = kwargs.get("icms_cst_id")
+        cst = kwargs.get("cst")
 
         if taxes_dict.get("icms"):
             if company.state_id != partner.state_id:
@@ -492,7 +526,7 @@ class Tax(models.Model):
         tax_dict["fcpst_base"] = taxes_dict.get("icmsst", {}).get("base", 0.00)
 
         # TODO Improve this condition
-        if icms_cst_id.code in ICSM_CST_CSOSN_ST_BASE:
+        if cst.code in ICSM_CST_CSOSN_ST_BASE:
             tax_dict["fcpst_value"] = tax_dict["fcpst_base"] * (
                 tax_dict["percent_amount"] / 100
             )
@@ -520,6 +554,21 @@ class Tax(models.Model):
             tax_dict["tax_value"] -= taxes_dict.get("icms", {}).get("tax_value", 0.0)
 
         return tax_dict
+
+    @api.model
+    def _compute_icmsfcpst(self, tax, taxes_dict, **kwargs):
+        """Compute ICMS FCP ST"""
+        tax_dict = taxes_dict.get(tax.tax_domain)
+
+        if taxes_dict.get("icmsst"):
+            tax_dict["base"] = taxes_dict["icmsst"].get("base", 0.0)
+        else:
+            tax_dict["base"] = 0
+
+        # pop percent_amount to get it from tax_id
+        tax_dict.pop("percent_amount", None)
+
+        return self._compute_tax(tax, taxes_dict, **kwargs)
 
     @api.model
     def _compute_icmssn(self, tax, taxes_dict, **kwargs):
@@ -650,27 +699,20 @@ class Tax(models.Model):
             # Define CST FROM TAX
             operation_line = kwargs.get("operation_line")
             fiscal_operation_type = operation_line.fiscal_operation_type or FISCAL_OUT
-            kwargs.update({"cst": tax.cst_from_tax(fiscal_operation_type)})
-            try:
-                compute_method = getattr(self, "_compute_%s" % tax.tax_domain)
-                taxes[tax.tax_domain].update(compute_method(tax, taxes, **kwargs))
+            kwargs["cst"] = tax.cst_from_tax(fiscal_operation_type)
 
-            except AttributeError:
-                taxes[tax.tax_domain].update(tax._compute_tax(tax, taxes, **kwargs))
+            compute_method = getattr(
+                tax, f"_compute_{tax.tax_domain}", tax._compute_tax
+            )
+            taxes[tax.tax_domain].update(compute_method(tax, taxes, **kwargs))
 
+            total = taxes[tax.tax_domain].get("tax_value", 0.00)
             if taxes[tax.tax_domain]["tax_include"]:
-                result_amounts["amount_included"] += taxes[tax.tax_domain].get(
-                    "tax_value", 0.00
-                )
+                result_amounts["amount_included"] += total
             else:
-                result_amounts["amount_not_included"] += taxes[tax.tax_domain].get(
-                    "tax_value", 0.00
-                )
-
+                result_amounts["amount_not_included"] += total
             if taxes[tax.tax_domain]["tax_withholding"]:
-                result_amounts["amount_withholding"] += taxes[tax.tax_domain].get(
-                    "tax_value", 0.00
-                )
+                result_amounts["amount_withholding"] += total
 
         # Estimate taxes
         result_amounts["estimate_tax"] = self._compute_estimate_taxes(**kwargs)

@@ -264,7 +264,6 @@ class L10nBrPurchaseBaseTest(TransactionCase):
             )
 
             for line in invoice.invoice_line_ids:
-                #line._onchange_price_subtotal()
                 self.assertTrue(
                     line.fiscal_operation_line_id,
                     "Error to included Operation " "Line from Purchase Order Line.",

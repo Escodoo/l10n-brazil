@@ -8,15 +8,29 @@
         <field name="code">TPO</field>
         <field name="type">bank</field>
         <field name="company_id" ref="base.main_company" />
+        <field
+            name="inbound_payment_method_line_ids"
+            eval="[
+                (5, 0, 0),
+                (0, 0, {'payment_method_id': ref('account.account_payment_method_manual_in')}),
+            ]"
+        />
         <field name="edi_format_ids" eval="False" />
     </record>
-
+    
     <!-- Account Journal for Simples Nacional -->
     <record id="simples_nacional_bank_journal" model="account.journal">
         <field name="name">Diário de Banco - Simples Nacional</field>
         <field name="code">TPO1</field>
-        <field name="type">bank</field>
+        <field name="type">sale</field>
         <field name="company_id" ref="l10n_br_base.empresa_simples_nacional" />
+        <field
+            name="inbound_payment_method_line_ids"
+            eval="[
+                (5, 0, 0),
+                (0, 0, {'payment_method_id': ref('account.account_payment_method_manual_in')}),
+            ]"
+        />
         <field name="edi_format_ids" eval="False" />
     </record>
 
@@ -24,11 +38,18 @@
     <record id="lucro_presumido_bank_journal" model="account.journal">
         <field name="name">Diário de Banco - Lucro Presumido</field>
         <field name="code">TPO2</field>
-        <field name="type">bank</field>
+        <field name="type">sale</field>
+        <field
+            name="inbound_payment_method_line_ids"
+            eval="[
+                (5, 0, 0),
+                (0, 0, {'payment_method_id': ref('account.account_payment_method_manual_in')}),
+            ]"
+        />
         <field name="company_id" ref="l10n_br_base.empresa_lucro_presumido" />
         <field name="edi_format_ids" eval="False" />
     </record>
-
+    
     <!-- Diario Bradesco -->
     <record id="bradesco_journal" model="account.journal">
         <field name="name">Banco Bradesco</field>
@@ -192,7 +213,7 @@
     <record id="l10n_br_account_payment_order-account_journal" model="account.journal">
         <field name="name">Diário de Banco(teste l10n_br_account_payment_order)</field>
         <field name="code">TPO4</field>
-        <field name="type">sale</field>
+        <field name="type">bank</field>
         <field name="company_id" ref="base.main_company" />
         <field name="edi_format_ids" eval="False" />
     </record>
@@ -202,6 +223,13 @@
         <field name="name">Diário Cheque</field>
         <field name="code">DCQ</field>
         <field name="type">bank</field>
+        <field
+            name="inbound_payment_method_line_ids"
+            eval="[
+                (5, 0, 0),
+                (0, 0, {'payment_method_id': ref('account.account_payment_method_manual_in')}),
+            ]"
+        />
         <field name="company_id" ref="base.main_company" />
         <field name="edi_format_ids" eval="False" />
     </record>

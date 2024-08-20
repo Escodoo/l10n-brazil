@@ -2239,7 +2239,7 @@ msgstr ""
 #~ msgid "Number of error"
 #~ msgstr "Número do erro"
 
-#~ msgid "Number of messages which requires an action"
+#~ msgid "Number of messages requiring action"
 #~ msgstr "Número de mensagens que requer uma ação"
 
 #~ msgid "Number of messages with delivery error"

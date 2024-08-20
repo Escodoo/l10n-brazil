@@ -4,18 +4,18 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 12.0\n"
+"Project-Id-Version: Odoo Server 17.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2019-05-23 01:40+0000\n"
-"PO-Revision-Date: 2023-11-27 20:36+0000\n"
+"PO-Revision-Date: 2024-08-01 12:40-0300\n"
 "Last-Translator: Adriano Prado <adrianojprado@gmail.com>\n"
 "Language-Team: \n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: \n"
+"Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.17\n"
+"X-Generator: Poedit 3.4.2\n"
 
 #. module: l10n_br_base
 #. odoo-python
@@ -3599,7 +3599,7 @@ msgstr "Mixin de dados para empresas e parceiros brasileiros"
 #. module: l10n_br_base
 #: model:res.city,name:l10n_br_base.city_3108909
 msgid "Brazópolis"
-msgstr ""
+msgstr "Brazópolis"
 
 #. module: l10n_br_base
 #: model:res.city,name:l10n_br_base.city_4202800
@@ -3933,7 +3933,7 @@ msgstr "CPF"
 #: model:ir.model.fields.selection,name:l10n_br_base.selection__res_partner_pix__key_type__cnpj_cpf
 #, python-format
 msgid "CPF or CNPJ"
-msgstr ""
+msgstr "CPF ou CNPJ"
 
 #. module: l10n_br_base
 #: model:ir.model.fields,field_description:l10n_br_base.field_res_partner__crc_code
@@ -6138,13 +6138,14 @@ msgstr "Cidade"
 #: model:ir.model.fields,field_description:l10n_br_base.field_res_partner__city_id
 #: model:ir.model.fields,field_description:l10n_br_base.field_res_users__city_id
 msgid "City ID"
-msgstr ""
+msgstr "ID Cidade"
 
 #. module: l10n_br_base
 #: model:ir.model.fields,field_description:l10n_br_base.field_l10n_br_base_party_mixin__city_id
 #: model:ir.model.fields,field_description:l10n_br_base.field_res_company__city_id
+#, fuzzy
 msgid "City of Address"
-msgstr "Endereço da Cidade"
+msgstr "Cidade do Endereço"
 
 #. module: l10n_br_base
 #: model_terms:ir.ui.view,arch_db:l10n_br_base.l10n_br_base_res_partner_address
@@ -7012,7 +7013,7 @@ msgstr "País..."
 #. module: l10n_br_base
 #: model:res.city,name:l10n_br_base.city_1706001
 msgid "Couto Magalhães"
-msgstr ""
+msgstr "Couto Magalhães"
 
 #. module: l10n_br_base
 #: model:res.city,name:l10n_br_base.city_3120102
@@ -8127,7 +8128,7 @@ msgstr "Dário Meira"
 #: model:ir.model.fields.selection,name:l10n_br_base.selection__res_partner_pix__key_type__email
 #, python-format
 msgid "E-mail"
-msgstr ""
+msgstr "E-mail"
 
 #. module: l10n_br_base
 #: model:res.city,name:l10n_br_base.city_3514700
@@ -8163,7 +8164,7 @@ msgstr "Eldorado"
 #. module: l10n_br_base
 #: model:res.city,name:l10n_br_base.city_1502954
 msgid "Eldorado do Carajás"
-msgstr ""
+msgstr "Eldorado do Carajás"
 
 #. module: l10n_br_base
 #: model:res.city,name:l10n_br_base.city_4306767
@@ -8213,7 +8214,7 @@ msgstr "Embaúba"
 #. module: l10n_br_base
 #: model:res.city,name:l10n_br_base.city_3515004
 msgid "Embu das Artes"
-msgstr ""
+msgstr "Embu das Artes"
 
 #. module: l10n_br_base
 #: model:res.city,name:l10n_br_base.city_3515103
@@ -20142,6 +20143,7 @@ msgstr "Quiterianópolis"
 
 #. module: l10n_br_base
 #: model:res.city,name:l10n_br_base.city_2611533
+#: model:res.city,name:l10n_br_base.city_2512606
 msgid "Quixaba"
 msgstr "Quixaba"
 
@@ -22028,6 +22030,7 @@ msgstr "Santa Tereza do Tocantins"
 #: model:res.city,name:l10n_br_base.city_2612802
 #: model:res.city,name:l10n_br_base.city_4215679
 #: model:res.city,name:l10n_br_base.city_5107776
+#: model:res.city,name:l10n_br_base.city_2928505
 msgid "Santa Terezinha"
 msgstr "Santa Terezinha"
 
@@ -23592,6 +23595,7 @@ msgstr "São Desidério"
 #: model:res.city,name:l10n_br_base.city_2928950
 #: model:res.city,name:l10n_br_base.city_4216107
 #: model:res.city,name:l10n_br_base.city_5219803
+#: model:res.city,name:l10n_br_base.city_2513968
 msgid "São Domingos"
 msgstr "São Domingos"
 
@@ -25710,8 +25714,8 @@ msgstr "Já existe um parceiro com este CNPJ !"
 #. odoo-python
 #: code:addons/l10n_br_base/models/res_partner.py:0
 #, python-format
-msgid "There is already a partner record with this CPF/RG!"
-msgstr "Já existe cadastro de parceiro com este CPF/RG!"
+msgid "There is already a partner record with this CPF/CNPJ!"
+msgstr "Já existe cadastro de parceiro com este CPF/CNPJ!"
 
 #. module: l10n_br_base
 #. odoo-python
@@ -27597,6 +27601,111 @@ msgstr "Óbidos"
 msgid "Óleo"
 msgstr "Óleo"
 
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_2800100
+msgid "Amparo do São Francisco"
+msgstr "Amparo do São Francisco"
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_2902054
+msgid "Araçás"
+msgstr "Araçás"
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_3200706
+msgid "Atílio Vivácqua"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_3506607
+msgid "Biritiba Mirim"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_3122900
+msgid "Dona Euzébia"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_2304277
+msgid "Ereré"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_3516101
+msgid "Florínea"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_4206108
+msgid "Grão-Pará"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_3522158
+msgid "Itaoca"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_2917334
+msgid "Iuiu"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_4209607
+msgid "Lauro Müller"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_2922250
+msgid "Muquém do São Francisco"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_2206720
+msgid "Nazária"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_2408409
+msgid "Olho d'Água do Borges"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_3145455
+msgid "Olhos-d'Água"
+msgstr "Olhos-d'Água"
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_3147808
+msgid "Passa Vinte"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_5107800
+msgid "Santo Antônio de Leverger"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_4216057
+msgid "São Cristóvão do Sul"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_3165206
+msgid "São Tomé das Letras"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_2613800
+msgid "São Vicente Férrer"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_1708254
+msgid "Tabocão"
+msgstr ""
+
 #, python-format
 #~ msgid "Estadual Inscription Invalid !"
 #~ msgstr "Inscrição Estadual Inválida !"
@@ -27661,9 +27770,6 @@ msgstr "Óleo"
 
 #~ msgid "Moji Mirim"
 #~ msgstr "Moji Mirim"
-
-#~ msgid "Olhos-d'Água"
-#~ msgstr "Olhos-d'Água"
 
 #~ msgid "Parati"
 #~ msgstr "Parati"

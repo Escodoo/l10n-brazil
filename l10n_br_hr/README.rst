@@ -35,8 +35,8 @@ Este é o módulo base dos recursos humanos brasileiro e implementa adaptações
 * PIS/PASEF;
 * Certificado de serviço militar;
 * Naturalidade;
-* Escolaridade;
-* Dependentes;
+* Escolaridade - Usar hr_skills;
+* Dependentes - Usar hr_employee_relative;
 * RG;
 * Título de eleitor;
 * Paternidade;

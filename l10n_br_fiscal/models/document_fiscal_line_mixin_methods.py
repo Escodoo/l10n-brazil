@@ -7,7 +7,7 @@ from lxml import etree
 
 from odoo import api, models
 
-from ..constants.fiscal import CFOP_DESTINATION_EXPORT, FISCAL_IN
+from ..constants.fiscal import CFOP_DESTINATION_EXPORT, FISCAL_IN, FINAL_CUSTOMER_NO
 from ..constants.icms import ICMS_BASE_TYPE_DEFAULT, ICMS_ST_BASE_TYPE_DEFAULT
 from .tax import TAX_DICT_VALUES
 
@@ -21,6 +21,7 @@ FISCAL_TAX_ID_FIELDS = [
     "icmsfcp_tax_id",
     "icmssn_tax_id",
     "icmsst_tax_id",
+    "icmsfcpst_tax_id",
     "ii_tax_id",
     "inss_tax_id",
     "inss_wh_tax_id",
@@ -43,6 +44,33 @@ FISCAL_CST_ID_FIELDS = [
     "cofinsst_cst_id",
 ]
 
+FISCAL_TAX_PREFIXES = [
+    "cofins",
+    "cofins_wh",
+    "cofinsst",
+    "csll",
+    "csll_wh",
+    "icms",
+    "icmsst",
+    "icmsst_wh",
+    "ii",
+    "inss",
+    "inss_wh",
+    "ipi",
+    "irpj",
+    "irpj_wh",
+    "issqn",
+    "issqn_wh",
+    "pis",
+    "pis_wh",
+    "pisst",
+]
+
+MANUAL_TAX_FIELDS = [
+    f"{prefix}{suffix}"
+    for prefix in FISCAL_TAX_PREFIXES
+    for suffix in ("_base_manual", "_value_manual")
+]
 
 class FiscalDocumentLineMixinMethods(models.AbstractModel):
     _name = "l10n_br_fiscal.document.line.mixin.methods"
@@ -52,7 +80,6 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
     def inject_fiscal_fields(
         self,
         view_arch,
-        view_ref="l10n_br_fiscal.document_fiscal_line_mixin_form",
         xpath_mappings=None,
     ):
         """
@@ -116,6 +143,7 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
         "insurance_value",
         "other_value",
         "freight_value",
+        "icms_relief_value",
         "fiscal_quantity",
         "amount_tax_not_included",
         "amount_tax_included",
@@ -130,15 +158,12 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
     def _compute_amounts(self):
         for record in self:
             round_curr = record.currency_id or self.env.ref("base.BRL")
-            # Valor dos produtos
+            # Total value of products or services
             record.price_gross = round_curr.round(record.price_unit * record.quantity)
 
             record.amount_untaxed = record.price_gross - record.discount_value
 
-            record.amount_fiscal = (
-                round_curr.round(record.fiscal_price * record.fiscal_quantity)
-                - record.discount_value
-            )
+            record.amount_fiscal = record.price_gross - record.discount_value
 
             record.amount_tax = record.amount_tax_not_included
 
@@ -152,6 +177,9 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
 
             # Valor Liquido (TOTAL + IMPOSTOS - RETENÇÕES)
             record.amount_taxed = record.amount_total - record.amount_tax_withholding
+
+            # Valor do documento (NF) - RETENÇÕES
+            record.amount_total = record.amount_taxed
 
             # Valor financeiro
             if (
@@ -170,6 +198,10 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
 
     def _compute_taxes(self, taxes, cst=None):
         self.ensure_one()
+
+        # get the dict with the values of the taxes entered manually.
+        manual_tax_values = self._get_br_manual_tax_vals()
+
         return taxes.compute_taxes(
             company=self.company_id,
             partner=self.partner_id,
@@ -196,6 +228,35 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
             icms_origin=self.icms_origin,
             icms_cst_id=self.icms_cst_id,
             ind_final=self.ind_final,
+            icms_relief_id=self.icms_relief_id,
+            **manual_tax_values,
+        )
+
+    def _get_br_manual_tax_vals(self):
+        return {
+            fname: self[fname]
+            for fname in MANUAL_TAX_FIELDS
+        }
+
+    def _get_compute_taxes_extra_kwargs(self, product, qty, price_unit):
+        return dict(
+            operation_line=self.fiscal_operation_line_id,
+            ncm=self.ncm_id or product.ncm_id,
+            nbs=self.nbs_id or product.nbs_id,
+            nbm=self.nbm_id or product.nbm_id,
+            cest=self.cest_id or product.cest_id,
+            cfop=self.cfop_id or None,
+            discount_value=self.discount_value,
+            insurance_value=self.insurance_value,
+            other_value=self.other_value,
+            ii_customhouse_charges=self.ii_customhouse_charges,
+            freight_value=self.freight_value,
+            fiscal_price=self.fiscal_price or price_unit,
+            fiscal_quantity=self.fiscal_quantity or qty,
+            uot_id=self.uot_id or product.uot_id,
+            icmssn_range=self.icmssn_range_id,
+            icms_origin=self.icms_origin or product.icms_origin,
+            ind_final=self.ind_final or FINAL_CUSTOMER_NO,
         )
 
     @api.depends("tax_icms_or_issqn", "partner_is_public_entity")
@@ -246,6 +307,7 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
             self._set_fields_inss(TAX_DICT_VALUES)
             self._set_fields_icms(TAX_DICT_VALUES)
             self._set_fields_icmsfcp(TAX_DICT_VALUES)
+            self._set_fields_icmsfcpst(TAX_DICT_VALUES)
             self._set_fields_icmsst(TAX_DICT_VALUES)
             self._set_fields_icmssn(TAX_DICT_VALUES)
             self._set_fields_ipi(TAX_DICT_VALUES)
@@ -336,7 +398,9 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
     def _onchange_fiscal_operation_line_id(self):
         # Reset Taxes
         self._remove_all_fiscal_tax_ids()
-        if self.fiscal_operation_line_id:
+        if not self.fiscal_operation_line_id:
+            self.cfop_id = False
+        else:
             mapping_result = self.fiscal_operation_line_id.map_fiscal_taxes(
                 company=self.company_id,
                 partner=self.partner_id,
@@ -350,20 +414,22 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
             )
 
             self.cfop_id = mapping_result["cfop"]
-            self.ipi_guideline_id = mapping_result["ipi_guideline"]
-            self.icms_tax_benefit_id = mapping_result["icms_tax_benefit_id"]
-            taxes = self.env["l10n_br_fiscal.tax"]
-            for tax in mapping_result["taxes"].values():
-                taxes |= tax
-            self.fiscal_tax_ids = taxes
-            self._update_fiscal_taxes()
-            self.comment_ids = self.fiscal_operation_line_id.comment_ids
+            self._process_fiscal_mapping(mapping_result)
 
-        if not self.fiscal_operation_line_id:
-            self.cfop_id = False
+    def _process_fiscal_mapping(self, mapping_result):
+        self.ipi_guideline_id = mapping_result["ipi_guideline"]
+        self.icms_tax_benefit_id = mapping_result["icms_tax_benefit_id"]
+        taxes = self.env["l10n_br_fiscal.tax"]
+        for tax in mapping_result["taxes"].values():
+            taxes |= tax
+        self.fiscal_tax_ids = taxes
+        self._update_fiscal_taxes()
+        self.comment_ids = self.fiscal_operation_line_id.comment_ids
 
     @api.onchange("product_id")
     def _onchange_product_id_fiscal(self):
+        if not self.fiscal_operation_id:
+            return
         if self.product_id:
             self.name = self.product_id.display_name
             self.fiscal_type = self.product_id.fiscal_type
@@ -385,7 +451,6 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
                 if city_id:
                     self.city_taxation_code_id = city_id
                     self.issqn_fg_city_id = company_city_id
-            self._compute_product_price()
         else:
             self.name = False
             self.fiscal_type = False
@@ -401,6 +466,7 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
             self.city_taxation_code_id = False
             self.uot_id = False
 
+        self._compute_product_price()
         self._onchange_fiscal_operation_id()
 
     def _set_fields_issqn(self, tax_dict):
@@ -540,6 +606,10 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
             if tax_dict.get("icms_dest_value") is not None:
                 self.icms_destination_value = tax_dict.get("icms_dest_value")
 
+            # Valor da desoneração do ICMS
+            if tax_dict.get("icms_relief") is not None:
+                self.icms_relief_value = tax_dict.get("icms_relief")
+
     @api.onchange(
         "icms_base",
         "icms_percent",
@@ -606,6 +676,12 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
         self.icmsfcp_percent = tax_dict.get("percent_amount", 0.0)
         self.icmsfcp_value = tax_dict.get("tax_value", 0.0)
         self.icmsfcpst_value = tax_dict.get("fcpst_value", 0.0)
+
+    def _set_fields_icmsfcpst(self, tax_dict):
+        self.ensure_one()
+        self.icmsfcpst_base = self.icmsst_base
+        self.icmsfcpst_percent = tax_dict.get("percent_amount", 0.0)
+        self.icmsfcpst_value = tax_dict.get("tax_value", 0.0)
 
     @api.onchange("icmsfcp_percent", "icmsfcp_value")
     def _onchange_icmsfcp_fields(self):
@@ -751,26 +827,10 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
         pass
 
     @api.onchange(
-        "csll_tax_id",
-        "csll_wh_tax_id",
-        "irpj_tax_id",
-        "irpj_wh_tax_id",
-        "inss_tax_id",
-        "inss_wh_tax_id",
-        "issqn_tax_id",
-        "issqn_wh_tax_id",
-        "icms_tax_id",
-        "icmssn_tax_id",
-        "icmsst_tax_id",
-        "icmsfcp_tax_id",
-        "ipi_tax_id",
-        "ii_tax_id",
-        "pis_tax_id",
-        "pis_wh_tax_id",
-        "pisst_tax_id",
-        "cofins_tax_id",
-        "cofins_wh_tax_id",
-        "cofinsst_tax_id",
+        *FISCAL_TAX_ID_FIELDS,
+        *MANUAL_TAX_FIELDS,
+        "icms_relief_id",
+        "icms_relief_value",
         "fiscal_price",
         "fiscal_quantity",
         "discount_value",
@@ -820,9 +880,12 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
 
     @api.onchange("city_taxation_code_id")
     def _onchange_city_taxation_code_id(self):
-        if self.city_taxation_code_id:
-            self.cnae_id = self.city_taxation_code_id.cnae_id
-            self._onchange_fiscal_operation_id()
+        if not self.city_taxation_code_id:
+            return
+        self.cnae_id = self.city_taxation_code_id.cnae_id
+        self._onchange_fiscal_operation_id()
+        if self.city_taxation_code_id.city_id:
+            self.issqn_fg_city_id = self.city_taxation_code_id.city_id
 
     @api.model
     def _add_fields_to_amount(self):

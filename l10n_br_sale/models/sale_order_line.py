@@ -273,7 +273,8 @@ class SaleOrderLine(models.Model):
         self.ensure_one()
 
         if (
-            self.fiscal_operation_id.default_price_unit == "sale_price"
+            self.product_id
+            and self.fiscal_operation_id.default_price_unit == "sale_price"
             and self.order_id.pricelist_id
             and self.order_id.partner_id
         ):

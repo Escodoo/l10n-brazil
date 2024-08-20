@@ -37,53 +37,50 @@
         <field name="arch" type="xml">
             <field name="vat" position="replace" />
             <xpath expr="//h1" position="after">
-                <group>
-                    <field name="city_id" invisible="1" />
-                    <!-- Allow inject city_id on context above -->
-                    <div class="oe_edit_only">
-                        <label
-                            for="legal_name"
-                            string="Full Name"
-                            invisible="is_company"
-                        />
-                        <label
-                            for="legal_name"
-                            string="Legal Name"
-                            invisible="not is_company"
-                        />
-                    </div>
-                    <field colspan="2" name="legal_name" nolabel="1" />
-                    <div class="oe_edit_only">
-                        <label
-                            for="cnpj_cpf"
-                            string="CPF"
-                            invisible="is_company"
-                        />
-                        <label
-                            for="cnpj_cpf"
-                            string="CNPJ/Vat Number"
-                            invisible="not is_company"
-                        />
-                    </div>
-                    <field colspan="2" name="cnpj_cpf" nolabel="1" />
-                    <div class="oe_edit_only">
-                        <label
-                            for="rg"
-                            string="RG"
-                            invisible="is_company"
-                        />
-                    </div>
-                    <field
-                        name="rg"
-                        colspan="4"
-                        nolabel="1"
+                <field name="city_id" invisible="1" />
+                <!-- Allow inject city_id on context above -->
+                <div>
+                    <label
+                        for="legal_name"
+                        string="Full Name"
                         invisible="is_company"
                     />
-                    <div class="oe_edit_only" name="inscr_est">
-                        <label for="inscr_est" name="inscr_est" string="IE" />
-                    </div>
-                    <field colspan="4" name="inscr_est" nolabel="1" />
-                </group>
+                    <label
+                        for="legal_name"
+                        string="Legal Name"
+                        invisible="not is_company"
+                    />
+                </div>
+                <field name="legal_name" nolabel="1" />
+                <div>
+                    <label
+                        for="cnpj_cpf"
+                        string="CPF"
+                        invisible="is_company"
+                    />
+                    <label
+                        for="cnpj_cpf"
+                        string="CNPJ/Vat Number"
+                        invisible="not is_company"
+                    />
+                </div>
+                <field name="cnpj_cpf" nolabel="1" />
+                <div>
+                    <label
+                        for="rg"
+                        string="RG"
+                        invisible="is_company"
+                    />
+                </div>
+                <field
+                    name="rg"
+                    nolabel="1"
+                    invisible="is_company"
+                />
+                <div name="inscr_est">
+                    <label for="inscr_est" name="inscr_est" string="IE" />
+                </div>
+                <field colspan="4" name="inscr_est" nolabel="1" />
             </xpath>
             <page position="after" name="sales_purchases">
                 <page string="Fiscal" name="fiscal">

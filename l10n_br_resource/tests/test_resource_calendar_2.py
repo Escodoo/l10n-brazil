@@ -124,4 +124,4 @@ class TestResourceCalendar(common.TransactionCase):
             "wizard.workalendar.holiday.import"
         ].get_calendar_for_country()
         self.assertTrue(calendar.exists())
-        self.assertEqual(calendar.country_id.name, "Brazil")
+        self.assertEqual(calendar.country_id, self.env.ref("base.br"))

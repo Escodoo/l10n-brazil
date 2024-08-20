@@ -89,7 +89,6 @@
     <field name="arch" type="xml">
       <form string="Fiscal Document">
         <field name="id" invisible="1" />
-<!--        <field name="state_edoc" invisible="1"/>-->
         <field name="currency_id" invisible="1" />
         <field name="document_electronic" invisible="1" />
         <field name="fiscal_operation_type" invisible="1" />
@@ -113,12 +112,20 @@
                         invisible="state_edoc not in ['a_enviar', 'rejeitada']"
                     />
             <button
+                        name="action_document_send"
+                        type="object"
+                        string="Consultar Recibo"
+                        groups="l10n_br_fiscal.group_user"
+                        class="btn-primary"
+                        invisible="state_edoc != 'enviada'"
+                    />
+            <button
                         name="action_document_back2draft"
                         type="object"
                         string="Voltar p/ Em Digitação"
                         groups="l10n_br_fiscal.group_user"
                         class="btn-secondary"
-                        invisible="state_edoc not in ['a_enviar', 'rejeitada'] or not document_electronic"
+                        invisible="state_edoc not in ['a_enviar', 'rejeitada', 'enviada'] or not document_electronic"
                     />
             <button
                         name="view_pdf"
@@ -171,10 +178,6 @@
                         groups="l10n_br_fiscal.group_user"
                         invisible="state_edoc not in ['autorizada', 'cancelada', 'denegada']"
                     />
-<!--                <button name="action_edoc_check" type="object"-->
-<!--                        string="Consultar no sefaz"-->
-<!--                        groups="base.group_no_one"/>-->
-<!--            -->
             <field
                         name="state_edoc"
                         widget="statusbar"
@@ -303,7 +306,12 @@
                 </group>
               </group>
               <group name="company_info" string="Company">
-                <field name="company_id" required="1" />
+                <field name="company_id" invisible="1" />
+                <field
+                    name="company_id"
+                    required="1"
+                    groups="base.group_multi_company"
+                />
               </group>
               <group>
                 <group name="company_left">
@@ -423,7 +431,7 @@
                     </group>
                     <group
                                     name="cancel"
-                                    string="Cancelation"
+                                    string="Cancellation"
                                     colspan="4"
                                     invisible="state_edoc != 'cancelada'"
                                 >
@@ -447,14 +455,14 @@
                                 <field name="state" />
                                 <button
                                                 name="print_document_event"
+                                                title="Print Document Event"
                                                 icon="fa-print"
-                                                title="Print"
                                                 type="object"
                                             />
                             </tree>
                         </field>
                     </group>
-                    <group name="events" string="Events" colspan="4">
+                    <group name="events" string="Events and Services" colspan="4">
                         <field name="event_ids" nolabel="1">
                             <tree>
                                 <field name="id" />

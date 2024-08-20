@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 14.0\n"
+"Project-Id-Version: Odoo Server 17.0\n"
 "Report-Msgid-Bugs-To: \n"
-"PO-Revision-Date: 2023-02-10 17:00+0000\n"
-"Last-Translator: Marcel Savegnago <marcel.savegnago@gmail.com>\n"
+"PO-Revision-Date: 2024-08-13 11:54+0000\n"
+"Last-Translator: Ravi do Valle Luz <raviluz@xipptech.com.br>\n"
 "Language-Team: none\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
@@ -112,6 +112,7 @@ msgid "CSLL"
 msgstr "CSLL"
 
 #. module: l10n_br_fiscal_closing
+#. odoo-python
 #: code:addons/l10n_br_fiscal_closing/models/closing.py:0
 #, python-format
 msgid "Check write permissions in your system temp folder"
@@ -120,7 +121,7 @@ msgstr "Verifique as permissões de gravação na pasta temporária do sistema"
 #. module: l10n_br_fiscal_closing
 #: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_closing.fiscal_closing_form
 msgid "Close"
-msgstr "Encerrar"
+msgstr "Fechar"
 
 #. module: l10n_br_fiscal_closing
 #: model:ir.model.fields,field_description:l10n_br_fiscal_closing.field_l10n_br_fiscal_document__close_id
@@ -164,6 +165,7 @@ msgid "Draft"
 msgstr "Rascunho"
 
 #. module: l10n_br_fiscal_closing
+#. odoo-python
 #: code:addons/l10n_br_fiscal_closing/models/closing.py:0
 #, python-format
 msgid "Error!"
@@ -212,11 +214,6 @@ msgid "Followers"
 msgstr "Seguidores"
 
 #. module: l10n_br_fiscal_closing
-#: model:ir.model.fields,field_description:l10n_br_fiscal_closing.field_l10n_br_fiscal_closing__message_channel_ids
-msgid "Followers (Channels)"
-msgstr "Seguidores (Canais)"
-
-#. module: l10n_br_fiscal_closing
 #: model:ir.model.fields,field_description:l10n_br_fiscal_closing.field_l10n_br_fiscal_closing__message_partner_ids
 msgid "Followers (Partners)"
 msgstr "Seguidores (Parceiros)"
@@ -232,6 +229,12 @@ msgid "Group documents"
 msgstr "Grupo de Documentos"
 
 #. module: l10n_br_fiscal_closing
+#: model:ir.model.fields,field_description:l10n_br_fiscal_closing.field_l10n_br_fiscal_closing__has_message
+msgid "Has Message"
+msgstr "Há Mensagem"
+
+#. module: l10n_br_fiscal_closing
+#. odoo-python
 #: code:addons/l10n_br_fiscal_closing/models/closing.py:0
 #, python-format
 msgid "I/O Error"
@@ -280,7 +283,6 @@ msgstr "Ícone para indicar uma atividade excepcional."
 
 #. module: l10n_br_fiscal_closing
 #: model:ir.model.fields,help:l10n_br_fiscal_closing.field_l10n_br_fiscal_closing__message_needaction
-#: model:ir.model.fields,help:l10n_br_fiscal_closing.field_l10n_br_fiscal_closing__message_unread
 msgid "If checked, new messages require your attention."
 msgstr "Se marcado, novas mensagens solicitarão sua atenção."
 
@@ -338,7 +340,7 @@ msgstr "Mês"
 #. module: l10n_br_fiscal_closing
 #: model:ir.model.fields,field_description:l10n_br_fiscal_closing.field_l10n_br_fiscal_closing__my_activity_date_deadline
 msgid "My Activity Deadline"
-msgstr "Meu Prazo Final de Atividade"
+msgstr "Meu Prazo Final da Atividade"
 
 #. module: l10n_br_fiscal_closing
 #: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_closing.fiscal_closing_form
@@ -376,6 +378,11 @@ msgid "National Simple Taxes"
 msgstr "Impostos Simples Nacional"
 
 #. module: l10n_br_fiscal_closing
+#: model:ir.model.fields,field_description:l10n_br_fiscal_closing.field_l10n_br_fiscal_closing__activity_calendar_event_id
+msgid "Next Activity Calendar Event"
+msgstr "Próximo Evento do Calendário de Atividades"
+
+#. module: l10n_br_fiscal_closing
 #: model:ir.model.fields,field_description:l10n_br_fiscal_closing.field_l10n_br_fiscal_closing__activity_date_deadline
 msgid "Next Activity Deadline"
 msgstr "Prazo Final para Próxima Atividade"
@@ -402,18 +409,13 @@ msgstr "Número de Erros"
 
 #. module: l10n_br_fiscal_closing
 #: model:ir.model.fields,help:l10n_br_fiscal_closing.field_l10n_br_fiscal_closing__message_needaction_counter
-msgid "Number of messages which requires an action"
+msgid "Number of messages requiring action"
 msgstr "Número de mensagens que requer uma ação"
 
 #. module: l10n_br_fiscal_closing
 #: model:ir.model.fields,help:l10n_br_fiscal_closing.field_l10n_br_fiscal_closing__message_has_error_counter
 msgid "Number of messages with delivery error"
 msgstr "Número de mensagens com erro de entrega"
-
-#. module: l10n_br_fiscal_closing
-#: model:ir.model.fields,help:l10n_br_fiscal_closing.field_l10n_br_fiscal_closing__message_unread_counter
-msgid "Number of unread messages"
-msgstr "Número de mensagens não lidas"
 
 #. module: l10n_br_fiscal_closing
 #: model:ir.model.fields.selection,name:l10n_br_fiscal_closing.selection__l10n_br_fiscal_closing__state__open
@@ -451,6 +453,7 @@ msgid "RL Documents"
 msgstr "Documentos RL"
 
 #. module: l10n_br_fiscal_closing
+#. odoo-python
 #: code:addons/l10n_br_fiscal_closing/models/closing.py:0
 #, python-format
 msgid ""
@@ -473,7 +476,7 @@ msgstr "Enviar por email:"
 #. module: l10n_br_fiscal_closing
 #: model:ir.model.fields,field_description:l10n_br_fiscal_closing.field_l10n_br_fiscal_closing__state
 msgid "State"
-msgstr "Situação"
+msgstr "Status"
 
 #. module: l10n_br_fiscal_closing
 #: model:ir.model.fields,help:l10n_br_fiscal_closing.field_l10n_br_fiscal_closing__activity_state
@@ -497,16 +500,6 @@ msgstr "O fechamento deve ser único para a empresa em um período de tempo."
 #: model:ir.model.fields,help:l10n_br_fiscal_closing.field_l10n_br_fiscal_closing__activity_exception_decoration
 msgid "Type of the exception activity on record."
 msgstr "Tipo da atividade de exceção no registro."
-
-#. module: l10n_br_fiscal_closing
-#: model:ir.model.fields,field_description:l10n_br_fiscal_closing.field_l10n_br_fiscal_closing__message_unread
-msgid "Unread Messages"
-msgstr "Mensagens Não Lidas"
-
-#. module: l10n_br_fiscal_closing
-#: model:ir.model.fields,field_description:l10n_br_fiscal_closing.field_l10n_br_fiscal_closing__message_unread_counter
-msgid "Unread Messages Counter"
-msgstr "Contador de Mensagens Não Lidas"
 
 #. module: l10n_br_fiscal_closing
 #: model:ir.model.fields,field_description:l10n_br_fiscal_closing.field_l10n_br_fiscal_closing__website_message_ids

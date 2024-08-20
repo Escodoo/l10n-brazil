@@ -17,8 +17,12 @@ class TestAccountTaxes(TransactionCase):
     def test_account_taxes(self):
         """Test if account taxes are related with fiscal taxes"""
         template = self.env["account.chart.template"]
-        for chart in template._get_chart_template_mapping().keys():
+        for chart, chart_data in template._get_chart_template_mapping().items():
             if "br_oca" not in template._get_parent_template(chart):
+                continue
+            if self.env['ir.module.module']._get(
+                chart_data["module"]
+            ).state != "installed":
                 continue
             template.try_loading(chart, self.l10n_br_company)
             account_taxes = self.env["account.tax"].search(

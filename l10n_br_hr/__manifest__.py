@@ -14,7 +14,6 @@
         "data/dependent_type_data.xml",
         "data/hr_deficiency_data.xml",
         "data/hr_ethnicity_data.xml",
-        "data/hr_educational_attainment_data.xml",
         "security/ir.model.access.csv",
         "views/res_company_view.xml",
         "views/l10n_br_hr_cbo_view.xml",

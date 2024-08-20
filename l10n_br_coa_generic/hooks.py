@@ -2,7 +2,7 @@
 # Copyright (C) 2024 - Ravi do Valle Luz <raviluz@xipptech.com.br>
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
-from odoo import SUPERUSER_ID, api, tools
+from odoo import tools
 
 
 def post_init_hook(env):

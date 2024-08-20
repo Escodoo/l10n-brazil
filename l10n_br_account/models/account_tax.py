@@ -62,6 +62,14 @@ class AccountTax(models.Model):
             fixed_multiplicator,
         )
 
+        line = self._context.get(
+            "taxes_compute_origin_document_line_mixin", 
+            self.env["l10n_br_fiscal.document.line.mixin"]
+        )
+        # line may be any model with fiscal properties, 
+        # like account.move.line, sale.order.line, etc
+        if "fiscal_tax_ids" not in line._fields:
+            return taxes_results
         product = product or self.env["product.product"]
 
         if len(self) == 0:
@@ -76,18 +84,18 @@ class AccountTax(models.Model):
         else:
             company = self[0].company_id
 
-        extra_vals = self._context.get("aml_tax_extra_vals", dict())
-        fiscal_taxes = extra_vals.get("fiscal_taxes", self.env["l10n_br_fiscal.tax"])
-        fiscal_taxes_results = fiscal_taxes.compute_taxes(
+        extra_vals = dict(
+            line._get_compute_taxes_extra_kwargs(product, quantity, price_unit),
+            **line._get_br_manual_tax_vals(),
+        )
+        fiscal_taxes_results = line.fiscal_tax_ids.compute_taxes(
             company=company,
             partner=partner,
             product=product,
             price_unit=price_unit,
             quantity=quantity,
             uom_id=product.uom_id,
-            **extra_vals.get(
-                "move_line", self.env["account.move.line"]
-            )._get_compute_taxes_extra_kwargs(product, quantity, price_unit)
+            **extra_vals,
         )
 
         taxes_results["amount_tax_included"] = fiscal_taxes_results["amount_included"]
@@ -136,14 +144,10 @@ class AccountTax(models.Model):
                 if not fiscal_tax.get("tax_include") and not tax.deductible:
                     taxes_results["total_included"] += fiscal_tax.get("tax_value")
 
-                fiscal_group = tax.tax_group_id.fiscal_tax_group_id
                 tax_amount = fiscal_tax.get("tax_value", 0.0) * sum_repartition_factor
                 tax_base = fiscal_tax.get("base") * sum_repartition_factor
-                if tax.deductible or fiscal_group.tax_withholding:
-                    tax_amount = (
-                        fiscal_tax.get("tax_value", 0.0) * sum_repartition_factor
-                    )
 
+                fiscal_group = tax.tax_group_id.fiscal_tax_group_id
                 account_tax.update(
                     {
                         "id": account_tax.get("id"),
@@ -161,11 +165,6 @@ class AccountTax(models.Model):
 
     @api.model
     def _compute_taxes_for_single_line(self, base_line, **kwargs):
-        move_line = base_line.get("record", self.env["account.move.line"])
-        return super(
-            AccountTax, 
-            self.with_context(aml_tax_extra_vals=dict(
-                fiscal_taxes=move_line.fiscal_tax_ids,
-                move_line=move_line,
-            ))
-        )._compute_taxes_for_single_line(base_line, **kwargs)
+        line = base_line.get("record")
+        base_line["extra_context"]["taxes_compute_origin_document_line_mixin"] = line
+        return super()._compute_taxes_for_single_line(base_line, **kwargs)

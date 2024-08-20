@@ -131,7 +131,7 @@ class AccountMoveSimpleNacional(AccountMoveBRCommon):
             "price_total": 0.0,
             "tax_ids": [],
             "tax_line_id": self._get_record_by_name(
-                "account.tax", "ICMS SN Saida"
+                "account.tax", "ICMS SN Saída"
             ).id,
             "currency_id": self.company_data["currency"].id,
             "amount_currency": -27.0,

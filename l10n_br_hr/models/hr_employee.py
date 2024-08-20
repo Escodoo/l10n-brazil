@@ -15,11 +15,11 @@ class HrEmployee(models.Model):
     _inherit = "hr.employee"
 
     def _default_country(self):
-        return self.env["res.country"].search([("code", "=", "BR")])
+        return self.env.ref("base.br")
 
     cnpj_cpf = fields.Char(string="CNPJ/CPF", groups="hr.group_hr_user")
 
-    naturalidade = fields.Many2one(comodel_name="res.city", groups="hr.group_hr_user")
+    birth_city_id = fields.Many2one(comodel_name="res.city", groups="hr.group_hr_user")
 
     pis_pasep = fields.Char(string="PIS/PASEP", groups="hr.group_hr_user")
 
@@ -51,12 +51,6 @@ class HrEmployee(models.Model):
             ("3", "Third Category"),
         ],
         default="3",
-        groups="hr.group_hr_user",
-    )
-
-    educational_attainment = fields.Many2one(
-        comodel_name="hr.educational.attainment",
-        tracking=True,
         groups="hr.group_hr_user",
     )
 
@@ -184,7 +178,7 @@ class HrEmployee(models.Model):
 
     country_id = fields.Many2one(comodel_name="res.country", default=_default_country)
 
-    tipo = fields.Selection(
+    employee_relationship_type = fields.Selection(
         string="Tipo de Colaborador",
         selection=[
             # S2200

@@ -12,17 +12,13 @@
             </field>
             <field name="place_of_birth" position="after">
                 <field
-                    name="naturalidade"
+                    name="birth_city_id"
                     options="{'no_create': True, 'no_open': True}"
                     required="1"
                 />
             </field>
             <xpath expr="//field[@name='identification_id']" position="replace">
                 <field name="cpf" />
-                <field
-                    name="educational_attainment"
-                    options="{'no_create': True, 'no_open': True}"
-                />
             </xpath>
             <xpath expr="//page[@name='personal_information']" position="inside">
                 <group name="characteristics" string="Characteristics">
@@ -201,34 +197,6 @@
         </field>
     </record>
 
-    <record id="view_hr_educational_attainment_tree" model="ir.ui.view">
-        <field name="name">hr.educational.attainment.tree.view</field>
-        <field name="model">hr.educational.attainment</field>
-        <field name="arch" type="xml">
-            <tree edit="false" delete="false" create="false">
-                <field name="code" />
-                <field name="name" />
-            </tree>
-        </field>
-    </record>
-
-    <record id="view_hr_educational_attainment_form" model="ir.ui.view">
-        <field name="name">hr.educational.attainment.form.view</field>
-        <field name="model">hr.educational.attainment</field>
-        <field name="arch" type="xml">
-            <form string="Escolaridade" edit="false" delete="false" create="false">
-                <sheet>
-                    <group>
-                        <group name="geral" colspan="4" col="4">
-                            <field name="code" colspan="4" />
-                            <field name="name" colspan="4" />
-                        </group>
-                    </group>
-                </sheet>
-            </form>
-        </field>
-    </record>
-
     <record id="action_hr_deficiency" model="ir.actions.act_window">
         <field name="name">Deficiency</field>
         <field name="res_model">hr.deficiency</field>
@@ -256,12 +224,6 @@
     <record id="action_hr_ethnicity" model="ir.actions.act_window">
         <field name="name">Ethnicity</field>
         <field name="res_model">hr.ethnicity</field>
-        <field name="view_mode">tree,form</field>
-    </record>
-
-    <record id="action_hr_educational_attainment" model="ir.actions.act_window">
-        <field name="name">Educational Attainment</field>
-        <field name="res_model">hr.educational.attainment</field>
         <field name="view_mode">tree,form</field>
     </record>
 
@@ -308,13 +270,6 @@
         sequence="6"
     />
 
-    <menuitem
-        action="action_hr_educational_attainment"
-        id="menu_hr_educational_attainment"
-        parent="menu_hr_employee_register"
-        sequence="7"
-    />
-
     <!-- Menu item de colaboradores -->
     <menuitem
         id="menu_hr_colaboradores"
@@ -326,8 +281,8 @@
     <!-- Funcionários -->
     <!--Action de Funcionários -->
     <record id="hr.open_view_employee_list_my" model="ir.actions.act_window">
-        <field name="context">{'default_tipo': 'funcionario'}</field>
-        <field name="domain">[('tipo','=', 'funcionario')]</field>
+        <field name="context">{'default_employee_relationship_type': 'funcionario'}</field>
+        <field name="domain">[('employee_relationship_type', '=', 'funcionario')]</field>
     </record>
 
     <!-- Sub Menu de Funcionarios -->
@@ -344,8 +299,8 @@
         <field name="name">Autônomos</field>
         <field name="res_model">hr.employee</field>
         <field name="view_mode">kanban,tree,form</field>
-        <field name="context">{'default_tipo': 'autonomo'}</field>
-        <field name="domain">[('tipo','=', 'autonomo')]</field>
+        <field name="context">{'default_employee_relationship_type': 'autonomo'}</field>
+        <field name="domain">[('employee_relationship_type', '=', 'autonomo')]</field>
     </record>
 
     <menuitem
@@ -376,8 +331,8 @@
         <field name="name">Terceirizados</field>
         <field name="res_model">hr.employee</field>
         <field name="view_mode">kanban,tree,form</field>
-        <field name="context">{'default_tipo': 'terceirizado'}</field>
-        <field name="domain">[('tipo','=', 'terceirizado')]</field>
+        <field name="context">{'default_employee_relationship_type': 'terceirizado'}</field>
+        <field name="domain">[('employee_relationship_type', '=', 'terceirizado')]</field>
     </record>
 
     <menuitem

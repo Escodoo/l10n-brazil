@@ -217,6 +217,10 @@ class TestCNABStructure(AccountTestInvoicingCommon):
         )
         cnab_structure_form.name = "Test CNAB Structure"
         cnab_structure_form.bank_id = self.bank_341
+        # BATCH
+        with cnab_structure_form.batch_ids.new() as batch_form:
+            batch_form.name = "Test Batch 1"
+
         # FILE HEADER
         with cnab_structure_form.line_ids.new() as line_form:
             line_form.type = "header"
@@ -224,11 +228,7 @@ class TestCNABStructure(AccountTestInvoicingCommon):
             with line_form.field_ids.new() as field_form:
                 field_form.start_pos = 1
                 field_form.end_pos = 240
-        # BATCH
         cnab_structure = cnab_structure_form.save()
-        cnab_structure.batch_ids = cnab_structure.batch_ids.create({
-            "name": "Test Batch 1",
-        })
 
         # BATCH HEADER
         line_form = Form(self.env["l10n_br_cnab.line"])
@@ -372,7 +372,7 @@ class TestCNABStructure(AccountTestInvoicingCommon):
 
         field_select_wizard = (
             self.env[wiz_action["res_model"]]
-            .with_context(wiz_action["context"])
+            .with_context(**wiz_action["context"])
             .create({})
         )
 

@@ -50,7 +50,6 @@ def post_init_hook(env):
                     prepare_fake_certificate_vals(cert_type=CERTIFICATE_TYPE_ECNPJ)
                 )
         except NameError:  # (means from erpbrasil.assinatura import misc failed)
-            raise
             _logger.error(
                 _(
                     "Python Library erpbrasil.assinatura not installed!"
@@ -58,3 +57,4 @@ def post_init_hook(env):
                     "Demo companies fake A1 certificates were not created."
                 )
             )
+            raise

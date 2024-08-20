@@ -73,8 +73,7 @@ class TestInvoiceRefund(TransactionCase):
                                 ),
                             ],
                             limit=1,
-                        )
-                        .id,
+                        ).ensure_one().id,
                         "name": "Refund Test",
                         "uom_id": cls.env.ref("uom.product_uom_unit").id,
                     }),

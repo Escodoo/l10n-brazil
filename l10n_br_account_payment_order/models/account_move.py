@@ -147,15 +147,10 @@ class AccountMove(models.Model):
 
     def unlink(self):
         # Verificar se é necessário solicitar a Baixa no caso de CNAB
-        cnab_already_start = False
-        for l_aml in self.mapped("line_ids"):
-            if l_aml._cnab_already_start():
+        for rec in self:
+            if any(l._cnab_already_start() for l in rec.line_ids):
                 # Se exitir um caso já deve ser feito
-                cnab_already_start = l_aml._cnab_already_start()
-                break
-
-        if cnab_already_start:
-            # Solicitar a Baixa do CNAB
-            self.financial_move_line_ids.update_cnab_for_cancel_invoice()
+                # Solicitar a Baixa do CNAB
+                rec.financial_move_line_ids.update_cnab_for_cancel_invoice()
 
         return super().unlink()

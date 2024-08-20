@@ -23,8 +23,8 @@ class AccountChartTemplate(models.AbstractModel):
         return {
             self.env.company.id: {
                 'account_fiscal_country_id': 'base.br',
-                'bank_account_code_prefix': '1.1.1.2.',
                 'cash_account_code_prefix': '1.1.1.1.',
+                'bank_account_code_prefix': '1.1.1.2.',
                 'transfer_account_code_prefix': '1.1.1.2.0',
                 'account_sale_tax_id': False,
                 'account_purchase_tax_id': False,
@@ -67,19 +67,14 @@ class AccountChartTemplate(models.AbstractModel):
             if tax.get('deductible'):
                 account_id = accs.get('ded_account_id', False)
                 refund_account_id = accs.get('ded_refund_account_id', False)
+            elif tax.get('withholdable') and tax['type_tax_use'] != 'purchase':
+                account_id = False
+                refund_account_id = False
             else:
-                account_id = accs.get(
-                    'refund_account_id' 
-                    if tax['type_tax_use'] == 'purchase' 
-                    else 'account_id', 
-                    False
-                )
-                refund_account_id = accs.get(
-                    'refund_account_id' 
-                    if tax['type_tax_use'] != 'purchase' 
-                    else 'account_id',
-                    False
-                )
+                account_id = accs.get('account_id', False)
+                refund_account_id = accs.get('refund_account_id', False)
+                if not tax.get('withholdable') and tax['type_tax_use'] == 'purchase':
+                    account_id, refund_account_id = refund_account_id, account_id
 
             for fname in (
                 'invoice_repartition_line_ids', 
@@ -97,8 +92,10 @@ class AccountChartTemplate(models.AbstractModel):
                         if is_refund else account_id 
                     )
                     repartition['factor_percent'] = (
-                        (-1 if tax.get("deductible") else 1) * 100
-                    )
+                        -1 
+                        if tax.get('deductible') or tax.get('withholdable') 
+                        else 1
+                    ) * 100
 
     def _get_tax_group_accounts(self, template_code):
         """

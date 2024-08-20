@@ -14,6 +14,6 @@ class FormatAddressMixin(models.AbstractModel):
     def _view_get_address(self, arch):
         address_view_id = self.env.company.country_id.address_view_id.sudo()
         for rec in address_view_id.inherit_children_ids:
-            if rec.model and rec.model != self._name:
-                rec.model = False
+            if rec.model != self._name:
+                rec.model = None
         return super()._view_get_address(arch)

@@ -73,5 +73,65 @@ class AccountChartTemplate(models.AbstractModel):
                 'refund_account_id': 'coa_generic_114104',
                 'ded_account_id': 'coa_generic_611205',
                 'ded_refund_account_id': 'coa_generic_611225',
-            }
+            },
+            'tax_group_issqn': {
+                'account_id': 'coa_generic_217108',
+                'refund_account_id': 'coa_generic_114109',
+                'ded_account_id': 'coa_generic_611204',
+                'ded_refund_account_id': 'coa_generic_611224',
+            },
+            'tax_group_csll': {
+                'account_id': 'coa_generic_217107',
+                'refund_account_id': 'coa_generic_114107',
+                'ded_account_id': 'coa_generic_611209',
+                'ded_refund_account_id': 'coa_generic_611229',
+            },
+            'tax_group_irpj': {
+                'account_id': 'coa_generic_217106',
+                'refund_account_id': 'coa_generic_114106',
+                'ded_account_id': 'coa_generic_611210',
+                'ded_refund_account_id': 'coa_generic_611230',
+            },
+            'tax_group_ii': {
+                'account_id': 'coa_generic_217113',
+                'refund_account_id': 'coa_generic_114110',
+                'ded_account_id': 'coa_generic_611211',
+                'ded_refund_account_id': 'coa_generic_611231',
+            },
+            'tax_group_pis_wh': {
+                'account_id': 'coa_generic_217105',
+                'refund_account_id': 'coa_generic_114105',
+                'ded_account_id': False,
+                'ded_refund_account_id': False,
+            },
+            'tax_group_cofins_wh': {
+                'account_id': 'coa_generic_217104',
+                'refund_account_id': 'coa_generic_114104',
+                'ded_account_id': False,
+                'ded_refund_account_id': False,
+            },
+            'tax_group_issqn_wh': {
+                'account_id': 'coa_generic_217108',
+                'refund_account_id': 'coa_generic_114109',
+                'ded_account_id': False,
+                'ded_refund_account_id': False,
+            },
+            'tax_group_csll_wh': {
+                'account_id': 'coa_generic_217107',
+                'refund_account_id': 'coa_generic_114107',
+                'ded_account_id': False,
+                'ded_refund_account_id': False,
+            },
+            'tax_group_irpj_wh': {
+                'account_id': 'coa_generic_217106',
+                'refund_account_id': 'coa_generic_114106',
+                'ded_account_id': False,
+                'ded_refund_account_id': False,
+            },
+            'tax_group_inss_wh': {
+                'account_id': 'coa_generic_216101',
+                'refund_account_id': 'coa_generic_114111',
+                'ded_account_id': False,
+                'ded_refund_account_id': False,
+            },
         }

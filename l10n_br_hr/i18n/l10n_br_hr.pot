@@ -4,7 +4,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 15.0\n"
+"Project-Id-Version: Odoo Server 17.0\n"
 "Report-Msgid-Bugs-To: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -114,6 +114,26 @@ msgid "Alternate Phone"
 msgstr ""
 
 #. module: l10n_br_hr
+#: model:ir.model.fields.selection,name:l10n_br_hr.selection__hr_employee__employee_relationship_type__autonomo
+msgid "Autônomo"
+msgstr ""
+
+#. module: l10n_br_hr
+#: model:ir.model.fields.selection,name:l10n_br_hr.selection__hr_employee__employee_relationship_type__funcionario
+msgid "Funcionário"
+msgstr ""
+
+#. module: l10n_br_hr
+#: model:ir.model.fields.selection,name:l10n_br_hr.selection__hr_employee__employee_relationship_type__cedido
+msgid "Funcionário Cedido"
+msgstr ""
+
+#. module: l10n_br_hr
+#: model:ir.model.fields.selection,name:l10n_br_hr.selection__hr_employee__employee_relationship_type__terceirizado
+msgid "Terceirizado"
+msgstr ""
+
+#. module: l10n_br_hr
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_employee_dependent__inc_trab_inss_file
 msgid "Atestado de incapacidade INSS"
 msgstr ""
@@ -128,11 +148,6 @@ msgstr ""
 msgid ""
 "Automatically send a confirmation email to the vendor X days before the "
 "expected receipt date, asking him to confirm the exact date."
-msgstr ""
-
-#. module: l10n_br_hr
-#: model:ir.model.fields.selection,name:l10n_br_hr.selection__hr_employee__tipo__autonomo
-msgid "Autônomo"
 msgstr ""
 
 #. module: l10n_br_hr
@@ -276,11 +291,6 @@ msgid "Certidão de Nascimento / Casamento / etc"
 msgstr ""
 
 #. module: l10n_br_hr
-#: model:ir.model.fields,field_description:l10n_br_hr.field_hr_employee_dependent__channel_ids
-msgid "Channels"
-msgstr ""
-
-#. module: l10n_br_hr
 #: model_terms:ir.ui.view,arch_db:l10n_br_hr.view_l10n_br_hr_employee_form
 msgid "Characteristics"
 msgstr ""
@@ -333,7 +343,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_civil_certificate_type__code
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_deficiency__code
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_dependent_type__code
-#: model:ir.model.fields,field_description:l10n_br_hr.field_hr_educational_attainment__code
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_ethnicity__code
 #: model:ir.model.fields,field_description:l10n_br_hr.field_l10n_br_hr_cbo__code
 #: model:ir.model.fields,field_description:l10n_br_hr.field_l10n_br_hr_data_abstract__code
@@ -343,16 +352,6 @@ msgstr ""
 #. module: l10n_br_hr
 #: model:ir.ui.menu,name:l10n_br_hr.menu_hr_colaboradores
 msgid "Colaboradores"
-msgstr ""
-
-#. module: l10n_br_hr
-#: model:ir.model.fields,field_description:l10n_br_hr.field_hr_employee_dependent__color
-msgid "Color Index"
-msgstr ""
-
-#. module: l10n_br_hr
-#: model:ir.model.fields,field_description:l10n_br_hr.field_hr_employee_dependent__commercial_partner_id
-msgid "Commercial Entity"
 msgstr ""
 
 #. module: l10n_br_hr
@@ -425,7 +424,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_civil_certificate_type__create_uid
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_deficiency__create_uid
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_dependent_type__create_uid
-#: model:ir.model.fields,field_description:l10n_br_hr.field_hr_educational_attainment__create_uid
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_employee_dependent__create_uid
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_ethnicity__create_uid
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_identity_type__create_uid
@@ -437,7 +435,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_civil_certificate_type__create_date
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_deficiency__create_date
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_dependent_type__create_date
-#: model:ir.model.fields,field_description:l10n_br_hr.field_hr_educational_attainment__create_date
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_employee_dependent__create_date
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_ethnicity__create_date
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_identity_type__create_date
@@ -546,7 +543,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_civil_certificate_type__display_name
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_deficiency__display_name
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_dependent_type__display_name
-#: model:ir.model.fields,field_description:l10n_br_hr.field_hr_educational_attainment__display_name
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_employee_dependent__display_name
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_ethnicity__display_name
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_identity_type__display_name
@@ -587,18 +583,6 @@ msgstr ""
 #. module: l10n_br_hr
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_employee__driver_license
 msgid "Driver license number"
-msgstr ""
-
-#. module: l10n_br_hr
-#: model:ir.actions.act_window,name:l10n_br_hr.action_hr_educational_attainment
-#: model:ir.model.fields,field_description:l10n_br_hr.field_hr_employee__educational_attainment
-#: model:ir.ui.menu,name:l10n_br_hr.menu_hr_educational_attainment
-msgid "Educational Attainment"
-msgstr ""
-
-#. module: l10n_br_hr
-#: model:ir.model,name:l10n_br_hr.model_hr_educational_attainment
-msgid "Educational Attainments"
 msgstr ""
 
 #. module: l10n_br_hr
@@ -664,11 +648,6 @@ msgstr ""
 #. module: l10n_br_hr
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_employee_dependent__country_enforce_cities
 msgid "Enforce Cities"
-msgstr ""
-
-#. module: l10n_br_hr
-#: model_terms:ir.ui.view,arch_db:l10n_br_hr.view_hr_educational_attainment_form
-msgid "Escolaridade"
 msgstr ""
 
 #. module: l10n_br_hr
@@ -744,16 +723,6 @@ msgid "Formatted Email"
 msgstr ""
 
 #. module: l10n_br_hr
-#: model:ir.model.fields.selection,name:l10n_br_hr.selection__hr_employee__tipo__funcionario
-msgid "Funcionário"
-msgstr ""
-
-#. module: l10n_br_hr
-#: model:ir.model.fields.selection,name:l10n_br_hr.selection__hr_employee__tipo__cedido
-msgid "Funcionário Cedido"
-msgstr ""
-
-#. module: l10n_br_hr
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_employee_dependent__dependent_gender
 msgid "Gender"
 msgstr ""
@@ -807,7 +776,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_civil_certificate_type__id
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_deficiency__id
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_dependent_type__id
-#: model:ir.model.fields,field_description:l10n_br_hr.field_hr_educational_attainment__id
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_employee_dependent__id
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_ethnicity__id
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_identity_type__id
@@ -1029,22 +997,9 @@ msgid "Language"
 msgstr ""
 
 #. module: l10n_br_hr
-#: model:ir.model.fields,field_description:l10n_br_hr.field_hr_civil_certificate_type____last_update
-#: model:ir.model.fields,field_description:l10n_br_hr.field_hr_deficiency____last_update
-#: model:ir.model.fields,field_description:l10n_br_hr.field_hr_dependent_type____last_update
-#: model:ir.model.fields,field_description:l10n_br_hr.field_hr_educational_attainment____last_update
-#: model:ir.model.fields,field_description:l10n_br_hr.field_hr_employee_dependent____last_update
-#: model:ir.model.fields,field_description:l10n_br_hr.field_hr_ethnicity____last_update
-#: model:ir.model.fields,field_description:l10n_br_hr.field_hr_identity_type____last_update
-#: model:ir.model.fields,field_description:l10n_br_hr.field_l10n_br_hr_cbo____last_update
-msgid "Last Modified on"
-msgstr ""
-
-#. module: l10n_br_hr
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_civil_certificate_type__write_uid
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_deficiency__write_uid
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_dependent_type__write_uid
-#: model:ir.model.fields,field_description:l10n_br_hr.field_hr_educational_attainment__write_uid
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_employee_dependent__write_uid
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_ethnicity__write_uid
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_identity_type__write_uid
@@ -1056,7 +1011,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_civil_certificate_type__write_date
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_deficiency__write_date
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_dependent_type__write_date
-#: model:ir.model.fields,field_description:l10n_br_hr.field_hr_educational_attainment__write_date
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_employee_dependent__write_date
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_ethnicity__write_date
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_identity_type__write_date
@@ -1176,7 +1130,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_civil_certificate_type__name
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_deficiency__name
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_dependent_type__name
-#: model:ir.model.fields,field_description:l10n_br_hr.field_hr_educational_attainment__name
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_employee_dependent__name
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_ethnicity__name
 #: model:ir.model.fields,field_description:l10n_br_hr.field_l10n_br_hr_cbo__name
@@ -1195,9 +1148,9 @@ msgid "Nationality (Country)"
 msgstr ""
 
 #. module: l10n_br_hr
-#: model:ir.model.fields,field_description:l10n_br_hr.field_hr_employee__naturalidade
-msgid "Naturalidade"
-msgstr ""
+#: model:ir.model.fields,field_description:l10n_br_hr.field_hr_employee__birth_city_id
+msgid "Birth City"
+msgstr "Naturalidade"
 
 #. module: l10n_br_hr
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_employee_dependent__activity_calendar_event_id
@@ -1251,7 +1204,7 @@ msgstr ""
 
 #. module: l10n_br_hr
 #: model:ir.model.fields,help:l10n_br_hr.field_hr_employee_dependent__message_needaction_counter
-msgid "Number of messages which requires an action"
+msgid "Number of messages requiring action"
 msgstr ""
 
 #. module: l10n_br_hr
@@ -1633,11 +1586,6 @@ msgstr ""
 #. module: l10n_br_hr
 #: model:ir.model.fields,field_description:l10n_br_hr.field_hr_employee_dependent__have_alimony
 msgid "Tem Pensão?"
-msgstr ""
-
-#. module: l10n_br_hr
-#: model:ir.model.fields.selection,name:l10n_br_hr.selection__hr_employee__tipo__terceirizado
-msgid "Terceirizado"
 msgstr ""
 
 #. module: l10n_br_hr

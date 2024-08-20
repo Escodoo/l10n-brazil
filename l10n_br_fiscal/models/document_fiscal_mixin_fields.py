@@ -77,13 +77,13 @@ class FiscalDocumentMixinFields(models.AbstractModel):
 
     fiscal_additional_data = fields.Text()
 
-    manual_fiscal_additional_data = fields.Char(
+    manual_fiscal_additional_data = fields.Text(
         help="Fiscal Additional data manually entered by user",
     )
 
     customer_additional_data = fields.Text()
 
-    manual_customer_additional_data = fields.Char(
+    manual_customer_additional_data = fields.Text(
         help="Customer Additional data manually entered by user",
     )
 
@@ -124,6 +124,12 @@ class FiscalDocumentMixinFields(models.AbstractModel):
         store=True,
     )
 
+    amount_icms_relief_value = fields.Monetary(
+        string="ICMS Relief Value",
+        compute="_compute_amount",
+        store=True,
+    )
+
     amount_icmsst_base = fields.Monetary(
         string="ICMS ST Base",
         compute="_compute_amount",
@@ -150,6 +156,12 @@ class FiscalDocumentMixinFields(models.AbstractModel):
 
     amount_icmsfcp_value = fields.Monetary(
         string="ICMS FCP Value",
+        compute="_compute_amount",
+        store=True,
+    )
+
+    amount_icmsfcpst_value = fields.Monetary(
+        string="ICMS FCP ST Value",
         compute="_compute_amount",
         store=True,
     )
@@ -380,6 +392,7 @@ class FiscalDocumentMixinFields(models.AbstractModel):
     )
 
     amount_tax_withholding = fields.Monetary(
+        string="Tax Withholding",
         compute="_compute_amount",
         store=True,
     )

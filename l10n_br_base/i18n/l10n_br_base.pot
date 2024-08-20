@@ -2,16 +2,18 @@
 # This file contains the translation of the following modules:
 # 	* l10n_br_base
 #
+#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0\n"
+"Project-Id-Version: Odoo Server 17.0\n"
 "Report-Msgid-Bugs-To: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: \n"
+"Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: \n"
+"X-Generator: Poedit 3.4.2\n"
 
 #. module: l10n_br_base
 #. odoo-python
@@ -20133,6 +20135,7 @@ msgstr ""
 
 #. module: l10n_br_base
 #: model:res.city,name:l10n_br_base.city_2611533
+#: model:res.city,name:l10n_br_base.city_2512606
 msgid "Quixaba"
 msgstr ""
 
@@ -22019,6 +22022,7 @@ msgstr ""
 #: model:res.city,name:l10n_br_base.city_2612802
 #: model:res.city,name:l10n_br_base.city_4215679
 #: model:res.city,name:l10n_br_base.city_5107776
+#: model:res.city,name:l10n_br_base.city_2928505
 msgid "Santa Terezinha"
 msgstr ""
 
@@ -23583,6 +23587,7 @@ msgstr ""
 #: model:res.city,name:l10n_br_base.city_2928950
 #: model:res.city,name:l10n_br_base.city_4216107
 #: model:res.city,name:l10n_br_base.city_5219803
+#: model:res.city,name:l10n_br_base.city_2513968
 msgid "São Domingos"
 msgstr ""
 
@@ -25697,7 +25702,7 @@ msgstr ""
 #. odoo-python
 #: code:addons/l10n_br_base/models/res_partner.py:0
 #, python-format
-msgid "There is already a partner record with this CPF/RG!"
+msgid "There is already a partner record with this CPF/CNPJ!"
 msgstr ""
 
 #. module: l10n_br_base
@@ -27576,4 +27581,109 @@ msgstr ""
 #. module: l10n_br_base
 #: model:res.city,name:l10n_br_base.city_3533809
 msgid "Óleo"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_2800100
+msgid "Amparo do São Francisco"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_2902054
+msgid "Araçás"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_3200706
+msgid "Atílio Vivácqua"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_3506607
+msgid "Biritiba Mirim"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_3122900
+msgid "Dona Euzébia"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_2304277
+msgid "Ereré"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_3516101
+msgid "Florínea"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_4206108
+msgid "Grão-Pará"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_3522158
+msgid "Itaoca"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_2917334
+msgid "Iuiu"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_4209607
+msgid "Lauro Müller"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_2922250
+msgid "Muquém do São Francisco"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_2206720
+msgid "Nazária"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_2408409
+msgid "Olho d'Água do Borges"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_3145455
+msgid "Olhos-d'Água"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_3147808
+msgid "Passa Vinte"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_5107800
+msgid "Santo Antônio de Leverger"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_4216057
+msgid "São Cristóvão do Sul"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_3165206
+msgid "São Tomé das Letras"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_2613800
+msgid "São Vicente Férrer"
+msgstr ""
+
+#. module: l10n_br_base
+#: model:res.city,name:l10n_br_base.city_1708254
+msgid "Tabocão"
 msgstr ""

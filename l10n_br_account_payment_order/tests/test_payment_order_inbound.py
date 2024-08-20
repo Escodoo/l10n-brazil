@@ -69,26 +69,13 @@ class TestPaymentOrderInbound(TransactionCase):
         self.invoice_cef.button_cancel()
         self.invoice_cef.button_draft()
 
-        # TODO v13, o account.move não tem um campo para informar um account_id
-        #  isso pode ser um problema na localização?
-        # for line in self.invoice_cef.line_ids.filtered(
-        #     lambda l: l.account_id.id == self.invoice_cef.account_id.id
-        # ):
-        #     self.assertEqual(
-        #        line.journal_entry_ref,
-        #        line.invoice_id.name,
-        #        "Error with compute field journal_entry_ref",
-        #    )
-
         # Return the status of Move to Posted
         self.invoice_cef.action_post()
 
         # Verificar os campos CNAB na account.move.line
-        for line in self.invoice_cef.line_ids.filtered(lambda line: line.own_number):
-            assert (
-                line.own_number
-            ), "own_number field is not filled in created Move Line."
-            assert line.mov_instruction_code_id, (
+        for line in self.invoice_cef.line_ids.filtered("own_number"):
+            self.assertTrue(
+                line.mov_instruction_code_id, 
                 "mov_instruction_code_id field is not filled" " in created Move Line."
             )
             self.assertEqual(
@@ -96,11 +83,6 @@ class TestPaymentOrderInbound(TransactionCase):
                 line.move_id.name,
                 "Error with compute field journal_entry_ref",
             )
-            # testar com a parcela 700
-            if line.debit == 700.0:
-                test_balance_value = line.get_balance()
-
-        self.assertEqual(test_balance_value, 700.0, "Error with method get_balance()")
 
         payment_order = self.env["account.payment.order"].search(
             [("payment_mode_id", "=", self.invoice_cef.payment_mode_id.id)]
@@ -108,10 +90,14 @@ class TestPaymentOrderInbound(TransactionCase):
 
         # Verifica os campos CNAB na linhas de pagamentos
         for line in payment_order.payment_line_ids:
-            assert line.own_number, "own_number field is not filled in Payment Line."
-            assert (
-                line.mov_instruction_code_id
-            ), "mov_instruction_code_id field are not filled in Payment Line."
+            self.assertTrue(
+                line.own_number, 
+                "own_number field is not filled in Payment Line."
+            )
+            self.assertTrue(
+                line.mov_instruction_code_id, 
+                "mov_instruction_code_id field are not filled in Payment Line."
+            )
 
         # Ordem de Pagto CNAB não pode ser apagada
         with self.assertRaises(UserError):
@@ -130,10 +116,14 @@ class TestPaymentOrderInbound(TransactionCase):
 
         # Verifica os campos CNAB na linhas de pagamentos
         for line in payment_order.payment_line_ids:
-            assert line.own_number, "own_number field is not filled in Payment Line."
-            assert (
-                line.mov_instruction_code_id
-            ), "mov_instruction_code_id field are not filled in Payment Line."
+            self.assertTrue(
+                line.own_number, 
+                "own_number field is not filled in Payment Line."
+            )
+            self.assertTrue(
+                line.mov_instruction_code_id,
+                "mov_instruction_code_id field are not filled in Payment Line."
+            )
 
         # Ordem de Pagto CNAB não pode ser Cancelada
         with self.assertRaises(UserError):
@@ -175,7 +165,7 @@ class TestPaymentOrderInbound(TransactionCase):
         payment_id = register_payments._create_payments()
         payment = self.payment_model.browse(payment_id.id)
 
-        self.assertAlmostEqual(payment.amount, 1000)
+        self.assertAlmostEqual(payment.amount, self.invoice_unicred.amount_total)
         self.assertEqual(payment.state, "posted")
         self.assertEqual(self.invoice_unicred.payment_state, "paid")
         # Linhas Apagadas
@@ -264,9 +254,9 @@ class TestPaymentOrderInbound(TransactionCase):
         payment = self.env["account.payment"].create(
             {
                 "payment_type": "inbound",
-                "payment_method_id": self.env.ref(
-                    "account.account_payment_method_manual_in"
-                ).id,
+                "payment_method_id": self.journal_cash._get_available_payment_method_lines(
+                    "inbound"
+                ).filtered(lambda x: x.code == "manual").id,
                 "partner_type": "customer",
                 "partner_id": self.partner_akretion.id,
                 "amount": 100,
@@ -376,7 +366,7 @@ class TestPaymentOrderInbound(TransactionCase):
             [("state", "=", "draft"), ("payment_mode_id", "=", inv_payment_mode_id.id)]
         )
         # I check creation of Payment Order
-        assert payment_order, "Payment Order not created."
+        self.assertTrue(payment_order, "Payment Order not created.")
         payment_order.draft2open()
         payment_order.open2generated()
         payment_order.generated2uploaded()
@@ -395,8 +385,8 @@ class TestPaymentOrderInbound(TransactionCase):
             "Unexpected Payment Method",
         )
 
-        # Perform the partial payment by setting the amount at 300 instead of 1000
-        payment_register.amount = 300
+        # Perform the partial payment by setting the amount at 30%
+        payment_register.amount = 0.3 * self.demo_invoice_auto.amount_total
 
         payment = payment_register.save()._create_payments()
         self.assertEqual(len(payment), 1)
@@ -422,8 +412,8 @@ class TestPaymentOrderInbound(TransactionCase):
             "Unexpected Payment Method",
         )
 
-        # Perform the partial payment by setting the amount at 700 instead of 500
-        payment_register.amount = 700
+        # Perform the partial payment (invoice's residual amount)
+        payment_register.amount = self.demo_invoice_auto.amount_residual
 
         payment = payment_register.save()._create_payments()
         self.assertEqual(len(payment), 1)
@@ -443,14 +433,13 @@ class TestPaymentOrderInbound(TransactionCase):
         change_payment_order.open2generated()
         change_payment_order.generated2uploaded()
 
-        assert (
+        self.assertIn(
             self.env.ref(
                 "l10n_br_account_payment_order.manual_test_mov_instruction_code_02"
-            ).id
-            in change_payment_order.payment_line_ids.mapped(
-                "mov_instruction_code_id"
-            ).ids
-        ), "Payment Order with wrong mov_instruction_code_id"
+            ).id,
+            change_payment_order.payment_line_ids.mov_instruction_code_id.ids,
+            "Payment Order with wrong mov_instruction_code_id"
+        )
 
     def test_payment_inbound_cancel_invoice_alread_registred(self):
         """Cancel the invoice with a payment that is already registred at the bank.

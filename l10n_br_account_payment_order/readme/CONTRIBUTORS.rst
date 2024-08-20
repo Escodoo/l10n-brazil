@@ -15,3 +15,7 @@
 * `Escodoo <https://www.escodoo.com.br>`_:
 
   * Marcel Savegnago
+
+* `Xipp Tech <https://xipp.com.br/>`_:
+
+  * Ravi do Valle Luz <raviluz@xipptech.com.br>

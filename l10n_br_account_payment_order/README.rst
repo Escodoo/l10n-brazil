@@ -17,13 +17,13 @@ Brazilian Payment Order
     :target: http://www.gnu.org/licenses/agpl-3.0-standalone.html
     :alt: License: AGPL-3
 .. |badge3| image:: https://img.shields.io/badge/github-OCA%2Fl10n--brazil-lightgray.png?logo=github
-    :target: https://github.com/OCA/l10n-brazil/tree/14.0/l10n_br_account_payment_order
+    :target: https://github.com/OCA/l10n-brazil/tree/17.0/l10n_br_account_payment_order
     :alt: OCA/l10n-brazil
 .. |badge4| image:: https://img.shields.io/badge/weblate-Translate%20me-F47D42.png
-    :target: https://translation.odoo-community.org/projects/l10n-brazil-14-0/l10n-brazil-14-0-l10n_br_account_payment_order
+    :target: https://translation.odoo-community.org/projects/l10n-brazil-17-0/l10n-brazil-17-0-l10n_br_account_payment_order
     :alt: Translate me on Weblate
 .. |badge5| image:: https://img.shields.io/badge/runboat-Try%20me-875A7B.png
-    :target: https://runboat.odoo-community.org/builds?repo=OCA/l10n-brazil&target_branch=14.0
+    :target: https://runboat.odoo-community.org/builds?repo=OCA/l10n-brazil&target_branch=17.0
     :alt: Try me on Runboat
 
 |badge1| |badge2| |badge3| |badge4| |badge5|
@@ -80,7 +80,7 @@ Known issues / Roadmap
 
 * CNAB de Pagamento, verificar a integração com o PR https://github.com/OCA/l10n-brazil/pull/972 e a possibilidade de multiplos modos de pagamento na mesma Ordem de Pagamento https://github.com/odoo-brazil/l10n-brazil/pull/112
 
-* Verificar a possibilidade na v14 de remoção do ondele='restrict' no campo "move_line_id" e o campo "related" "ml_maturity_date" do account.payment.line no modulo dependente https://github.com/OCA/bank-payment/blob/14.0/account_payment_order/models/account_payment_line.py#L39 para permitir o processo de Cancelamento de uma Fatura quando existe uma Ordem de Pagamento já confirmada/gerada/enviada( detalhes l10n_br_account_payment_order/models/account_payment_line.py#L130 )
+* Verificar a possibilidade na v14 de remoção do ondele='restrict' no campo "move_line_id" e o campo "related" "ml_maturity_date" do account.payment.line no modulo dependente https://github.com/OCA/bank-payment/blob/17.0/account_payment_order/models/account_payment_line.py#L39 para permitir o processo de Cancelamento de uma Fatura quando existe uma Ordem de Pagamento já confirmada/gerada/enviada( detalhes l10n_br_account_payment_order/models/account_payment_line.py#L130 )
 
 * Funcionalidade de Agrupar Por/Group By não funciona em campos do tipo Many2Many, aparentemente isso foi resolvido na v15(verfificar na migração), isso é usado nos objetos referentes aos Codigos CNAB de Instrução e Retorno.
 
@@ -88,7 +88,7 @@ Known issues / Roadmap
 
 * Na migração remover o objeto bank.payment.line, que está vazio, porém é necessário para evitar erro na atualização do modulo ver detalhes em l10n_br_account_payment_order/models/account_payment_line.py:291 e referencia do problema https://github.com/odoo/odoo/issues/44767 .
 
-* Verificar a possibilidade de usar o objeto account.payment no caso CNAB e o modulo https://github.com/OCA/bank-payment/tree/14.0/account_payment_order_return para tratar o LOG de Retorno do CNAB, RFC https://github.com/OCA/l10n-brazil/issues/2272 .
+* Verificar a possibilidade de usar o objeto account.payment no caso CNAB e o modulo https://github.com/OCA/bank-payment/tree/17.0/account_payment_order_return para tratar o LOG de Retorno do CNAB, RFC https://github.com/OCA/l10n-brazil/issues/2272 .
 
 Changelog
 =========
@@ -182,6 +182,10 @@ Contributors
 
   * Marcel Savegnago
 
+* `Xipp Tech <https://xipp.com.br/>`_:
+
+  * Ravi do Valle Luz <raviluz@xipptech.com.br>
+
 Other credits
 ~~~~~~~~~~~~~
 
@@ -211,6 +215,6 @@ Current `maintainer <https://odoo-community.org/page/maintainer-role>`__:
 
 |maintainer-mbcosta| 
 
-This module is part of the `OCA/l10n-brazil <https://github.com/OCA/l10n-brazil/tree/14.0/l10n_br_account_payment_order>`_ project on GitHub.
+This module is part of the `OCA/l10n-brazil <https://github.com/OCA/l10n-brazil/tree/17.0/l10n_br_account_payment_order>`_ project on GitHub.
 
 You are welcome to contribute. To learn how please visit https://odoo-community.org/page/Contribute.

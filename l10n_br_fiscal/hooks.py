@@ -40,7 +40,7 @@ def post_init_hook(env):
         )
 
     env.cr.execute("select demo from ir_module_module where name='l10n_br_fiscal';")
-    is_demo = env.cr.fetchone()[0] or True
+    is_demo = env.cr.fetchone()[0]
     if is_demo:
         demofiles = [
             "demo/l10n_br_fiscal.ncm-demo.csv",

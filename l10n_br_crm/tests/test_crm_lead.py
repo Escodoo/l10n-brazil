@@ -104,22 +104,20 @@ class CrmLeadTest(TransactionCase):
 
     def test_create_partner(self):
         """Create a Partner and check the if the fields were filled"""
-        self.partner_id = self.crm_lead_company._create_customer()
-
-        self.obj_partner = self.env["res.partner"].browse(self.partner_id.id)
+        partner = self.crm_lead_company._create_customer()
 
         self.assertTrue(
-            self.obj_partner.name, "The creation of the partner have problems."
+            partner.name, "The creation of the partner have problems."
         )
         self.assertTrue(
-            self.obj_partner.legal_name, "The field Razão Social not was filled."
+            partner.legal_name, "The field Razão Social not was filled."
         )
-        self.assertTrue(self.obj_partner.cnpj_cpf, "The field CNPJ not was filled.")
+        self.assertTrue(partner.cnpj_cpf, "The field CNPJ not was filled.")
         self.assertTrue(
-            self.obj_partner.inscr_est, "The field Inscrição Estadual not was filled"
+            partner.inscr_est, "The field Inscrição Estadual not was filled"
         )
         self.assertTrue(
-            self.obj_partner.inscr_mun, "The field Inscrição Municipal not was filled"
+            partner.inscr_mun, "The field Inscrição Municipal not was filled"
         )
 
     def test_lead_won(self):
@@ -182,25 +180,23 @@ class CrmLeadTest(TransactionCase):
         Create a partner of crm_lead_company_1 and
         check if the fields were fields with Inscr. Estadual ok
         """
-        self.partner_id = self.crm_lead_company_1._create_customer()
-
-        self.obj_partner = self.env["res.partner"].browse(self.partner_id.id)
+        partner = self.crm_lead_company_1._create_customer()
 
         self.assertTrue(
-            self.obj_partner.name, "The creation of the partner have problems."
+            partner.name, "The creation of the partner have problems."
         )
         self.assertTrue(
-            self.obj_partner.legal_name, "The field Razão Social not was filled."
+            partner.legal_name, "The field Razão Social not was filled."
         )
-        self.assertTrue(self.obj_partner.cnpj_cpf, "The field CNPJ not was filled.")
+        self.assertTrue(partner.cnpj_cpf, "The field CNPJ not was filled.")
         self.assertTrue(
-            self.obj_partner.inscr_est, "The field Inscrição Estadual not was filled"
+            partner.inscr_est, "The field Inscrição Estadual not was filled"
         )
         self.assertTrue(
-            self.obj_partner.inscr_mun, "The field Inscrição Municipal not was filled"
+            partner.inscr_mun, "The field Inscrição Municipal not was filled"
         )
-        self.assertTrue(self.obj_partner.country_id, "The field Country not was filled")
-        self.assertTrue(self.obj_partner.state_id, "The field State not was filled")
+        self.assertTrue(partner.country_id, "The field Country not was filled")
+        self.assertTrue(partner.state_id, "The field State not was filled")
 
     def test_change_lead_partner(self):
         """
@@ -264,4 +260,34 @@ class CrmLeadTest(TransactionCase):
             self.env.ref("l10n_br_base.city_4205407").id,
             "In the change of the partner the field \
                          city_id was not automatically filled.",
+        )
+
+    def test_brazilian_fields_in_lead_view(self):
+        """
+        Test when show Brazilian Fields in the Lead View.
+        """
+        # Brazilian Lead with Partner informed
+        self.assertTrue(
+            self.crm_lead_company_1.show_l10n_br,
+            "Field show_l10n_br should be True for Brazilian case.",
+        )
+
+        # Brazilian Lead without Partner
+        lead_without_partner = self.env["crm.lead"].create(
+            {
+                "name": "Test BR without Partner",
+                "stage_id": self.env.ref("crm.stage_lead1").id,
+                "country_id": self.env.ref("base.br").id,
+            }
+        )
+        self.assertTrue(
+            lead_without_partner.show_l10n_br,
+            "Field show_l10n_br should be True for Brazilian case.",
+        )
+
+        # International Lead
+        inter_lead = self.env.ref("crm.crm_case_31")
+        self.assertFalse(
+            inter_lead.show_l10n_br,
+            "Field show_l10n_br should be False in International case.",
         )

@@ -78,7 +78,7 @@ class CNABLine(models.Model):
     def _selection_target_model(self):
         return [
             ("account.payment.order", "Payment Order"),
-            ("bank.payment.line", "Bank Payment Line"),
+            ("account.payment.line", "Payment Line"),
         ]
 
     resource_ref = fields.Reference(
@@ -113,27 +113,23 @@ class CNABLine(models.Model):
         return payment_way in self.cnab_payment_way_ids
 
     def _compute_content_source_model_id(self):
-        if self.type in ["header", "trailer"]:
-            self.content_source_model_id = self.env["ir.model"].search(
-                [("model", "=", "account.payment.order")]
-            )
-        else:
-            self.content_source_model_id = self.env["ir.model"].search(
-                [("model", "=", "bank.payment.line")]
+        for rec in self:
+            rec.content_source_model_id = self.env["ir.model"]._get(
+                "account.payment.order"
+                if rec.type in ["header", "trailer"]
+                else "account.payment.line"
             )
 
     def _compute_dest_source_model_id(self):
-        if self.type in ["header", "trailer"] and not self.batch_id:
-            self.content_dest_model_id = self.env["ir.model"].search(
-                [("model", "=", "l10n_br_cnab.return.log")]
-            )
-        elif self.type in ["header", "trailer"] and self.batch_id:
-            self.content_dest_model_id = self.env["ir.model"].search(
-                [("model", "=", "l10n_br_cnab.return.lot")]
-            )
-        else:
-            self.content_dest_model_id = self.env["ir.model"].search(
-                [("model", "=", "l10n_br_cnab.return.event")]
+        for rec in self:
+            rec.content_dest_model_id = self.env["ir.model"]._get(
+                "l10n_br_cnab.return.event"
+                if rec.type not in ["header", "trailer"]
+                else (
+                    "l10n_br_cnab.return.lot"
+                    if rec.batch_id
+                    else "l10n_br_cnab.return.log"
+                )
             )
 
     def output(self, resource_ref, record_type, **kwargs):

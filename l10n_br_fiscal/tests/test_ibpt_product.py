@@ -26,18 +26,16 @@ class TestIbptProduct(TestIbpt):
         )
 
     @mock.patch("requests.get", side_effect=mocked_requests_get)
-    def test_mock(self, mock_get):
+    def test_mock(self, _):
         api_status = self.env.company.ibpt_api
         self.env.company.ibpt_api = True  # force to run the mocked query
         self.ncm_85030010.action_ibpt_inquiry()
-        ncms = self.ncm_model.search(
-            [("id", "in", (self.ncm_85030010.id, self.ncm_85014029.id))]
-        )
-        ncms._scheduled_update()
+        (self.ncm_85030010 | self.ncm_85014029)._scheduled_update()
         self.env.company.ibpt_api = api_status
 
+    @mock.patch("requests.get", side_effect=mocked_requests_get)
     @not_every_day_test
-    def test_update_ibpt_product(self):
+    def test_update_ibpt_product(self, _):
         """Check tax estimate update"""
 
         if not self.company.ibpt_api:
@@ -63,17 +61,15 @@ class TestIbptProduct(TestIbpt):
         self.assertEqual(self.ncm_85030010.product_tmpl_qty, 2)
         self.assertEqual(self.ncm_85014029.product_tmpl_qty, 1)
 
+    @mock.patch("requests.get", side_effect=mocked_requests_get)
     @not_every_day_test
-    def test_update_scheduled(self):
+    def test_update_scheduled(self, _):
         """Check NCM update scheduled"""
 
         if not self.company.ibpt_api:
             return
 
-        ncms = self.ncm_model.search(
-            [("id", "in", (self.ncm_85030010.id, self.ncm_85014029.id))]
-        )
-        ncms._scheduled_update()
+        (self.ncm_85030010 | self.ncm_85014029)._scheduled_update()
 
         self.assertTrue(self.ncm_85030010.tax_estimate_ids)
         self.assertTrue(self.ncm_85014029.tax_estimate_ids)

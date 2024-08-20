@@ -2,7 +2,7 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
 from odoo import fields
-from odoo.tests.common import tagged
+from odoo.tests.common import tagged, Form
 
 from .common import AccountMoveBRCommon
 
@@ -12,46 +12,8 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.pis_tax_definition_empresa_lc = cls.env[
-            "l10n_br_fiscal.tax.definition"
-        ].create(
-            {
-                "company_id": cls.company_data["company"].id,
-                "tax_group_id": cls.env.ref("l10n_br_fiscal.tax_group_pis").id,
-                "is_taxed": True,
-                "is_debit_credit": True,
-                "custom_tax": True,
-                "tax_id": cls.env.ref("l10n_br_fiscal.tax_pis_0_65").id,
-                "cst_id": cls.env.ref("l10n_br_fiscal.cst_pis_01").id,
-                "state": "approved",
-            }
-        )
 
-        cls.cofins_tax_definition_empresa_lc = cls.env[
-            "l10n_br_fiscal.tax.definition"
-        ].create(
-            {
-                "company_id": cls.company_data["company"].id,
-                "tax_group_id": cls.env.ref("l10n_br_fiscal.tax_group_cofins").id,
-                "is_taxed": True,
-                "is_debit_credit": True,
-                "custom_tax": True,
-                "tax_id": cls.env.ref("l10n_br_fiscal.tax_cofins_3").id,
-                "cst_id": cls.env.ref("l10n_br_fiscal.cst_cofins_01").id,
-                "state": "approved",
-            }
-        )
-
-        cls.empresa_lc_document_55_serie_1 = cls.env[
-            "l10n_br_fiscal.document.serie"
-        ].create(
-            {
-                "code": "1",
-                "name": "Série 1",
-                "document_type_id": cls.env.ref("l10n_br_fiscal.document_55").id,
-                "active": True,
-            }
-        )
+        cls.configure_normal_company_taxes()
 
         cls.move_out_venda = cls.init_invoice(
             "out_invoice",
@@ -60,6 +22,15 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             document_serie_id=cls.empresa_lc_document_55_serie_1,
             fiscal_operation=cls.env.ref("l10n_br_fiscal.fo_venda"),
             fiscal_operation_lines=[cls.env.ref("l10n_br_fiscal.fo_venda_venda")],
+        )
+
+        cls.move_out_venda_with_icms_reduction = cls.init_invoice(
+            "out_invoice",
+            products=[cls.product_a],
+            document_type=cls.env.ref("l10n_br_fiscal.document_55"),
+            document_serie_id=cls.empresa_lc_document_55_serie_1,
+            fiscal_operation=cls.env.ref("l10n_br_fiscal.fo_venda"),
+            fiscal_operation_lines=[cls.fo_sale_with_icms_reduction],
         )
 
         cls.move_out_simples_remessa = cls.init_invoice(
@@ -85,6 +56,51 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             document_serie="1",
             document_number="42",
         )
+
+        # Account Moves With Tax Withholding
+        cls.pis_tax_definition_empresa_lc.state = "expired"
+        cls.cofins_tax_definition_empresa_lc.state = "expired"
+        cls.pis_wh_tax_definition_empresa_lc.action_approve()
+        cls.cofins_wh_tax_definition_empresa_lc.action_approve()
+
+        cls.move_out_venda_tax_withholding = cls.init_invoice(
+            "out_invoice",
+            products=[cls.product_a],
+            document_type=cls.env.ref("l10n_br_fiscal.document_55"),
+            document_serie_id=cls.empresa_lc_document_55_serie_1,
+            fiscal_operation=cls.env.ref("l10n_br_fiscal.fo_venda"),
+            fiscal_operation_lines=[cls.env.ref("l10n_br_fiscal.fo_venda_venda")],
+        )
+
+        cls.move_out_simples_remessa_tax_withholding = cls.init_invoice(
+            "out_invoice",
+            products=[cls.product_a],
+            document_type=cls.env.ref("l10n_br_fiscal.document_55"),
+            document_serie_id=cls.empresa_lc_document_55_serie_1,
+            fiscal_operation=cls.env.ref("l10n_br_fiscal.fo_simples_remessa"),
+            fiscal_operation_lines=[
+                cls.env.ref("l10n_br_fiscal.fo_simples_remessa_simples_remessa")
+            ],
+        )
+
+        cls.env.ref("l10n_br_fiscal.fo_compras").deductible_taxes = True
+        cls.move_in_compra_para_revenda_tax_withholding = cls.init_invoice(
+            "in_invoice",
+            products=[cls.product_a],
+            document_type=cls.env.ref("l10n_br_fiscal.document_55"),
+            fiscal_operation=cls.env.ref("l10n_br_fiscal.fo_compras"),
+            fiscal_operation_lines=[
+                cls.env.ref("l10n_br_fiscal.fo_compras_compras_comercializacao")
+            ],
+            document_serie="1",
+            document_number="44",
+        )
+
+        # Set default values for the tax definitions
+        cls.pis_tax_definition_empresa_lc.action_approve()
+        cls.cofins_tax_definition_empresa_lc.action_approve()
+        cls.pis_wh_tax_definition_empresa_lc.state = "expired"
+        cls.cofins_wh_tax_definition_empresa_lc.state = "expired"
 
     @classmethod
     def setup_company_data(cls, company_name, chart_template=None, **kwargs):
@@ -141,7 +157,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "product_id": False,
             "account_id": self.env["account.account"]
             .search([("name", "=ilike", "COFINS a Recolher")], order="id DESC", limit=1)
-            .id,
+            .ensure_one().id,
             "partner_id": self.partner_a.id,
             "product_uom_id": False,
             "quantity": False,
@@ -151,8 +167,8 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "price_total": 0.0,
             "tax_ids": [],
             "tax_line_id": self.env["account.tax"]
-            .search([("name", "=ilike", "COFINS Saida")], order="id DESC", limit=1)
-            .id,
+            .search([("name", "=ilike", "COFINS Saída")], order="id DESC", limit=1)
+            .ensure_one().id,
             "currency_id": self.company_data["currency"].id,
             "amount_currency": -30.0,
             "debit": 0.0,
@@ -165,7 +181,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "product_id": False,
             "account_id": self.env["account.account"]
             .search([("name", "=ilike", "ICMS a Recolher")], order="id DESC", limit=1)
-            .id,
+            .ensure_one().id,
             "partner_id": self.partner_a.id,
             "product_uom_id": False,
             "quantity": False,
@@ -175,8 +191,8 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "price_total": 0.0,
             "tax_ids": [],
             "tax_line_id": self.env["account.tax"]
-            .search([("name", "=ilike", "ICMS Saida")], order="id desc", limit=1)
-            .id,
+            .search([("name", "=ilike", "ICMS Saída")], order="id desc", limit=1)
+            .ensure_one().id,
             "currency_id": self.company_data["currency"].id,
             "amount_currency": -120.0,
             "debit": 0.0,
@@ -195,7 +211,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
                 ],
                 order="id ASC",
                 limit=1,
-            )
+            ).ensure_one()
             .id,  # TODO find our why this complex domain is required for IPI
             "partner_id": self.partner_a.id,
             "product_uom_id": False,
@@ -207,7 +223,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "tax_ids": [],
             "tax_line_id": self.env["account.tax"]
             .search([("name", "=ilike", "IPI Saída")], order="id desc", limit=1)
-            .id,
+            .ensure_one().id,
             "currency_id": self.company_data["currency"].id,
             "amount_currency": -50.0,
             "debit": 0.0,
@@ -220,7 +236,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "product_id": False,
             "account_id": self.env["account.account"]
             .search([("name", "=ilike", "PIS a Recolher")], order="id DESC", limit=1)
-            .id,
+            .ensure_one().id,
             "partner_id": self.partner_a.id,
             "product_uom_id": False,
             "quantity": False,
@@ -230,8 +246,8 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "price_total": 0.0,
             "tax_ids": [],
             "tax_line_id": self.env["account.tax"]
-            .search([("name", "=ilike", "PIS Saida")], order="id desc", limit=1)
-            .id,
+            .search([("name", "=ilike", "PIS Saída")], order="id desc", limit=1)
+            .ensure_one().id,
             "currency_id": self.company_data["currency"].id,
             "amount_currency": -6.5,
             "debit": 0.0,
@@ -256,7 +272,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "amount_currency": 1050.0,
             "debit": 1050.0,
             "credit": 0.0,
-            "date_maturity": fields.Date.today(),
+            "date_maturity": fields.Date.from_string("2019-01-01"),
         }
 
         move_vals = {
@@ -273,6 +289,347 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
 
         self.assertInvoiceValues(
             self.move_out_venda,
+            [
+                product_line_vals_1,
+                tax_line_vals_cofins,
+                tax_line_vals_icms,
+                tax_line_vals_ipi,
+                tax_line_vals_pis,
+                term_line_vals_1,
+            ],
+            move_vals,
+        )
+
+    def test_venda_with_icms_reduction(self):
+        product_line_vals_1 = {
+            "name": self.product_a.name,
+            "product_id": self.product_a.id,
+            "account_id": self.product_a.property_account_income_id.id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": self.product_a.uom_id.id,
+            "quantity": 1.0,
+            "discount": 0.0,
+            "price_unit": 1000.0,
+            "price_subtotal": 1000.0,
+            "price_total": 1050.00,
+            "tax_line_id": False,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": -875.38,
+            "debit": 0.0,
+            "credit": 875.38,
+            "date_maturity": False,
+        }
+
+        tax_line_vals_cofins = {
+            "name": "COFINS",
+            "product_id": False,
+            "account_id": self.env["account.account"]
+            .search([("name", "=", "COFINS a Recolher")], order="id DESC", limit=1)
+            .ensure_one().id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": self.env["account.tax"]
+            .search([("name", "=", "COFINS Saída")], order="id DESC", limit=1)
+            .ensure_one().id,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": -30.0,
+            "debit": 0.0,
+            "credit": 30.0,
+            "date_maturity": False,
+        }
+
+        tax_line_vals_icms = {
+            "name": "ICMS",
+            "product_id": False,
+            "account_id": self.env["account.account"]
+            .search([("name", "=", "ICMS a Recolher")], order="id DESC", limit=1)
+            .ensure_one().id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": self.env["account.tax"]
+            .search([("name", "=", "ICMS Saída")], order="id desc", limit=1)
+            .ensure_one().id,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": -88.12,
+            "debit": 0.0,
+            "credit": 88.12,
+            "date_maturity": False,
+        }
+
+        tax_line_vals_ipi = {
+            "name": "IPI",
+            "product_id": False,
+            "account_id": self.env["account.account"]
+            .search(
+                [
+                    ("name", "=", "IPI a Recolher"),
+                    ("company_id", "=", self.company_data["company"].id),
+                ],
+                order="id ASC",
+                limit=1,
+            ).ensure_one()
+            .id,  # TODO find our why this complex domain is required for IPI
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": self.env["account.tax"]
+            .search([("name", "=", "IPI Saída")], order="id desc", limit=1)
+            .ensure_one().id,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": -50.0,
+            "debit": 0.0,
+            "credit": 50.0,
+            "date_maturity": False,
+        }
+
+        tax_line_vals_pis = {
+            "name": "PIS",
+            "product_id": False,
+            "account_id": self.env["account.account"]
+            .search([("name", "=", "PIS a Recolher")], order="id DESC", limit=1)
+            .ensure_one().id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": self.env["account.tax"]
+            .search([("name", "=", "PIS Saída")], order="id desc", limit=1)
+            .ensure_one().id,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": -6.5,
+            "debit": 0.0,
+            "credit": 6.5,
+            "date_maturity": False,
+        }
+
+        term_line_vals_1 = {
+            "name": "",
+            "product_id": False,
+            "account_id": self.company_data["default_account_receivable"].id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": False,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": 1050.00,
+            "debit": 1050.00,
+            "credit": 0.0,
+            "date_maturity": fields.Date.from_string("2019-01-01"),
+        }
+
+        move_vals = {
+            "partner_id": self.partner_a.id,
+            "currency_id": self.company_data["currency"].id,
+            "journal_id": self.company_data["default_journal_sale"].id,
+            "date": fields.Date.from_string("2019-01-01"),
+            "fiscal_position_id": False,
+            "payment_reference": "",
+            "amount_untaxed": 1000.0,
+            "amount_tax": 50.0,
+            "amount_total": 1050.0,
+        }
+
+        self.assertInvoiceValues(
+            self.move_out_venda_with_icms_reduction,
+            [
+                product_line_vals_1,
+                tax_line_vals_cofins,
+                tax_line_vals_icms,
+                tax_line_vals_ipi,
+                tax_line_vals_pis,
+                term_line_vals_1,
+            ],
+            move_vals,
+        )
+
+    def test_venda_with_icms_reduction_with_relief(self):
+        # Testando com Alivio do ICMS
+        with Form(self.move_out_venda_with_icms_reduction) as move_form:
+            with move_form.invoice_line_ids.edit(0) as line_form:
+                line_form.icms_relief_id = self.env.ref("l10n_br_fiscal.icms_relief_1")
+
+        product_line_vals_1 = {
+            "name": self.product_a.name,
+            "product_id": self.product_a.id,
+            "account_id": self.product_a.property_account_income_id.id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": self.product_a.uom_id.id,
+            "quantity": 1.0,
+            "discount": 0.0,
+            "price_unit": 1000.0,
+            "price_subtotal": 1000.0,
+            "price_total": 1013.77,
+            "tax_line_id": False,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": -839.15,
+            "debit": 0.0,
+            "credit": 839.15,
+            "date_maturity": False,
+        }
+
+        tax_line_vals_cofins = {
+            "name": "COFINS",
+            "product_id": False,
+            "account_id": self.env["account.account"]
+            .search([("name", "=", "COFINS a Recolher")], order="id DESC", limit=1)
+            .ensure_one().id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": self.env["account.tax"]
+            .search([("name", "=", "COFINS Saída")], order="id DESC", limit=1)
+            .ensure_one().id,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": -30.0,
+            "debit": 0.0,
+            "credit": 30.0,
+            "date_maturity": False,
+        }
+
+        tax_line_vals_icms = {
+            "name": "ICMS",
+            "product_id": False,
+            "account_id": self.env["account.account"]
+            .search([("name", "=", "ICMS a Recolher")], order="id DESC", limit=1)
+            .ensure_one().id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": self.env["account.tax"]
+            .search([("name", "=", "ICMS Saída")], order="id desc", limit=1)
+            .ensure_one().id,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": -88.12,
+            "debit": 0.0,
+            "credit": 88.12,
+            "date_maturity": False,
+        }
+
+        tax_line_vals_ipi = {
+            "name": "IPI",
+            "product_id": False,
+            "account_id": self.env["account.account"]
+            .search(
+                [
+                    ("name", "=", "IPI a Recolher"),
+                    ("company_id", "=", self.company_data["company"].id),
+                ],
+                order="id ASC",
+                limit=1,
+            )
+            .ensure_one().id,  # TODO find our why this complex domain is required for IPI
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": self.env["account.tax"]
+            .search([("name", "=", "IPI Saída")], order="id desc", limit=1)
+            .ensure_one().id,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": -50.0,
+            "debit": 0.0,
+            "credit": 50.0,
+            "date_maturity": False,
+        }
+
+        tax_line_vals_pis = {
+            "name": "PIS",
+            "product_id": False,
+            "account_id": self.env["account.account"]
+            .search([("name", "=", "PIS a Recolher")], order="id DESC", limit=1)
+            .ensure_one().id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": self.env["account.tax"]
+            .search([("name", "=", "PIS Saída")], order="id desc", limit=1)
+            .ensure_one().id,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": -6.5,
+            "debit": 0.0,
+            "credit": 6.5,
+            "date_maturity": False,
+        }
+
+        term_line_vals_1 = {
+            "name": "",
+            "product_id": False,
+            "account_id": self.company_data["default_account_receivable"].id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": False,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": 1013.77,
+            "debit": 1013.77,
+            "credit": 0.0,
+            "date_maturity": fields.Date.from_string("2019-01-01"),
+        }
+
+        move_vals = {
+            "partner_id": self.partner_a.id,
+            "currency_id": self.company_data["currency"].id,
+            "journal_id": self.company_data["default_journal_sale"].id,
+            "date": fields.Date.from_string("2019-01-01"),
+            "fiscal_position_id": False,
+            "payment_reference": "",
+            "amount_untaxed": 1000.0,
+            "amount_tax": 50.0,
+            "amount_total": 1013.77,
+        }
+
+        self.assertInvoiceValues(
+            self.move_out_venda_with_icms_reduction,
             [
                 product_line_vals_1,
                 tax_line_vals_cofins,
@@ -309,7 +666,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "product_id": False,
             "account_id": self.env["account.account"]
             .search([("name", "=ilike", "COFINS a Recolher")], order="id DESC", limit=1)
-            .id,
+            .ensure_one().id,
             "partner_id": self.partner_a.id,
             "product_uom_id": False,
             "quantity": False,
@@ -319,8 +676,8 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "price_total": 0.0,
             "tax_ids": [],
             "tax_line_id": self.env["account.tax"]
-            .search([("name", "=ilike", "COFINS Saida")], order="id DESC", limit=1)
-            .id,
+            .search([("name", "=ilike", "COFINS Saída")], order="id DESC", limit=1)
+            .ensure_one().id,
             "currency_id": self.company_data["currency"].id,
             "amount_currency": -30.0,
             "debit": 0.0,
@@ -333,7 +690,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "product_id": False,
             "account_id": self.env["account.account"]
             .search([("name", "=ilike", "ICMS a Recolher")], order="id DESC", limit=1)
-            .id,
+            .ensure_one().id,
             "partner_id": self.partner_a.id,
             "product_uom_id": False,
             "quantity": False,
@@ -343,8 +700,8 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "price_total": 0.0,
             "tax_ids": [],
             "tax_line_id": self.env["account.tax"]
-            .search([("name", "=ilike", "ICMS Saida")], order="id desc", limit=1)
-            .id,
+            .search([("name", "=ilike", "ICMS Saída")], order="id desc", limit=1)
+            .ensure_one().id,
             "currency_id": self.company_data["currency"].id,
             "amount_currency": -120.0,
             "debit": 0.0,
@@ -363,7 +720,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
                 ],
                 order="id ASC",
                 limit=1,
-            )
+            ).ensure_one()
             .id,  # TODO find our why this complex domain is required for IPI
             "partner_id": self.partner_a.id,
             "product_uom_id": False,
@@ -375,7 +732,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "tax_ids": [],
             "tax_line_id": self.env["account.tax"]
             .search([("name", "=ilike", "IPI Saída")], order="id desc", limit=1)
-            .id,
+            .ensure_one().id,
             "currency_id": self.company_data["currency"].id,
             "amount_currency": -50.0,
             "debit": 0.0,
@@ -388,7 +745,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "product_id": False,
             "account_id": self.env["account.account"]
             .search([("name", "=ilike", "PIS a Recolher")], order="id DESC", limit=1)
-            .id,
+            .ensure_one().id,
             "partner_id": self.partner_a.id,
             "product_uom_id": False,
             "quantity": False,
@@ -398,8 +755,8 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "price_total": 0.0,
             "tax_ids": [],
             "tax_line_id": self.env["account.tax"]
-            .search([("name", "=ilike", "PIS Saida")], order="id desc", limit=1)
-            .id,
+            .search([("name", "=ilike", "PIS Saída")], order="id desc", limit=1)
+            .ensure_one().id,
             "currency_id": self.company_data["currency"].id,
             "amount_currency": -6.5,
             "debit": 0.0,
@@ -424,7 +781,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "amount_currency": 206.5,
             "debit": 206.5,
             "credit": 0.0,
-            "date_maturity": fields.Date.today(),
+            "date_maturity": fields.Date.from_string("2019-01-01"),
         }
 
         move_vals = {
@@ -469,8 +826,8 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "price_total": 1050.0,
             "tax_line_id": False,
             "currency_id": self.company_data["currency"].id,
-            "amount_currency": 1000.0,
-            "debit": 1000.0,
+            "amount_currency": 1050.0,
+            "debit": 1050.0,
             "credit": 0.0,
             "date_maturity": False,
         }
@@ -480,7 +837,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "product_id": False,
             "account_id": self.env["account.account"]
             .search([("name", "=ilike", "COFINS a Compensar")], order="id DESC", limit=1)
-            .id,
+            .ensure_one().id,
             "partner_id": self.partner_a.id,
             "product_uom_id": False,
             "quantity": False,
@@ -491,7 +848,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "tax_ids": [],
             "tax_line_id": self.env["account.tax"]
             .search([("name", "=ilike", "COFINS Entrada")], order="id DESC", limit=1)
-            .id,
+            .ensure_one().id,
             "currency_id": self.company_data["currency"].id,
             "amount_currency": 30.0,
             "debit": 30.0,
@@ -504,7 +861,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "product_id": False,
             "account_id": self.env["account.account"]
             .search([("name", "=ilike", "COFINS s/ Vendas")], order="id DESC", limit=1)
-            .id,
+            .ensure_one().id,
             "partner_id": self.partner_a.id,
             "product_uom_id": False,
             "quantity": False,
@@ -517,7 +874,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             .search(
                 [("name", "=ilike", "COFINS Entrada Dedutível")], order="id desc", limit=1
             )
-            .id,
+            .ensure_one().id,
             "currency_id": self.company_data["currency"].id,
             "amount_currency": -30.0,
             "debit": 0.0,
@@ -530,7 +887,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "product_id": False,
             "account_id": self.env["account.account"]
             .search([("name", "=ilike", "ICMS a Compensar")], order="id DESC", limit=1)
-            .id,
+            .ensure_one().id,
             "partner_id": self.partner_a.id,
             "product_uom_id": False,
             "quantity": False,
@@ -541,7 +898,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "tax_ids": [],
             "tax_line_id": self.env["account.tax"]
             .search([("name", "=ilike", "ICMS Entrada")], order="id DESC", limit=1)
-            .id,
+            .ensure_one().id,
             "currency_id": self.company_data["currency"].id,
             "amount_currency": 120.0,
             "debit": 120.0,
@@ -554,7 +911,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "product_id": False,
             "account_id": self.env["account.account"]
             .search([("name", "=ilike", "ICMS s/ Vendas")], order="id DESC", limit=1)
-            .id,
+            .ensure_one().id,
             "partner_id": self.partner_a.id,
             "product_uom_id": False,
             "quantity": False,
@@ -565,7 +922,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "tax_ids": [],
             "tax_line_id": self.env["account.tax"]
             .search([("name", "=ilike", "ICMS Entrada Dedutível")], order="id desc", limit=1)
-            .id,
+            .ensure_one().id,
             "currency_id": self.company_data["currency"].id,
             "amount_currency": -120.0,
             "debit": 0.0,
@@ -578,7 +935,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "product_id": False,
             "account_id": self.env["account.account"]
             .search([("name", "=ilike", "IPI a Compensar")], order="id DESC", limit=1)
-            .id,
+            .ensure_one().id,
             "partner_id": self.partner_a.id,
             "product_uom_id": False,
             "quantity": False,
@@ -589,7 +946,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "tax_ids": [],
             "tax_line_id": self.env["account.tax"]
             .search([("name", "=ilike", "IPI Entrada")], order="id desc", limit=1)
-            .id,
+            .ensure_one().id,
             "currency_id": self.company_data["currency"].id,
             "amount_currency": 50.0,
             "debit": 50.0,
@@ -602,7 +959,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "product_id": False,
             "account_id": self.env["account.account"]
             .search([("name", "=ilike", "IPI s/ Vendas")], order="id DESC", limit=1)
-            .id,
+            .ensure_one().id,
             "partner_id": self.partner_a.id,
             "product_uom_id": False,
             "quantity": False,
@@ -613,7 +970,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "tax_ids": [],
             "tax_line_id": self.env["account.tax"]
             .search([("name", "=ilike", "IPI Entrada Dedutível")], order="id desc", limit=1)
-            .id,
+            .ensure_one().id,
             "currency_id": self.company_data["currency"].id,
             "amount_currency": -50.0,
             "debit": 0.0,
@@ -626,7 +983,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "product_id": False,
             "account_id": self.env["account.account"]
             .search([("name", "=ilike", "PIS a Compensar")], order="id DESC", limit=1)
-            .id,
+            .ensure_one().id,
             "partner_id": self.partner_a.id,
             "product_uom_id": False,
             "quantity": False,
@@ -637,7 +994,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "tax_ids": [],
             "tax_line_id": self.env["account.tax"]
             .search([("name", "=ilike", "PIS Entrada")], order="id desc", limit=1)
-            .id,
+            .ensure_one().id,
             "currency_id": self.company_data["currency"].id,
             "amount_currency": 6.5,
             "debit": 6.5,
@@ -650,7 +1007,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "product_id": False,
             "account_id": self.env["account.account"]
             .search([("name", "=ilike", "PIS s/ Vendas")], order="id DESC", limit=1)
-            .id,
+            .ensure_one().id,
             "partner_id": self.partner_a.id,
             "product_uom_id": False,
             "quantity": False,
@@ -661,7 +1018,7 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "tax_ids": [],
             "tax_line_id": self.env["account.tax"]
             .search([("name", "=ilike", "PIS Entrada Dedutível")], order="id desc", limit=1)
-            .id,
+            .ensure_one().id,
             "currency_id": self.company_data["currency"].id,
             "amount_currency": -6.5,
             "debit": 0.0,
@@ -685,31 +1042,22 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
             "tax_ids": [],
             "tax_line_id": False,
             "currency_id": self.company_data["currency"].id,
-            "amount_currency": -1000.0,
+            "amount_currency": -1050.0,
             "debit": 0.0,
-            "credit": 1000.0,
-            "date_maturity": fields.Date.today(),
+            "credit": 1050.0,
+            "date_maturity": fields.Date.from_string("2019-01-01"),
         }
 
         move_vals = {
             "partner_id": self.partner_a.id,
             "currency_id": self.company_data["currency"].id,
             "journal_id": self.company_data["default_journal_purchase"].id,
-            "date": fields.Date.from_string("2019-01-31"),
+            "date": fields.Date.from_string("2019-01-01"),
             "fiscal_position_id": False,
             "payment_reference": "",
             "amount_untaxed": 1000.0,
             "amount_tax": 50.0,
-            # Valor de taxas fica 50. Eu não tenho vasto conhecimento fiscal, 
-            # mas por uma questão de coerência com as move.line's, o IPI, 
-            # que é o único imposto não incluso no produto nesse caso, 
-            # deveria ser totalizado como 0. Há duas move lines de IPI, 
-            # uma de entrada e outra de entrada dedutível. Notei que apenas 
-            # os l10n_br_fiscal.tax não dedutíveis entram no produto. 
-            # Talvez esse seja a raiz do problema aqui, ou então esses impostos
-            # que são anulados entre si com contrapartidas dedutíveis conciliados
-            # ao fazer a revenda ao consumidor final
-            "amount_total": 1000.0,
+            "amount_total": 1050.0,
         }
 
         self.assertInvoiceValues(
@@ -731,3 +1079,626 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
 
     # TODO test effect of ind_final?
     # ver aqui https://github.com/OCA/l10n-brazil/pull/2347#issuecomment-1548345563
+
+    # Tax Withholding Tests
+    def test_venda_tax_withholding(self):
+        product_line_vals_1 = {
+            "name": self.product_a.name,
+            "product_id": self.product_a.id,
+            "account_id": self.product_a.property_account_income_id.id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": self.product_a.uom_id.id,
+            "quantity": 1.0,
+            "discount": 0.0,
+            "price_unit": 1000.0,
+            "price_subtotal": 1000.0,
+            "price_total": 1050.0,
+            "tax_line_id": False,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": -880.0,
+            "debit": 0.0,
+            "credit": 880.0,
+            "date_maturity": False,
+        }
+
+        tax_line_vals_cofins = {
+            "name": "COFINS RET",
+            "product_id": False,
+            "account_id": self.product_a.property_account_income_id.id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": self.env["account.tax"]
+            .search([("name", "=", "COFINS WH Saída")], order="id DESC", limit=1)
+            .ensure_one().id,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": 30.0,
+            "debit": 30.0,
+            "credit": 0.0,
+            "date_maturity": False,
+        }
+
+        tax_line_vals_icms = {
+            "name": "ICMS",
+            "product_id": False,
+            "account_id": self.env["account.account"]
+            .search([("name", "=", "ICMS a Recolher")], order="id DESC", limit=1)
+            .ensure_one().id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": self.env["account.tax"]
+            .search([("name", "=", "ICMS Saída")], order="id desc", limit=1)
+            .ensure_one().id,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": -120.0,
+            "debit": 0.0,
+            "credit": 120.0,
+            "date_maturity": False,
+        }
+
+        tax_line_vals_ipi = {
+            "name": "IPI",
+            "product_id": False,
+            "account_id": self.env["account.account"]
+            .search(
+                [
+                    ("name", "=", "IPI a Recolher"),
+                    ("company_id", "=", self.company_data["company"].id),
+                ],
+                order="id ASC",
+                limit=1,
+            )
+            .ensure_one().id,  # TODO find our why this complex domain is required for IPI
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": self.env["account.tax"]
+            .search([("name", "=", "IPI Saída")], order="id desc", limit=1)
+            .ensure_one().id,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": -50.0,
+            "debit": 0.0,
+            "credit": 50.0,
+            "date_maturity": False,
+        }
+
+        tax_line_vals_pis = {
+            "name": "PIS RET",
+            "product_id": False,
+            "account_id": self.product_a.property_account_income_id.id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": self.env["account.tax"]
+            .search([("name", "=", "PIS WH Saída")], order="id desc", limit=1)
+            .ensure_one().id,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": 6.5,
+            "debit": 6.5,
+            "credit": 0.0,
+            "date_maturity": False,
+        }
+
+        term_line_vals_1 = {
+            "name": "",
+            "product_id": False,
+            "account_id": self.company_data["default_account_receivable"].id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": False,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": 1013.5,
+            "debit": 1013.5,
+            "credit": 0.0,
+            "date_maturity": fields.Date.from_string("2019-01-01"),
+        }
+
+        move_vals = {
+            "partner_id": self.partner_a.id,
+            "currency_id": self.company_data["currency"].id,
+            "journal_id": self.company_data["default_journal_sale"].id,
+            "date": fields.Date.from_string("2019-01-01"),
+            "fiscal_position_id": False,
+            "payment_reference": "",
+            "invoice_payment_term_id": False,
+            "amount_untaxed": 1000.0,
+            "amount_tax": 50.0,
+            "amount_total": 1013.5,
+        }
+
+        self.assertInvoiceValues(
+            self.move_out_venda_tax_withholding,
+            [
+                product_line_vals_1,
+                tax_line_vals_cofins,
+                tax_line_vals_icms,
+                tax_line_vals_ipi,
+                tax_line_vals_pis,
+                term_line_vals_1,
+            ],
+            move_vals,
+        )
+
+    def test_simples_remessa_tax_withholding(self):
+        product_line_vals_1 = {
+            "name": self.product_a.name,
+            "product_id": self.product_a.id,
+            "account_id": self.product_a.property_account_income_id.id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": self.product_a.uom_id.id,
+            "quantity": 1.0,
+            "discount": 0.0,
+            "price_unit": 1000.0,
+            "price_subtotal": 1000.0,
+            "price_total": 1050.0,
+            "tax_line_id": False,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": 0.0,
+            "debit": 0.0,
+            "credit": 0.0,
+            "date_maturity": False,
+        }
+
+        tax_line_vals_cofins = {
+            "name": "COFINS RET",
+            "product_id": False,
+            "account_id": self.product_a.property_account_income_id.id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": self.env["account.tax"]
+            .search([("name", "=", "COFINS WH Saída")], order="id DESC", limit=1)
+            .ensure_one().id,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": 30.0,
+            "debit": 30.0,
+            "credit": 0.0,
+            "date_maturity": False,
+        }
+
+        tax_line_vals_icms = {
+            "name": "ICMS",
+            "product_id": False,
+            "account_id": self.env["account.account"]
+            .search([("name", "=", "ICMS a Recolher")], order="id DESC", limit=1)
+            .ensure_one().id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": self.env["account.tax"]
+            .search([("name", "=", "ICMS Saída")], order="id desc", limit=1)
+            .ensure_one().id,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": -120.0,
+            "debit": 0.0,
+            "credit": 120.0,
+            "date_maturity": False,
+        }
+
+        tax_line_vals_ipi = {
+            "name": "IPI",
+            "product_id": False,
+            "account_id": self.env["account.account"]
+            .search(
+                [
+                    ("name", "=", "IPI a Recolher"),
+                    ("company_id", "=", self.company_data["company"].id),
+                ],
+                order="id ASC",
+                limit=1,
+            )
+            .ensure_one().id,  # TODO find our why this complex domain is required for IPI
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": self.env["account.tax"]
+            .search([("name", "=", "IPI Saída")], order="id desc", limit=1)
+            .ensure_one().id,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": -50.0,
+            "debit": 0.0,
+            "credit": 50.0,
+            "date_maturity": False,
+        }
+
+        tax_line_vals_pis = {
+            "name": "PIS RET",
+            "product_id": False,
+            "account_id": self.product_a.property_account_income_id.id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": self.env["account.tax"]
+            .search([("name", "=", "PIS WH Saída")], order="id desc", limit=1)
+            .ensure_one().id,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": 6.5,
+            "debit": 6.5,
+            "credit": 0.0,
+            "date_maturity": False,
+        }
+
+        term_line_vals_1 = {
+            "name": "",
+            "product_id": False,
+            "account_id": self.company_data["default_account_receivable"].id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": False,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": 133.5,
+            "debit": 133.5,
+            "credit": 0.0,
+            "date_maturity": fields.Date.from_string("2019-01-01"),
+        }
+
+        move_vals = {
+            "partner_id": self.partner_a.id,
+            "currency_id": self.company_data["currency"].id,
+            "journal_id": self.company_data["default_journal_sale"].id,
+            "date": fields.Date.from_string("2019-01-01"),
+            "fiscal_position_id": False,
+            "payment_reference": "",
+            "invoice_payment_term_id": False,
+            "amount_untaxed": 1000.0,  # FIXME is this correct for a simples remessa??
+            "amount_tax": 50.0,
+            "amount_total": 133.5,
+        }
+
+        self.assertInvoiceValues(
+            self.move_out_simples_remessa_tax_withholding,
+            [
+                product_line_vals_1,
+                tax_line_vals_cofins,
+                tax_line_vals_icms,
+                tax_line_vals_ipi,
+                tax_line_vals_pis,
+                term_line_vals_1,
+            ],
+            move_vals,
+        )
+
+    def test_compra_para_revenda_tax_withholding(self):
+        """
+        Test move with deductible taxes and tax withholding
+        """
+        product_line_vals_1 = {
+            "name": self.product_a.name,
+            "product_id": self.product_a.id,
+            "account_id": self.product_a.property_account_expense_id.id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": self.product_a.uom_id.id,
+            "quantity": 1.0,
+            "discount": 0.0,
+            "price_unit": 1000.0,
+            "price_subtotal": 1000.0,
+            "price_total": 1050.0,
+            "tax_line_id": False,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": 1050.0,
+            "debit": 1050.0,
+            "credit": 0.0,
+            "date_maturity": False,
+        }
+
+        tax_line_vals_cofins = {
+            "name": "COFINS RET",
+            "product_id": False,
+            "account_id": self.env["account.account"]
+            .search([("name", "=", "COFINS a Recolher")], order="id DESC", limit=1)
+            .ensure_one().id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": self.env["account.tax"]
+            .search([("name", "=", "COFINS WH Entrada")], order="id DESC", limit=1)
+            .ensure_one().id,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": -30.0,
+            "debit": 0.0,
+            "credit": 30.0,
+            "date_maturity": False,
+        }
+
+        tax_line_vals_icms = {
+            "name": "ICMS",
+            "product_id": False,
+            "account_id": self.env["account.account"]
+            .search([("name", "=", "ICMS a Compensar")], order="id DESC", limit=1)
+            .ensure_one().id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": self.env["account.tax"]
+            .search([("name", "=", "ICMS Entrada")], order="id DESC", limit=1)
+            .ensure_one().id,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": 120.0,
+            "debit": 120.0,
+            "credit": 0.0,
+            "date_maturity": False,
+        }
+
+        tax_line_vals_icms_comp = {
+            "name": "ICMS",
+            "product_id": False,
+            "account_id": self.env["account.account"]
+            .search([("name", "=", "ICMS s/ Vendas")], order="id DESC", limit=1)
+            .ensure_one().id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": self.env["account.tax"]
+            .search([("name", "=", "ICMS Entrada Dedutível")], order="id desc", limit=1)
+            .ensure_one().id,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": -120.0,
+            "debit": 0.0,
+            "credit": 120.0,
+            "date_maturity": False,
+        }
+
+        tax_line_vals_ipi = {
+            "name": "IPI",
+            "product_id": False,
+            "account_id": self.env["account.account"]
+            .search([("name", "=", "IPI a Compensar")], order="id DESC", limit=1)
+            .ensure_one().id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": self.env["account.tax"]
+            .search([("name", "=", "IPI Entrada")], order="id desc", limit=1)
+            .ensure_one().id,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": 50.0,
+            "debit": 50.0,
+            "credit": 0.0,
+            "date_maturity": False,
+        }
+
+        tax_line_vals_ipi_comp = {
+            "name": "IPI",
+            "product_id": False,
+            "account_id": self.env["account.account"]
+            .search([("name", "=", "IPI s/ Vendas")], order="id DESC", limit=1)
+            .ensure_one().id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": self.env["account.tax"]
+            .search([("name", "=", "IPI Entrada Dedutível")], order="id desc", limit=1)
+            .ensure_one().id,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": -50.0,
+            "debit": 0.0,
+            "credit": 50.0,
+            "date_maturity": False,
+        }
+
+        tax_line_vals_pis = {
+            "name": "PIS RET",
+            "product_id": False,
+            "account_id": self.env["account.account"]
+            .search([("name", "=", "PIS a Recolher")], order="id DESC", limit=1)
+            .ensure_one().id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": self.env["account.tax"]
+            .search([("name", "=", "PIS WH Entrada")], order="id desc", limit=1)
+            .ensure_one().id,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": -6.5,
+            "debit": 0.0,
+            "credit": 6.5,
+            "date_maturity": False,
+        }
+
+        term_line_vals_1 = {
+            "name": "",
+            "product_id": False,
+            "account_id": self.company_data["default_account_payable"].id,
+            "partner_id": self.partner_a.id,
+            "product_uom_id": False,
+            "quantity": False,
+            "discount": 0.0,
+            "price_unit": 0.0,
+            "price_subtotal": 0.0,
+            "price_total": 0.0,
+            "tax_ids": [],
+            "tax_line_id": False,
+            "currency_id": self.company_data["currency"].id,
+            "amount_currency": -1013.5,
+            "debit": 0.0,
+            "credit": 1013.5,
+            "date_maturity": fields.Date.from_string("2019-01-01"),
+        }
+
+        move_vals = {
+            "partner_id": self.partner_a.id,
+            "currency_id": self.company_data["currency"].id,
+            "journal_id": self.company_data["default_journal_purchase"].id,
+            "date": fields.Date.from_string("2019-01-01"),
+            "fiscal_position_id": False,
+            "payment_reference": "",
+            "invoice_payment_term_id": False,
+            "amount_untaxed": 1000.0,
+            "amount_tax": 50.0,
+            "amount_total": 1013.5,
+        }
+
+        move_lines_vals = [
+            product_line_vals_1,
+            tax_line_vals_cofins,
+            tax_line_vals_icms_comp,
+            tax_line_vals_icms,
+            tax_line_vals_ipi_comp,
+            tax_line_vals_ipi,
+            tax_line_vals_pis,
+            term_line_vals_1,
+        ]
+        self.assertEqual(
+            len(self.move_in_compra_para_revenda_tax_withholding.line_ids),
+            len(move_lines_vals)
+        )
+        self.assertInvoiceValues(
+            self.move_in_compra_para_revenda_tax_withholding,
+            move_lines_vals,
+            move_vals,
+        )
+
+    def test_composite_move(self):
+        # first we make a few assertions about an existing vendor bill:
+        self.assertEqual(len(self.move_in_compra_para_revenda.invoice_line_ids), 1)
+        self.assertEqual(len(self.move_in_compra_para_revenda.line_ids), 10)
+        self.assertEqual(self.move_in_compra_para_revenda.amount_total, 1050)
+
+        self.assertEqual(len(self.move_in_compra_para_revenda.fiscal_document_ids), 1)
+        self.assertEqual(
+            self.move_in_compra_para_revenda.fiscal_document_ids,
+            self.move_in_compra_para_revenda.fiscal_document_id,
+        )
+
+        # now we create a dumb fiscal document we will import in our vendor bill:
+        fiscal_doc_to_import = self.env["l10n_br_fiscal.document"].create(
+            {
+                "fiscal_operation_id": self.env.ref("l10n_br_fiscal.fo_compras").id,
+                "document_type_id": self.env.ref("l10n_br_fiscal.document_55").id,
+                "document_serie": 1,
+                "document_number": 123,
+                "issuer": "partner",
+                "partner_id": self.partner_a.id,
+                "fiscal_operation_type": "in",
+            }
+        )
+
+        fiscal_doc_line_to_import = self.env["l10n_br_fiscal.document.line"].create(
+            {
+                "document_id": fiscal_doc_to_import.id,
+                "name": "Purchase Test",
+                "product_id": self.product_a.id,
+                "fiscal_operation_type": "in",
+                "fiscal_operation_id": self.env.ref("l10n_br_fiscal.fo_compras").id,
+                "fiscal_operation_line_id": self.env.ref(
+                    "l10n_br_fiscal.fo_compras_compras"
+                ).id,
+            }
+        )
+        fiscal_doc_line_to_import._onchange_product_id_fiscal()
+
+        # let's import it:
+        self.move_in_compra_para_revenda.fiscal_document_id = fiscal_doc_to_import
+        self.move_in_compra_para_revenda.button_import_fiscal_document()
+
+        # now a few assertions to check if it has been properly imported:
+        self.assertEqual(len(self.move_in_compra_para_revenda.invoice_line_ids), 2)
+        self.assertEqual(
+            self.move_in_compra_para_revenda.invoice_line_ids[
+                1
+            ].fiscal_document_line_id.product_id,
+            self.product_a,
+        )
+
+        self.assertEqual(len(self.move_in_compra_para_revenda.fiscal_document_ids), 2)
+        self.assertIn(
+            fiscal_doc_to_import,
+            self.move_in_compra_para_revenda.fiscal_document_ids,
+        )
+        self.assertIn(
+            self.move_in_compra_para_revenda.fiscal_document_id,
+            self.move_in_compra_para_revenda.fiscal_document_ids,
+        )
+
+        invoice_lines = sorted(
+            self.move_in_compra_para_revenda.invoice_line_ids, key=lambda item: item.id
+        )
+        self.assertEqual(
+            fiscal_doc_to_import.id,
+            invoice_lines[1].fiscal_document_line_id.document_id.id,
+        )
+        self.assertEqual(len(self.move_in_compra_para_revenda.line_ids), 11)
+        self.assertEqual(self.move_in_compra_para_revenda.amount_total, 2100)

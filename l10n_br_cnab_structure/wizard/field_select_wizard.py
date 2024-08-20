@@ -43,12 +43,9 @@ class FieldSelectWizard(models.TransientModel):
         for rec in self:
             model = rec.model_id
             if rec.notation_field:
-                dn_fields = rec.notation_field.split(".")
-                for fld in dn_fields:
-                    field_id = self.env["ir.model.fields"].search(
-                        [("model_id", "=", model.id), ("name", "=", fld)]
-                    )
-                    model = self.env["ir.model"].search([("model", "=", field_id.relation)])
+                model = self.env["ir.model"]._get(
+                    self.env[model.model].mapped(rec.notation_field)._name
+                )
             rec.parent_model_id = model
 
     def _update_dot_notation(self):

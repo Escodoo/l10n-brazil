@@ -17,6 +17,7 @@
         <field name="invoice_date" eval="time.strftime('%Y-%m')+'-05'"/>
         <field name="instructions">TESTE Intruções Boleto</field>
         <field name="invoice_line_ids" eval="[
+            (5, 0, 0),
             (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100.0, 'quantity': 10.0, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
         ]" />
     </record>
@@ -36,8 +37,9 @@
         <field
             name="invoice_line_ids"
             eval="[
-            (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
-        ]"
+                (5, 0, 0),
+                (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
+            ]"
         />
     </record>
 
@@ -56,8 +58,9 @@
         <field
             name="invoice_line_ids"
             eval="[
-            (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
-        ]"
+                (5, 0, 0),
+                (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
+            ]"
         />
     </record>
 
@@ -76,8 +79,9 @@
         <field
             name="invoice_line_ids"
             eval="[
-            (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
-        ]"
+                (5, 0, 0),
+                (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
+            ]"
         />
     </record>
 
@@ -96,8 +100,9 @@
         <field
             name="invoice_line_ids"
             eval="[
-            (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
-        ]"
+                (5, 0, 0),
+                (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
+            ]"
         />
     </record>
 
@@ -116,8 +121,9 @@
         <field
             name="invoice_line_ids"
             eval="[
-            (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
-        ]"
+                (5, 0, 0),
+                (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
+            ]"
         />
     </record>
 
@@ -136,8 +142,9 @@
         <field
             name="invoice_line_ids"
             eval="[
-            (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
-        ]"
+                (5, 0, 0),
+                (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
+            ]"
         />
     </record>
 
@@ -156,8 +163,9 @@
         <field
             name="invoice_line_ids"
             eval="[
-            (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
-        ]"
+                (5, 0, 0),
+                (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
+            ]"
         />
     </record>
 
@@ -177,8 +185,9 @@
         <field
             name="invoice_line_ids"
             eval="[
-            (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
-        ]"
+                (5, 0, 0),
+                (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
+            ]"
         />
     </record>
 
@@ -197,8 +206,9 @@
         <field
             name="invoice_line_ids"
             eval="[
-            (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
-        ]"
+                (5, 0, 0),
+                (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
+            ]"
         />
     </record>
 
@@ -218,8 +228,9 @@
         <field
             name="invoice_line_ids"
             eval="[
-            (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
-        ]"
+                (5, 0, 0),
+                (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
+            ]"
         />
     </record>
 
@@ -237,8 +248,9 @@
         <field
             name="invoice_line_ids"
             eval="[
-            (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
-        ]"
+                (5, 0, 0),
+                (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
+            ]"
         />
     </record>
 
@@ -260,8 +272,9 @@
         <field
             name="invoice_line_ids"
             eval="[
-            (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
-        ]"
+                (5, 0, 0),
+                (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
+            ]"
         />
     </record>
 
@@ -283,8 +296,9 @@
         <field
             name="invoice_line_ids"
             eval="[
-            (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
-        ]"
+                (5, 0, 0),
+                (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
+            ]"
         />
     </record>
 
@@ -302,8 +316,9 @@
         <field
             name="invoice_line_ids"
             eval="[
-            (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
-        ]"
+                (5, 0, 0),
+                (0, 0, {'product_id': ref('product.product_product_5'), 'price_unit': 100, 'quantity': 10, 'account_id':ref('1_account_template_3010101010200_avoid_travis_error')})
+            ]"
         />
     </record>
 

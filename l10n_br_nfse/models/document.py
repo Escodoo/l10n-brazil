@@ -4,7 +4,6 @@
 import base64
 import logging
 
-from erpbrasil.assinatura import certificado as cert
 from erpbrasil.base import misc
 from erpbrasil.edoc.provedores.cidades import NFSeFactory
 from erpbrasil.transmissao import TransmissaoSOAP
@@ -69,6 +68,11 @@ class Document(models.Model):
         string="NFSe Environment",
         default=lambda self: self.env.company.nfse_environment,
     )
+    
+    civil_construction_code = fields.Char()
+    civil_construction_art = fields.Char(
+        string="Civil Construction ART",
+    )
 
     def _document_date(self):
         result = super()._document_date()
@@ -81,8 +85,10 @@ class Document(models.Model):
         if not self.filtered(filter_processador_edoc_nfse):
             return super().make_pdf()
 
-        report_id = self.env.ref("l10n_br_nfse.report_br_nfse_danfe")
-        pdf = self.env["ir.actions.report"]._render_qweb_pdf(report_id, self.ids)[0]
+        pdf, __ = self.env["ir.actions.report"]._render_qweb_pdf(
+            self.env.ref("l10n_br_nfse.report_br_nfse_danfe"),
+            res_ids=self.ids
+        )
 
         if self.document_number:
             filename = "NFS-e-" + self.document_number + ".pdf"
@@ -103,10 +109,7 @@ class Document(models.Model):
             self.file_report_id = self.env["ir.attachment"].create(vals_dict)
 
     def _processador_erpbrasil_nfse(self):
-        certificado = cert.Certificado(
-            arquivo=self.company_id.certificate_nfe_id.file,
-            senha=self.company_id.certificate_nfe_id.password,
-        )
+        certificado = self.env.company._get_br_ecertificate()
         session = Session()
         session.verify = False
         transmissao = TransmissaoSOAP(certificado, session)
@@ -121,7 +124,7 @@ class Document(models.Model):
         )
 
     def _document_export(self, pretty_print=True):
-        result = super(Document, self)._document_export()
+        result = super()._document_export()
         for record in self.filtered(filter_processador_edoc_nfse):
             if record.company_id.provedor_nfse:
                 edoc = record.serialize()[0]
@@ -146,8 +149,6 @@ class Document(models.Model):
         return result
 
     def _prepare_dados_servico(self):
-        # TODO: Migration 14.0: Acredito que fiscal_line_ids
-        #  deveria ser igual invoice_line_ids
         lines = self.env["l10n_br_fiscal.document.line"]
         for line in self.fiscal_line_ids:
             if line.product_id:
@@ -191,9 +192,7 @@ class Document(models.Model):
             valor_iss += result_line.get("valor_iss")
             valor_iss_retido += result_line.get("valor_iss_retido")
             outras_retencoes += result_line.get("outras_retencoes")
-            base_calculo += (
-                result_line.get("issqn_base") or result_line.get("issqn_wh_base") or 0
-            )
+            base_calculo += result_line.get("base_calculo")
             valor_liquido_nfse += result_line.get("valor_liquido_nfse")
             valor_desconto_incondicionado += result_line.get(
                 "valor_desconto_incondicionado"
@@ -212,7 +211,7 @@ class Document(models.Model):
             "valor_ir_retido": valor_ir_retido,
             "valor_csll": valor_csll,
             "valor_csll_retido": valor_csll_retido,
-            "iss_retido": "1" if self.fiscal_line_ids[0].issqn_wh_value else "2",
+            "iss_retido": "1" if self.fiscal_line_ids[0].issqn_wh_percent else "2",
             "valor_iss": valor_iss,
             "valor_iss_retido": valor_iss_retido,
             "outras_retencoes": outras_retencoes,
@@ -230,7 +229,7 @@ class Document(models.Model):
                 0
             ].issqn_fg_city_id.ibge_code
             or "",
-            "discriminacao": str(self.fiscal_line_ids[0].name[:2000] or ""),
+            "discriminacao": self.fiscal_line_ids[0].prepare_line_service_description(),
             "codigo_cnae": misc.punctuation_rm(self.fiscal_line_ids[0].cnae_id.code)
             or None,
             "valor_desconto_incondicionado": valor_desconto_incondicionado,
@@ -274,9 +273,10 @@ class Document(models.Model):
             "status": "1",
             "rps_substitiuido": None,
             "intermediario_servico": None,
-            "construcao_civil": None,
+            "codigo_obra": self.civil_construction_code or "",
+            "art": self.civil_construction_art or "",
             "carga_tributaria": self.amount_tax,
-            "total_recebido": self.amount_total,
+            "total_recebido": self.amount_price_gross,
             "carga_tributaria_estimada": self.amount_estimate_tax,
         }
 

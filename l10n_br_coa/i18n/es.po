@@ -73,6 +73,11 @@ msgid "ICMS SN"
 msgstr "ICMS SN"
 
 #. module: l10n_br_coa
+#: model:account.tax.group,name:l10n_br_coa.tax_group_icmsfcp_st
+msgid "ICMS FCP ST"
+msgstr "ICMS FCP ST"
+
+#. module: l10n_br_coa
 #: model:account.tax.group,name:l10n_br_coa.tax_group_icmsst
 msgid "ICMS ST"
 msgstr "ICMS ST"
@@ -151,3 +156,9 @@ msgstr "Nacionales Simples"
 #: model:ir.model,name:l10n_br_coa.model_account_tax
 msgid "Tax"
 msgstr "Impuesto"
+
+#. module: l10n_br_coa
+#: model:ir.model.fields,field_description:l10n_br_coa.field_account_tax__withholdable
+#: model:ir.model.fields,field_description:l10n_br_coa.field_account_tax_mixin__withholdable
+msgid "Withholdable Tax?"
+msgstr ""

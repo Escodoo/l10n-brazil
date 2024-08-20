@@ -32,8 +32,9 @@ class TestIbptService(TestIbpt):
         self.nbs_115069000.action_ibpt_inquiry()
         self.env.company.ibpt_api = api_status
 
+    @mock.patch("requests.get", side_effect=mocked_requests_get)
     @not_every_day_test
-    def test_update_ibpt_service(self):
+    def test_update_ibpt_service(self, _):
         """Check tax estimate update"""
 
         if not self.company.ibpt_api:
@@ -59,17 +60,15 @@ class TestIbptService(TestIbpt):
         self.assertEqual(self.nbs_115069000.product_tmpl_qty, 2)
         self.assertEqual(self.nbs_124043300.product_tmpl_qty, 1)
 
+    @mock.patch("requests.get", side_effect=mocked_requests_get)
     @not_every_day_test
-    def test_update_scheduled(self):
+    def test_update_scheduled(self, _):
         """Check NBS update scheduled"""
 
         if not self.company.ibpt_api:
             return
 
-        nbss = self.nbs_model.search(
-            [("id", "in", (self.nbs_115069000.id, self.nbs_124043300.id))]
-        )
-        nbss._scheduled_update()
+        (self.nbs_115069000 | self.nbs_124043300)._scheduled_update()
 
         self.assertTrue(self.nbs_115069000.tax_estimate_ids)
         self.assertTrue(self.nbs_124043300.tax_estimate_ids)

@@ -9,8 +9,6 @@ from odoo.exceptions import UserError
 from erpbrasil.base import misc
 from brazilcep import WebService, get_address_from_cep
 
-_logger = logging.getLogger(__name__)
-
 
 class L10nBrZip(models.Model):
     """Este objeto persiste todos os códigos postais que podem ser

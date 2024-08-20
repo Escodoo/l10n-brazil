@@ -9,7 +9,8 @@ from decorator import decorate
 from erpbrasil.base import misc
 from unittest import mock
 
-from odoo.tests import TransactionCase, Form
+from odoo.tests import TransactionCase
+from odoo.tools import config as odooconfig
 
 from odoo.addons.l10n_br_fiscal.models.ibpt import (
     DeOlhoNoImposto,
@@ -41,40 +42,115 @@ def not_every_day_test(method):
     return decorate(method, _not_every_day_test)
 
 
-def mocked_requests_get(*args, **kwargs):
+def mocked_requests_get(url, **kwargs):
     class MockResponse:
         def __init__(self, json_data, status_code):
             self.json_data = json_data
             self.status_code = status_code
+        
+        @property
+        def _type(self):
+            return "ncm" if "produtos" in url else "nbs"
+        
+        @property
+        def _code(self):
+            return kwargs["params"]["codigo"]
 
         def ok(self):
-            return True
+            return self._code in self.json_data[self._type]
 
         def json(self):
-            return self.json_data
+            return self.json_data[self._type][self._code]
 
     # the same as rates during 2 days:
     return MockResponse(
         {
-            "Codigo": "85030010",
-            "UF": "ES",
-            "EX": 0,
-            "Descricao": "Partes de motores/geradores de pot<=75kva",
-            "Nacional": 16.67,
-            "Estadual": 25.0,
-            "Importado": 23.98,
-            "Municipal": 0.0,
-            "Tipo": "0",
-            "VigenciaInicio": "20/05/2023",
-            "VigenciaFim": "30/06/2023",
-            "Chave": "FADD79",
-            "Versao": "23.1.F",
-            "Fonte": "IBPT/empresometro.com.br",
-            "Valor": 0.0,
-            "ValorTributoNacional": 0.0,
-            "ValorTributoEstadual": 0.0,
-            "ValorTributoImportado": 0.0,
-            "ValorTributoMunicipal": 0.0,
+            "ncm": {
+                "85030010": {
+                    "Codigo": "85030010",
+                    "UF": "ES",
+                    "EX": 0,
+                    "Descricao": "Partes de motores/geradores de pot<=75kva",
+                    "Nacional": 16.67,
+                    "Estadual": 25.0,
+                    "Importado": 23.98,
+                    "Municipal": 0.0,
+                    "Tipo": "0",
+                    "VigenciaInicio": "20/05/2023",
+                    "VigenciaFim": "30/06/2023",
+                    "Chave": "FADD79",
+                    "Versao": "23.1.F",
+                    "Fonte": "IBPT/empresometro.com.br",
+                    "Valor": 0.0,
+                    "ValorTributoNacional": 0.0,
+                    "ValorTributoEstadual": 0.0,
+                    "ValorTributoImportado": 0.0,
+                    "ValorTributoMunicipal": 0.0,
+                },
+                "85014029": {
+                    "Codigo": "85014029", 
+                    "UF": "ES", 
+                    "EX": 0, 
+                    "Descricao": "Outros motores eletr.de corr.altern.monof. pot>15kw", 
+                    "Nacional": 16.65, 
+                    "Estadual": 25.0, 
+                    "Importado": 24.52, 
+                    "Municipal": 0.0, 
+                    "Tipo": "0", 
+                    "VigenciaInicio": "20/05/2023",
+                    "VigenciaFim": "30/06/2023",
+                    "Chave": "FADD79",
+                    "Versao": "23.1.F",
+                    "Fonte": "IBPT/empresometro.com.br", 
+                    "Valor": 0.0, 
+                    "ValorTributoNacional": 0.0, 
+                    "ValorTributoEstadual": 0.0, 
+                    "ValorTributoImportado": 0.0, 
+                    "ValorTributoMunicipal": 0.0
+                }
+            },
+            "nbs": {
+                "115069000": {
+                    "Codigo": "115069000", 
+                    "UF": "ES", 
+                    "Descricao": "Outros servicos de infraestrutura para hospedagem em tecnologia da informacao (ti)\xa0\xa0", 
+                    "Tipo": "1", 
+                    "Nacional": 13.45, 
+                    "Estadual": 0.0, 
+                    "Municipal": 5.0, 
+                    "Importado": 15.45, 
+                    "VigenciaInicio": "20/05/2023",
+                    "VigenciaFim": "30/06/2023",
+                    "Chave": "FADD79",
+                    "Versao": "23.1.F",
+                    "Fonte": "IBPT/empresometro.com.br", 
+                    "Valor": 0.0, 
+                    "ValorTributoNacional": 0.0, 
+                    "ValorTributoEstadual": 0.0, 
+                    "ValorTributoImportado": 0.0, 
+                    "ValorTributoMunicipal": 0.0
+                },
+                "124043300": {
+                    "Codigo": "124043300", 
+                    "UF": "ES", 
+                    "Descricao": "Servicos de triagem, preparacao, consolidacao, estocagem e outros tratamentos e disposicao de residuos solidos reciclaveis", 
+                    "Tipo": "1", 
+                    "Nacional": 13.45, 
+                    "Estadual": 0.0, 
+                    "Municipal": 5.0, 
+                    "Importado": 15.45, 
+                    "VigenciaInicio": "20/05/2023",
+                    "VigenciaFim": "30/06/2023",
+                    "Chave": "FADD79",
+                    "Versao": "23.1.F",
+                    "Fonte": "IBPT/empresometro.com.br", 
+                    "Valor": 0.0, 
+                    "ValorTributoNacional": 0.0, 
+                    "ValorTributoEstadual": 0.0, 
+                    "ValorTributoImportado": 0.0, 
+                    "ValorTributoMunicipal": 0.0
+                }
+            }
         },
         200,
     )
@@ -110,6 +186,10 @@ class TestIbpt(TransactionCase):
                 company.ibpt_token,
                 misc.punctuation_rm(company.cnpj_cpf),
                 company.state_id.code,
+                odooconfig.get("ibpt_request_timeout")
+                or cls.env["ir.config_parameter"]
+                .sudo()
+                .get_param("ibpt_request_timeout"),
             )
             if ncm_nbs._name == "l10n_br_fiscal.ncm":
                 result = bool(get_ibpt_product(config, ncm_nbs.code_unmasked))

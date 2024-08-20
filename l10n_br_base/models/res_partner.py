@@ -34,15 +34,15 @@ class Partner(models.Model):
 
     is_accountant = fields.Boolean(string="Is accountant?")
 
-    crc_code = fields.Char(string="CRC Code", size=18)
+    crc_code = fields.Char(string="CRC Code", size=18, unaccent=False)
 
     crc_state_id = fields.Many2one(comodel_name="res.country.state", string="CRC State")
 
-    rntrc_code = fields.Char(string="RNTRC Code", size=12)
+    rntrc_code = fields.Char(string="RNTRC Code", size=12, unaccent=False)
 
-    cei_code = fields.Char(string="CEI Code", size=12)
+    cei_code = fields.Char(string="CEI Code", size=12, unaccent=False)
 
-    union_entity_code = fields.Char(string="Union Entity code")
+    union_entity_code = fields.Char(string="Union Entity code", unaccent=False)
 
     pix_key_ids = fields.One2many(
         string="Pix Keys",
@@ -63,22 +63,15 @@ class Partner(models.Model):
 
     @api.constrains("cnpj_cpf", "inscr_est")
     def _check_cnpj_inscr_est(self):
-        for record in self:
-            domain = []
-
-            # permite cnpj vazio
-            if not record.cnpj_cpf:
-                return
-
-            if self.env.context.get("disable_allow_cnpj_multi_ie"):
-                return
-
-            allow_cnpj_multi_ie = (
-                record.env["ir.config_parameter"]
-                .sudo()
-                .get_param("l10n_br_base.allow_cnpj_multi_ie", default=True)
+        def get_param(param, default=False):
+            return self.env["ir.config_parameter"].sudo().get_param(
+                param, default=default
             )
 
+        if self.env.context.get("disable_allow_cnpj_multi_ie"):
+            return
+        for record in self.filtered("cnpj_cpf"):
+            domain = []
             if record.parent_id:
                 domain += [
                     ("id", "not in", record.parent_id.ids),
@@ -89,26 +82,27 @@ class Partner(models.Model):
 
             # se encontrar CNPJ iguais
             if record.env["res.partner"].search(domain):
-                if cnpj_cpf.validar_cnpj(record.cnpj_cpf):
-                    if allow_cnpj_multi_ie == "True":
-                        for partner in record.env["res.partner"].search(domain):
-                            if (
-                                partner.inscr_est == record.inscr_est
-                                and not record.inscr_est
-                            ):
-                                raise ValidationError(
-                                    _(
-                                        "There is already a partner record with this "
-                                        "Estadual Inscription !"
-                                    )
-                                )
-                    else:
+                if not get_param("l10n_br_base.disable_cpf_cnpj_validation"):
+                    if not cnpj_cpf.validar_cnpj(record.cnpj_cpf):
                         raise ValidationError(
-                            _("There is already a partner record with this CNPJ !")
+                            _("CPF or CNPJ Invalid!")
                         )
+                if get_param("l10n_br_base.allow_cnpj_multi_ie", "True") == "True":
+                    return
+                    # for partner in record.env["res.partner"].search(domain):
+                    #     if (
+                    #         partner.inscr_est == record.inscr_est
+                    #         and not record.inscr_est
+                    #     ):
+                    #         raise ValidationError(
+                    #             _(
+                    #                 "There is already a partner record with this "
+                    #                 "Estadual Inscription !"
+                    #             )
+                    #         )
                 else:
                     raise ValidationError(
-                        _("There is already a partner record with this CPF/RG!")
+                        _("There is already a partner record with this CPF/CNPJ!")
                     )
 
     @api.constrains("cnpj_cpf", "country_id")
@@ -120,14 +114,14 @@ class Partner(models.Model):
                 record.country_id,
             )
 
-    @api.constrains("inscr_est", "state_id")
+    @api.constrains("inscr_est", "state_id", "is_company")
     def _check_ie(self):
         """Checks if company register number in field insc_est is valid,
         this method call others methods because this validation is State wise
 
         :Return: True or False.
         """
-        for record in self:
+        for record in self.filtered("is_company"):
             check_ie(record.env, record.inscr_est, record.state_id, record.country_id)
 
     @api.constrains("state_tax_number_ids")
