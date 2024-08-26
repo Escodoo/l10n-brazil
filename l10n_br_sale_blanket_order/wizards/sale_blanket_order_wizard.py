@@ -13,7 +13,7 @@ class SaleBlanketOrderWizard(models.TransientModel):
 
         # change quantity
         fiscal_vals["quantity"] = line.qty
-        fiscal_vals["fiscal_quantity"] = line.qty
+        fiscal_vals["fiscal_qty"] = line.qty
 
         # set company
         fiscal_vals["company_id"] = self.blanket_order_id.company_id.id
