@@ -166,7 +166,7 @@ class SaleOrderLine(models.Model):
         "price_unit",
         "discount",
         "fiscal_price",
-        "fiscal_quantity",
+        "fiscal_qty",
         "discount_value",
         "freight_value",
         "insurance_value",
@@ -199,7 +199,7 @@ class SaleOrderLine(models.Model):
             # O caso Brasil se caracteriza por ter a Operação Fiscal
             result = self._prepare_br_fiscal_dict()
             if self.product_id and self.product_id.invoice_policy == "delivery":
-                result["fiscal_quantity"] = self.qty_to_invoice
+                result["fiscal_qty"] = self.qty_to_invoice
         result.update(super()._prepare_invoice_line(**optional_values))
         return result
 

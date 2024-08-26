@@ -239,7 +239,7 @@
                     widget="many2many_tags"
                     options="{'no_create': True}"
                 />
-                            <field name="fiscal_quantity" invisible="1" />
+                            <field name="fiscal_qty" invisible="1" />
                             <field name="uot_id" invisible="1" />
                             <field name="fiscal_price" invisible="1" />
                             <field name="discount_value" invisible="1" />
@@ -282,16 +282,16 @@
                 position="after"
             >
                 <label
-                    for="fiscal_quantity"
+                    for="fiscal_qty"
                     string="Fiscal Quantity"
                     attrs="{'invisible': [('document_type_id', '=', False)]}"
                 />
                 <div>
                     <field
-                        name="fiscal_quantity"
+                        name="fiscal_qty"
                         class="oe_inline"
                         attrs="{'invisible': [('document_type_id', '=', False)]}"
-                        context="{'partner_id':parent.partner_id, 'quantity':fiscal_quantity, 'uom':uot_id, 'uom_qty_change':True, 'company_id': parent.company_id}"
+                        context="{'partner_id':parent.partner_id, 'quantity':fiscal_qty, 'uom':uot_id, 'uom_qty_change':True, 'company_id': parent.company_id}"
                     />
                     <field
                         name="uot_id"

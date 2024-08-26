@@ -12,7 +12,7 @@ class SaleInvoicePlan(models.Model):
 
         if invoice_move:
             for line in invoice_move.invoice_line_ids:
-                line.write({"fiscal_quantity": line.quantity})
+                line.write({"fiscal_qty": line.quantity})
                 line._onchange_fiscal_tax_ids()
             invoice_move._onchange_invoice_line_ids()
         return result

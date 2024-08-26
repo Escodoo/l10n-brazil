@@ -248,7 +248,7 @@
                 position="after"
             >
                 <label
-                    for="fiscal_quantity"
+                    for="fiscal_qty"
                     string="Fiscal Quantity"
                     attrs="{'invisible': [('parent.fiscal_operation_id', '=', False)]}"
                 />
@@ -256,8 +256,8 @@
                     attrs="{'invisible': [('parent.fiscal_operation_id', '=', False)]}"
                 >
                     <field
-                        context="{'partner_id':parent.partner_id, 'quantity':fiscal_quantity, 'pricelist':parent.pricelist_id, 'uom':uot_id, 'uom_qty_change':True, 'company_id': parent.company_id}"
-                        name="fiscal_quantity"
+                        context="{'partner_id':parent.partner_id, 'quantity':fiscal_qty, 'pricelist':parent.pricelist_id, 'uom':uot_id, 'uom_qty_change':True, 'company_id': parent.company_id}"
+                        name="fiscal_qty"
                         class="oe_inline"
                     />
                     <field

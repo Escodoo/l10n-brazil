@@ -188,7 +188,7 @@ class Tax(models.Model):
         company = kwargs.get("company", tax.env.company)
         currency = kwargs.get("currency", company.currency_id)
         fiscal_price = kwargs.get("fiscal_price", 0.00)
-        fiscal_quantity = kwargs.get("fiscal_quantity", 0.00)
+        fiscal_qty = kwargs.get("fiscal_qty", 0.00)
         compute_reduction = kwargs.get("compute_reduction", True)
         discount_value = kwargs.get("discount_value", 0.00)
         insurance_value = kwargs.get("insurance_value", 0.00)
@@ -213,15 +213,15 @@ class Tax(models.Model):
 
             if tax_dict["base_type"] == "percent":
                 # Compute initial Tax Base for base_type Percent
-                base = currency.round(fiscal_price * fiscal_quantity)
+                base = currency.round(fiscal_price * fiscal_qty)
 
             if tax_dict["base_type"] == "quantity":
                 # Compute initial Tax Base for base_type Quantity
-                base = fiscal_quantity
+                base = fiscal_qty
 
             if tax_dict["base_type"] == "fixed":
                 # Compute initial Tax Base
-                base = currency.round(tax_dict["value_amount"] * fiscal_quantity)
+                base = currency.round(tax_dict["value_amount"] * fiscal_qty)
 
             # Update Base Value
             base_amount = currency.round(
@@ -317,14 +317,14 @@ class Tax(models.Model):
         company = kwargs.get("company")
         product = kwargs.get("product")
         fiscal_price = kwargs.get("fiscal_price")
-        fiscal_quantity = kwargs.get("fiscal_quantity")
+        fiscal_qty = kwargs.get("fiscal_qty")
         currency = kwargs.get("currency", company.currency_id)
         ncm = kwargs.get("ncm") or product.ncm_id
         nbs = kwargs.get("nbs") or product.nbs_id
         icms_origin = kwargs.get("icms_origin") or product.icms_origin
         op_line = kwargs.get("operation_line")
         amount_estimate_tax = 0.00
-        amount_total = currency.round(fiscal_price * fiscal_quantity)
+        amount_total = currency.round(fiscal_price * fiscal_qty)
 
         if op_line and (
             op_line.fiscal_operation_type == FISCAL_OUT
@@ -658,7 +658,7 @@ class Tax(models.Model):
             quantity,
             uom_id,
             fiscal_price,
-            fiscal_quantity,
+            fiscal_qty,
             uot_id,
             discount_value,
             insurance_value,

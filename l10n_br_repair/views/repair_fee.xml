@@ -58,11 +58,11 @@
                 expr="//field[@name='fees_lines']/form//field[@name='price_unit']"
                 position="after"
             >
-                <label for="fiscal_quantity" string="Fiscal Quantity" />
+                <label for="fiscal_qty" string="Fiscal Quantity" />
                 <div>
                     <field
-                        context="{'partner_id':parent.partner_id, 'quantity':fiscal_quantity, 'pricelist':parent.pricelist_id, 'uom':uot_id, 'uom_qty_change':True, 'company_id': parent.company_id}"
-                        name="fiscal_quantity"
+                        context="{'partner_id':parent.partner_id, 'quantity':fiscal_qty, 'pricelist':parent.pricelist_id, 'uom':uot_id, 'uom_qty_change':True, 'company_id': parent.company_id}"
+                        name="fiscal_qty"
                         class="oe_inline"
                     />
                     <field
