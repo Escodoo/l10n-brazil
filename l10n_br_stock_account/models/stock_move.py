@@ -253,7 +253,7 @@ class StockMove(models.Model):
             uot_id = new_move_vals.get("uot_id")
 
             new_move_vals.update(
-                self._update_fiscal_quantity(
+                self._update_fiscal_qty(
                     product_id, price_unit, quantity, uom_id, uot_id
                 )
             )

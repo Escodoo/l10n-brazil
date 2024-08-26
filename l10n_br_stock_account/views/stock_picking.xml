@@ -72,11 +72,11 @@
                         readonly="1"
                     />
                     <field name="price_unit" />
-                    <label for="fiscal_quantity" string="Fiscal Quantity" />
+                    <label for="fiscal_qty" string="Fiscal Quantity" />
                     <div>
                         <field
-                            context="{'partner_id':parent.partner_id, 'quantity':fiscal_quantity, 'uom':uot_id, 'uom_qty_change':True, 'company_id': parent.company_id}"
-                            name="fiscal_quantity"
+                            context="{'partner_id':parent.partner_id, 'quantity':fiscal_qty, 'uom':uot_id, 'uom_qty_change':True, 'company_id': parent.company_id}"
+                            name="fiscal_qty"
                             class="oe_inline"
                         />
                         <field name="uot_id" class="oe_inline oe_no_button" />
