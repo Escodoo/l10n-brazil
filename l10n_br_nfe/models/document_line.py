@@ -169,7 +169,7 @@ class NFeLine(spec_models.StackedModel):
 
     nfe40_uTrib = fields.Char(related="uot_id.code")
 
-    nfe40_qTrib = fields.Float(string="nfe40_qTrib", related="fiscal_quantity")
+    nfe40_qTrib = fields.Float(string="nfe40_qTrib", related="fiscal_qty")
 
     nfe40_vUnTrib = fields.Float(
         related="fiscal_price",
@@ -1061,7 +1061,7 @@ class NFeLine(spec_models.StackedModel):
         if key == "nfe40_qCom":
             vals["quantity"] = float(value)
         if key == "nfe40_qTrib":
-            vals["fiscal_quantity"] = float(value)
+            vals["fiscal_qty"] = float(value)
         if key == "nfe40_cEnq":
             vals["ipi_guideline_id"] = (
                 self.env["l10n_br_fiscal.tax.ipi.guideline"]
