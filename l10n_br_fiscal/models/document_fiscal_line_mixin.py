@@ -173,7 +173,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
 
     uot_id = fields.Many2one(comodel_name="uom.uom", string="Tax UoM")
 
-    fiscal_quantity = fields.Float(digits="Product Unit of Measure")
+    fiscal_qty = fields.Float(digits="Product Unit of Measure")
 
     discount_value = fields.Monetary()
 

@@ -81,7 +81,7 @@ class TestFiscalTax(SavepointCase):
             "quantity": 11.000,
             "uom_id": self.env.ref("uom.product_uom_unit"),
             "fiscal_price": 3.143539,
-            "fiscal_quantity": 11.000,
+            "fiscal_qty": 11.000,
             "uot_id": self.env.ref("uom.product_uom_unit"),
             "discount_value": 0.00,
             "insurance_value": 0.00,
@@ -231,7 +231,7 @@ class TestFiscalTax(SavepointCase):
         kwargs["price_unit"] = 49.63180
         kwargs["quantity"] = 5.00
         kwargs["fiscal_price"] = 49.63180
-        kwargs["fiscal_quantity"] = 5.00
+        kwargs["fiscal_qty"] = 5.00
         kwargs["insurance_value"] = 0.00
         kwargs["other_value"] = 74.87
         kwargs["freight_value"] = 0.00

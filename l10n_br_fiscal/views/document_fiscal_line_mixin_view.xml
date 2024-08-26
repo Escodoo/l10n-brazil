@@ -27,7 +27,7 @@
           <field name="city_taxation_code_id" force_save="1" invisible="1" />
           <field name="uot_id" force_save="1" invisible="1" />
           <field name="fiscal_price" force_save="1" invisible="1" />
-          <field name="fiscal_quantity" force_save="1" invisible="1" />
+          <field name="fiscal_qty" force_save="1" invisible="1" />
           <field name="fiscal_tax_ids" force_save="1" invisible="1" readonly="1" />
           <field name="allow_csll_irpj" force_save="1" invisible="1" />
         </group>

@@ -49,9 +49,9 @@
                                 />
               </group>
               <group name="fiscal_info" string="Fiscal">
-                <label for="fiscal_quantity" />
+                <label for="fiscal_qty" />
                 <div class="o_row">
-                  <field name="fiscal_quantity" class="oe_inline" />
+                  <field name="fiscal_qty" class="oe_inline" />
                   <field name="uot_id" groups="uom.group_uom" class="oe_inline" />
                 </div>
                 <field name="fiscal_price" />
