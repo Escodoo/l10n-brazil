@@ -155,7 +155,7 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
         "insurance_value",
         "other_value",
         "freight_value",
-        "fiscal_quantity",
+        "fiscal_qty",
         "amount_tax_not_included",
         "amount_tax_included",
         "amount_tax_withholding",
@@ -222,7 +222,7 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
             quantity=self.quantity,
             uom_id=self.uom_id,
             fiscal_price=self.fiscal_price,
-            fiscal_quantity=self.fiscal_quantity,
+            fiscal_qty=self.fiscal_qty,
             uot_id=self.uot_id,
             discount_value=self.discount_value,
             insurance_value=self.insurance_value,
@@ -872,7 +872,7 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
         "cofins_wh_tax_id",
         "cofinsst_tax_id",
         "fiscal_price",
-        "fiscal_quantity",
+        "fiscal_qty",
         "discount_value",
         "insurance_value",
         "other_value",
@@ -921,14 +921,14 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
         self._update_fiscal_taxes()
 
     @api.model
-    def _update_fiscal_quantity(self, product_id, price, quantity, uom_id, uot_id):
-        result = {"uot_id": uom_id, "fiscal_quantity": quantity, "fiscal_price": price}
+    def _update_fiscal_qty(self, product_id, price, quantity, uom_id, uot_id):
+        result = {"uot_id": uom_id, "fiscal_qty": quantity, "fiscal_price": price}
         if uot_id and uom_id != uot_id:
             result["uot_id"] = uot_id
             if product_id and price and quantity:
                 product = self.env["product.product"].browse(product_id)
                 result["fiscal_price"] = price / (product.uot_factor or 1.0)
-                result["fiscal_quantity"] = quantity * (product.uot_factor or 1.0)
+                result["fiscal_qty"] = quantity * (product.uot_factor or 1.0)
 
         return result
 
@@ -938,7 +938,7 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
         if self.product_id:
             product_id = self.product_id.id
         self.update(
-            self._update_fiscal_quantity(
+            self._update_fiscal_qty(
                 product_id, self.price_unit, self.quantity, self.uom_id, self.uot_id
             )
         )

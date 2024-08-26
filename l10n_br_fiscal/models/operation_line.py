@@ -196,7 +196,7 @@ class OperationLine(models.Model):
         partner,
         product=None,
         fiscal_price=None,
-        fiscal_quantity=None,
+        fiscal_qty=None,
         ncm=None,
         nbm=None,
         nbs=None,
