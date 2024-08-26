@@ -171,7 +171,7 @@ class AccountMoveLine(models.Model):
                 continue
 
             values.update(
-                self._update_fiscal_quantity(
+                self._update_fiscal_qty(
                     values.get("product_id"),
                     values.get("price_unit"),
                     values.get("quantity"),
@@ -393,7 +393,7 @@ class AccountMoveLine(models.Model):
                 other_value=self.other_value,
                 freight_value=self.freight_value,
                 fiscal_price=self.fiscal_price,
-                fiscal_quantity=self.fiscal_quantity,
+                fiscal_qty=self.fiscal_qty,
                 uot_id=self.uot_id,
                 icmssn_range=self.icmssn_range_id,
                 icms_origin=self.icms_origin,
@@ -486,7 +486,7 @@ class AccountMoveLine(models.Model):
                 ii_customhouse_charges=ii_customhouse_charges,
                 freight_value=freight_value,
                 fiscal_price=self.env.context.get("fiscal_price"),
-                fiscal_quantity=self.env.context.get("fiscal_quantity"),
+                fiscal_qty=self.env.context.get("fiscal_qty"),
                 uot_id=self.env.context.get("uot_id"),
                 icmssn_range=self.env.context.get("icmssn_range"),
                 icms_origin=self.env.context.get("icms_origin"),
@@ -586,7 +586,7 @@ class AccountMoveLine(models.Model):
         "account_id",
         "price_unit",
         "quantity",
-        "fiscal_quantity",
+        "fiscal_qty",
         "fiscal_price",
     )
     def _onchange_mark_recompute_taxes(self):
