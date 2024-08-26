@@ -118,7 +118,7 @@ class SaleBlanketOrderLine(models.Model):
         "original_uom_qty",
         "price_unit",
         "fiscal_price",
-        "fiscal_quantity",
+        "fiscal_qty",
         "taxes_id",
     )
     def _compute_amount(self):
