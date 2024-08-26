@@ -36,8 +36,8 @@ class L10nBrSaleInvoicePlanBaseTest(SavepointCase):
         self.assertEqual(len(invoices), 1, "Only 1 invoice should be created")
         self.assertEqual(
             line.quantity,
-            line.fiscal_quantity,
-            "The fiscal_quantity must be equal the quantity",
+            line.fiscal_qty,
+            "The fiscal_qty must be equal the quantity",
         )
         self.assertTrue(line.fiscal_operation_id)
         self.assertTrue(line.fiscal_tax_ids)
