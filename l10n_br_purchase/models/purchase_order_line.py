@@ -83,7 +83,7 @@ class PurchaseOrderLine(models.Model):
         "product_uom_qty",
         "price_unit",
         "fiscal_price",
-        "fiscal_quantity",
+        "fiscal_qty",
         "discount_value",
         "freight_value",
         "insurance_value",
