@@ -13,11 +13,14 @@
             <field name="uom_po_id" ref="uom.product_uom_unit" />
             <field name="categ_id" ref="product.product_category_3" />
             <field name="ncm_id" ref="l10n_br_fiscal.ncm_00000000" />
+            <field name="icms_origin">0</field>
             <field name="fiscal_type">99</field>
             <field name="tax_icms_or_issqn">icms</field>
             <field name="fiscal_genre_id" ref="l10n_br_fiscal.product_genre_00" />
+            <field name="tms_product">True</field>
+            <field name="tms_tracking">sale</field>
         </record>
-        <!-- fiscal_type property for customized_development_sale for simples nacional company -->
+        <!-- fiscal_type property for transport_service_sale for simples nacional company -->
         <record
             forcecreate="True"
             id="fiscal_type_transport_service_sale_sn"
@@ -37,7 +40,7 @@
             />
             <field name="company_id" ref="l10n_br_base.empresa_simples_nacional" />
         </record>
-        <!-- fiscal_type property for customized_development_sale for lucro presumido company -->
+        <!-- fiscal_type property for transport_service_sale for lucro presumido company -->
         <record
             forcecreate="True"
             id="fiscal_type_transport_service_sale_lp"
@@ -57,6 +60,48 @@
             />
             <field name="company_id" ref="l10n_br_base.empresa_lucro_presumido" />
         </record>
+
+        <!-- icms_origin property for transport_service_sale for simples nacional company -->
+        <record
+            forcecreate="True"
+            id="icms_origin_transport_service_sale_sn"
+            model="ir.property"
+        >
+            <field name="name">icms_origin</field>
+            <field
+                name="fields_id"
+                ref="l10n_br_fiscal.field_product_template__icms_origin"
+            />
+            <field name="value">0</field>
+            <field name="type">selection</field>
+            <field
+                eval="'product.template,'+str(obj().env.ref('l10n_br_tms_sale.transport_service_sale').product_tmpl_id.id)"
+                model="product.template"
+                name="res_id"
+            />
+            <field name="company_id" ref="l10n_br_base.empresa_simples_nacional" />
+        </record>
+        <!-- icms_origin property for transport_service_sale for lucro presumido company -->
+        <record
+            forcecreate="True"
+            id="icms_origin_transport_service_sale_lp"
+            model="ir.property"
+        >
+            <field name="name">icms_origin</field>
+            <field
+                name="fields_id"
+                ref="l10n_br_fiscal.field_product_template__icms_origin"
+            />
+            <field name="value">0</field>
+            <field name="type">selection</field>
+            <field
+                eval="'product.template,'+str(obj().env.ref('l10n_br_tms_sale.transport_service_sale').product_tmpl_id.id)"
+                model="product.template"
+                name="res_id"
+            />
+            <field name="company_id" ref="l10n_br_base.empresa_lucro_presumido" />
+        </record>
+
 
     </data>
 </odoo>
