@@ -306,22 +306,6 @@ class CTe(spec_models.StackedModel):
 
     cte40_toma = fields.Selection(related="service_provider")
 
-    cte40_CNPJ = fields.Char(
-        related="partner_id.cte40_CNPJ",
-    )
-    cte40_CPF = fields.Char(
-        related="partner_id.cte40_CPF",
-    )
-    cte40_IE = fields.Char(
-        related="partner_id.cte40_IE",
-    )
-    cte40_xNome = fields.Char(
-        related="partner_id.legal_name",
-    )
-    cte40_xFant = fields.Char(
-        related="partner_id.name",
-    )
-
     cte40_enderToma = fields.Many2one(comodel_name="res.partner", related="partner_id")
 
     ##########################
@@ -459,16 +443,27 @@ class CTe(spec_models.StackedModel):
     # CT-e tag: emit
     ##########################
 
-    cte40_emit = fields.Many2one(
-        comodel_name="res.company",
+    cte40_CNPJ = fields.Char(
         compute="_compute_emit_data",
-        readonly=True,
-        string="Emitente",
+    )
+    cte40_CPF = fields.Char(
+        compute="_compute_emit_data",
+    )
+    cte40_IE = fields.Char(
+        compute="_compute_emit_data",
+    )
+    cte40_xNome = fields.Char(
+        compute="_compute_emit_data",
+    )
+    cte40_xFant = fields.Char(
+        compute="_compute_emit_data",
+    )
+    cte40_enderEmit = fields.Many2one(
+        comodel_name="res.partner", compute="_compute_emit_data"
     )
 
     cte40_CRT = fields.Selection(
-        related="company_tax_framework",
-        string="Código de Regime Tributário",
+        compute="_compute_emit_data",
     )
 
     ##########################
@@ -476,13 +471,25 @@ class CTe(spec_models.StackedModel):
     # Compute Methods
     ##########################
 
+    @api.depends("company_id", "partner_id", "issuer")
     def _compute_emit_data(self):
-        for doc in self:  # TODO if out
+        for doc in self:
             if doc.issuer == DOCUMENT_ISSUER_COMPANY:
-                doc.cte40_emit = doc.company_id
+                doc.cte40_CNPJ = doc.company_id.partner_id.cte40_CNPJ
+                doc.cte40_CPF = doc.company_id.partner_id.cte40_CPF
+                doc.cte40_IE = doc.company_id.partner_id.cte40_IE
+                doc.cte40_xNome = doc.company_id.partner_id.legal_name
+                doc.cte40_xFant = doc.company_id.partner_id.name
+                doc.cte40_enderEmit = doc.company_id.partner_id
+                doc.cte40_CRT = doc.company_tax_framework
             else:
-                # TODO avaliar se os dados do emitente estão em parceiro ou empresa
-                doc.cte40_emit = doc.partner_id
+                doc.cte40_CNPJ = doc.partner_id.cte40_CNPJ
+                doc.cte40_CPF = doc.partner_id.cte40_CPF
+                doc.cte40_IE = doc.partner_id.cte40_IE
+                doc.cte40_xNome = doc.partner_id.legal_name
+                doc.cte40_xFant = doc.partner_id.name
+                doc.cte40_enderEmit = doc.partner_id
+                doc.cte40_CRT = doc.partner_tax_framework
 
     ##########################
     # CT-e tag: rem
@@ -1084,7 +1091,7 @@ class CTe(spec_models.StackedModel):
             if record.issuer == DOCUMENT_ISSUER_COMPANY:
                 record.cte40_RNTRC = record.company_id.partner_id.rntrc_code
             else:
-                record.cte40_RNTRC = record.partner_id.rntrc
+                record.cte40_RNTRC = record.partner_id.rntrc_code
 
     cte40_occ = fields.One2many(
         comodel_name="l10n_br_cte.modal.rodo.occ",
