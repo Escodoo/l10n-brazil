@@ -5,6 +5,15 @@
 
 from odoo import api, fields, models
 
+<<<<<<< HEAD
+=======
+from odoo.addons.l10n_br_fiscal.models.document_line_mixin_methods import (
+    FISCAL_TAX_PREFIXES,
+)
+
+from .account_move import InheritsCheckMuteLogger
+
+>>>>>>> b5195c2a73 ([FIX] l10n_br_account: rename document and document.line)
 # These fields have the same name in account.move.line
 # and l10n_br_fiscal.document.line. So they wouldn't get updated
 # by the _inherits system. An alternative would be changing their name
