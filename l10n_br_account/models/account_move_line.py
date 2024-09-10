@@ -5,7 +5,7 @@
 
 from odoo import api, fields, models
 
-from odoo.addons.l10n_br_fiscal.models.document_fiscal_line_mixin_methods import (
+from odoo.addons.l10n_br_fiscal.models.document_line_mixin_methods import (
     FISCAL_TAX_PREFIXES,
 )
 
