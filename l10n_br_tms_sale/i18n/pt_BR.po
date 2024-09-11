@@ -1,0 +1,407 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_br_tms_sale
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 14.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-09-11 16:42+0000\n"
+"PO-Revision-Date: 2024-09-11 13:51-0300\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: pt_BR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: Poedit 3.5\n"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,help:l10n_br_tms_sale.field_account_bank_statement_line__partner_receivering_id
+#: model:ir.model.fields,help:l10n_br_tms_sale.field_account_move__partner_receivering_id
+#: model:ir.model.fields,help:l10n_br_tms_sale.field_account_payment__partner_receivering_id
+#: model:ir.model.fields,help:l10n_br_tms_sale.field_l10n_br_fiscal_document__partner_receivering_id
+#: model:ir.model.fields,help:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin__partner_receivering_id
+#: model:ir.model.fields,help:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin_fields__partner_receivering_id
+#: model:ir.model.fields,help:l10n_br_tms_sale.field_sale_order__partner_receivering_id
+msgid ""
+"Actor who receives the goods. He is considered an intermediary             "
+"between the issuer and the final recipient."
+msgstr ""
+"Ator que recebe as mercadorias. Ele é considerado um intermediário entre o "
+"emissor e o destinatário final."
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__l10n_br_fiscal_document__tms_transport_modal__02
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__l10n_br_fiscal_document_mixin__tms_transport_modal__02
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__l10n_br_fiscal_document_mixin_fields__tms_transport_modal__02
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__sale_order__tms_transport_modal__02
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__stock_picking__tms_transport_modal__02
+msgid "Air"
+msgstr "Aéreo"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_bank_statement_line__tms_cargo_value
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_move__tms_cargo_value
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_payment__tms_cargo_value
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document__tms_cargo_value
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin__tms_cargo_value
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin_fields__tms_cargo_value
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_sale_order__tms_cargo_value
+msgid "Cargo Value"
+msgstr "Valor da Carga"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_product_pricelist_item__compute_price
+msgid "Compute Price"
+msgstr "Calcular Preço"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_bank_statement_line__commitment_date
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_move__commitment_date
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_payment__commitment_date
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document__commitment_date
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin__commitment_date
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin_fields__commitment_date
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_sale_order__commitment_date
+msgid "Delivery Date"
+msgstr "Data de entrega"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,help:l10n_br_tms_sale.field_sale_order__expected_date
+msgid ""
+"Delivery date you can promise to the customer, computed from the minimum "
+"lead time of the order lines in case of Service products. In case of "
+"shipping, the shipping policy of the order will be taken into account to "
+"either use the minimum or maximum lead time of the order lines."
+msgstr ""
+"Data de envio que pode prometer ao cliente, calculada a partir do tempo "
+"mínimo de entrega das linhas da encomenda no caso de produtos do tipo "
+"Serviço. Em caso de envio, a política de envio do pedido será levada em "
+"consideração para utilizar o tempo de espera mínimo ou máximo das linhas da "
+"encomenda ."
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin_fields__display_name
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_product_pricelist_item__display_name
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_sale_order__display_name
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_sale_order_line__display_name
+msgid "Display Name"
+msgstr "Nome de Exibição"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_bank_statement_line__tms_distance
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_move__tms_distance
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_payment__tms_distance
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document__tms_distance
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin__tms_distance
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin_fields__tms_distance
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_sale_order__tms_distance
+msgid "Distance (km)"
+msgstr "Distância (km)"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model,name:l10n_br_tms_sale.model_l10n_br_fiscal_document_mixin_fields
+msgid "Document Fiscal Mixin Fields"
+msgstr "Campos do Mixin Fiscal do Documento"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_bank_statement_line__expected_date
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_move__expected_date
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_payment__expected_date
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document__expected_date
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin__expected_date
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin_fields__expected_date
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_sale_order__expected_date
+msgid "Expected Date"
+msgstr "Data Prevista"
+
+#. module: l10n_br_tms_sale
+#: model:product.product,name:l10n_br_tms_sale.transport_service_sale
+#: model:product.template,name:l10n_br_tms_sale.transport_service_sale_product_template
+msgid "FRETE"
+msgstr "FRETE"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin_fields__id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_product_pricelist_item__id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_sale_order__id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_sale_order_line__id
+msgid "ID"
+msgstr "ID"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_bank_statement_line__partner_insurance_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_move__partner_insurance_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_payment__partner_insurance_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document__partner_insurance_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin__partner_insurance_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin_fields__partner_insurance_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_sale_order__partner_insurance_id
+msgid "Insurance Partner"
+msgstr "Parceiro do Seguro"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_bank_statement_line__tms_insured_value
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_move__tms_insured_value
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_payment__tms_insured_value
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document__tms_insured_value
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin__tms_insured_value
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin_fields__tms_insured_value
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_sale_order__tms_insured_value
+msgid "Insured Value"
+msgstr "Valor Segurado"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin_fields____last_update
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_product_pricelist_item____last_update
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_sale_order____last_update
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_sale_order_line____last_update
+msgid "Last Modified on"
+msgstr "Última Modificação em"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_bank_statement_line__tms_main_product
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_move__tms_main_product
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_payment__tms_main_product
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document__tms_main_product
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin__tms_main_product
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin_fields__tms_main_product
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_sale_order__tms_main_product
+msgid "Main Product"
+msgstr "Produto Principal"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__l10n_br_fiscal_document__tms_transport_modal__06
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__l10n_br_fiscal_document_mixin__tms_transport_modal__06
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__l10n_br_fiscal_document_mixin_fields__tms_transport_modal__06
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__sale_order__tms_transport_modal__06
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__stock_picking__tms_transport_modal__06
+msgid "Multimodal"
+msgstr "Multimodal"
+
+#. module: l10n_br_tms_sale
+#: model_terms:ir.ui.view,arch_db:l10n_br_tms_sale.sale_order_form_view
+msgid "Other Info"
+msgstr "Outras Informações"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_bank_statement_line__tms_other_product_features
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_move__tms_other_product_features
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_payment__tms_other_product_features
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document__tms_other_product_features
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin__tms_other_product_features
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin_fields__tms_other_product_features
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_sale_order__tms_other_product_features
+msgid "Other Product Features"
+msgstr "Outros Características do Produto"
+
+#. module: l10n_br_tms_sale
+#: model_terms:ir.ui.view,arch_db:l10n_br_tms_sale.sale_order_form_view
+msgid "Others Partners"
+msgstr "Outros Parceiros"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__l10n_br_fiscal_document__tms_transport_modal__05
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__l10n_br_fiscal_document_mixin__tms_transport_modal__05
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__l10n_br_fiscal_document_mixin_fields__tms_transport_modal__05
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__sale_order__tms_transport_modal__05
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__stock_picking__tms_transport_modal__05
+msgid "Pipeline"
+msgstr "Funil"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model,name:l10n_br_tms_sale.model_product_pricelist_item
+msgid "Pricelist Rule"
+msgstr "Regra da Lista de preços"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_bank_statement_line__tms_product_transported_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_move__tms_product_transported_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_payment__tms_product_transported_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document__tms_product_transported_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin__tms_product_transported_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin_fields__tms_product_transported_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_sale_order__tms_product_transported_id
+msgid "Product Transported"
+msgstr "Produto Transportado"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_product_pricelist_item__code
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__product_pricelist_item__compute_price__python
+msgid "Python Code"
+msgstr "Código Python"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__l10n_br_fiscal_document__tms_transport_modal__04
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__l10n_br_fiscal_document_mixin__tms_transport_modal__04
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__l10n_br_fiscal_document_mixin_fields__tms_transport_modal__04
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__sale_order__tms_transport_modal__04
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__stock_picking__tms_transport_modal__04
+msgid "Rail"
+msgstr "Ferrovia"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_bank_statement_line__partner_receivering_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_move__partner_receivering_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_payment__partner_receivering_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document__partner_receivering_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin__partner_receivering_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin_fields__partner_receivering_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_sale_order__partner_receivering_id
+msgid "Receiver Address"
+msgstr "Endereço do Recebedor"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,help:l10n_br_tms_sale.field_account_bank_statement_line__partner_sendering_id
+#: model:ir.model.fields,help:l10n_br_tms_sale.field_account_move__partner_sendering_id
+#: model:ir.model.fields,help:l10n_br_tms_sale.field_account_payment__partner_sendering_id
+#: model:ir.model.fields,help:l10n_br_tms_sale.field_l10n_br_fiscal_document__partner_sendering_id
+#: model:ir.model.fields,help:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin__partner_sendering_id
+#: model:ir.model.fields,help:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin_fields__partner_sendering_id
+#: model:ir.model.fields,help:l10n_br_tms_sale.field_sale_order__partner_sendering_id
+msgid "Responsible for sending the goods, usually the issuer of the NFe."
+msgstr "Responsável pelo envio das mercadorias, geralmente o emissor da NFe."
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__l10n_br_fiscal_document__tms_transport_modal__01
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__l10n_br_fiscal_document_mixin__tms_transport_modal__01
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__l10n_br_fiscal_document_mixin_fields__tms_transport_modal__01
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__sale_order__tms_transport_modal__01
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__stock_picking__tms_transport_modal__01
+msgid "Road"
+msgstr "Estrada"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model,name:l10n_br_tms_sale.model_sale_order
+msgid "Sales Order"
+msgstr "Pedidos de Venda"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model,name:l10n_br_tms_sale.model_sale_order_line
+msgid "Sales Order Line"
+msgstr "Linha do Pedido de Venda"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_bank_statement_line__partner_sendering_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_move__partner_sendering_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_payment__partner_sendering_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document__partner_sendering_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin__partner_sendering_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin_fields__partner_sendering_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_sale_order__partner_sendering_id
+msgid "Sender Address"
+msgstr "Endereço do Remetente"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_bank_statement_line__partner_shippering_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_move__partner_shippering_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_payment__partner_shippering_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document__partner_shippering_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin__partner_shippering_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin_fields__partner_shippering_id
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_sale_order__partner_shippering_id
+msgid "Shipper Address"
+msgstr "Endereço do Expedidor"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,help:l10n_br_tms_sale.field_account_bank_statement_line__partner_shippering_id
+#: model:ir.model.fields,help:l10n_br_tms_sale.field_account_move__partner_shippering_id
+#: model:ir.model.fields,help:l10n_br_tms_sale.field_account_payment__partner_shippering_id
+#: model:ir.model.fields,help:l10n_br_tms_sale.field_l10n_br_fiscal_document__partner_shippering_id
+#: model:ir.model.fields,help:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin__partner_shippering_id
+#: model:ir.model.fields,help:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin_fields__partner_shippering_id
+#: model:ir.model.fields,help:l10n_br_tms_sale.field_sale_order__partner_shippering_id
+msgid ""
+"The one responsible for delivering the cargo to the carrier when             "
+"the shipment is not carried out by the sender."
+msgstr ""
+"O responsável pela entrega da carga ao transportador quando a remessa não é "
+"realizada pelo remetente."
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,help:l10n_br_tms_sale.field_sale_order__commitment_date
+msgid ""
+"This is the delivery date promised to the customer. If set, the delivery "
+"order will be scheduled based on this date rather than product lead times."
+msgstr ""
+"Esta é a data de entrega prometida ao cliente. Se definido, o pedido de "
+"entrega será agendado com base nesta data, em vez de prazos de lead time do "
+"produto."
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_bank_statement_line__tms_transport_modal
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_move__tms_transport_modal
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_payment__tms_transport_modal
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document__tms_transport_modal
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin__tms_transport_modal
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin_fields__tms_transport_modal
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_sale_order__tms_transport_modal
+msgid "Transport Mode"
+msgstr "Modo de Transporte"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_bank_statement_line__tms_units
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_move__tms_units
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_payment__tms_units
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document__tms_units
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin__tms_units
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin_fields__tms_units
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_sale_order__tms_units
+#: model:product.product,uom_name:l10n_br_tms_sale.transport_service_sale
+#: model:product.template,uom_name:l10n_br_tms_sale.transport_service_sale_product_template
+msgid "Units"
+msgstr "Unidades"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_bank_statement_line__tms_units_description
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_move__tms_units_description
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_payment__tms_units_description
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document__tms_units_description
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin__tms_units_description
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin_fields__tms_units_description
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_sale_order__tms_units_description
+msgid "Units Description"
+msgstr "Descrição das Unidades"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_bank_statement_line__tms_volume
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_move__tms_volume
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_payment__tms_volume
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document__tms_volume
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin__tms_volume
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin_fields__tms_volume
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_sale_order__tms_volume
+msgid "Volume (m³)"
+msgstr "Volume (m³)"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__l10n_br_fiscal_document__tms_transport_modal__03
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__l10n_br_fiscal_document_mixin__tms_transport_modal__03
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__l10n_br_fiscal_document_mixin_fields__tms_transport_modal__03
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__sale_order__tms_transport_modal__03
+#: model:ir.model.fields.selection,name:l10n_br_tms_sale.selection__stock_picking__tms_transport_modal__03
+msgid "Water"
+msgstr "Água"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_bank_statement_line__tms_weight
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_move__tms_weight
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_account_payment__tms_weight
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document__tms_weight
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin__tms_weight
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_l10n_br_fiscal_document_mixin_fields__tms_weight
+#: model:ir.model.fields,field_description:l10n_br_tms_sale.field_sale_order__tms_weight
+msgid "Weight (kg)"
+msgstr "Peso (kg)"
+
+#. module: l10n_br_tms_sale
+#: model:ir.model.fields,help:l10n_br_tms_sale.field_product_pricelist_item__code
+msgid ""
+"Write Python code that the sqi profile will execute. Some variables are "
+"available for use; help about python expression is given in the help tab."
+msgstr ""
+"Escreva o código Python que o perfil iqf executará. Algumas variáveis estão "
+"disponíveis para uso; a ajuda sobre a expressão Python é fornecida na guia "
+"Ajuda."
