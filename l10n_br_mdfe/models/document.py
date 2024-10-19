@@ -852,7 +852,7 @@ class MDFe(spec_models.StackedModel):
         return edoc_mdfe(**params)
 
     def _generate_key(self):
-        if self.document_type != MODELO_FISCAL_MDFE:
+        if self.document_type_id.code not in [MODELO_FISCAL_MDFE]:
             return super()._generate_key()
 
         for record in self.filtered(filtered_processador_edoc_mdfe):
