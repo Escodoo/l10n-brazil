@@ -1076,7 +1076,10 @@ class NFe(spec_models.StackedModel):
         return super()._exec_after_SITUACAO_EDOC_AUTORIZADA(old_state, new_state)
 
     def _generate_key(self):
-        if not self.filtered(filter_processador_edoc_nfe):
+        if self.document_type_id.code not in [
+            MODELO_FISCAL_NFE,
+            MODELO_FISCAL_NFCE,
+        ]:
             return super()._generate_key()
 
         for record in self.filtered(filter_processador_edoc_nfe):
