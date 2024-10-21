@@ -87,7 +87,7 @@ class MDFeModalRodoviarioCIOT(spec_models.SpecModel):
 
     mdfe30_CPF = fields.Char(string="CPF do responsável")
 
-    mdfe30_choice1 = fields.Selection(
+    mdfe30_choice_responsible = fields.Selection(
         selection=[("mdfe30_CNPJ", "CNPJ"), ("mdfe30_CPF", "CPF")],
         string="CNPJ/CPF do responsável",
         compute="_compute_ciot_choice",
@@ -96,7 +96,9 @@ class MDFeModalRodoviarioCIOT(spec_models.SpecModel):
     @api.depends("is_company")
     def _compute_ciot_choice(self):
         for record in self:
-            record.mdfe30_choice1 = "mdfe30_CNPJ" if record.is_company else "mdfe30_CPF"
+            record.mdfe30_choice_responsible = (
+                "mdfe30_CNPJ" if record.is_company else "mdfe30_CPF"
+            )
 
 
 class MDFeModalRodoviarioValePedagioDispositivo(spec_models.SpecModel):
@@ -136,7 +138,7 @@ class MDFeModalRodoviarioPagamento(spec_models.StackedModel):
 
     mdfe30_xNome = fields.Char(related="partner_id.mdfe30_xNome")
 
-    mdfe30_choice1 = fields.Selection(
+    mdfe30_choice_tresponsible = fields.Selection(
         selection=[
             ("mdfe30_CNPJ", "CNPJ"),
             ("mdfe30_CPF", "CPF"),
@@ -167,7 +169,7 @@ class MDFeModalRodoviarioPagamento(spec_models.StackedModel):
         default="bank",
     )
 
-    mdfe30_choice1 = fields.Selection(
+    mdfe30_choice_tpayment = fields.Selection(
         selection=[
             ("mdfe30_codBanco", "Banco"),
             ("mdfe30_codAgencia", "Agencia"),
@@ -182,11 +184,11 @@ class MDFeModalRodoviarioPagamento(spec_models.StackedModel):
     def _compute_payment_type(self):
         for record in self:
             if record.payment_type == "bank":
-                record.mdfe30_choice1 = "mdfe30_codBanco"
+                record.mdfe30_choice_tpayment = "mdfe30_codBanco"
             elif record.payment_type == "pix":
-                record.mdfe30_choice1 = "mdfe30_PIX"
+                record.mdfe30_choice_tpayment = "mdfe30_PIX"
             else:
-                record.mdfe30_choice1 = False
+                record.mdfe30_choice_tpayment = False
 
     @api.depends("partner_id")
     def _compute_mdfe_data(self):
@@ -194,13 +196,13 @@ class MDFeModalRodoviarioPagamento(spec_models.StackedModel):
             cnpj_cpf = punctuation_rm(rec.partner_id.cnpj_cpf)
             if cnpj_cpf:
                 if rec.partner_id.country_id.code != "BR":
-                    rec.mdfe30_choice1 = "mdfe40_idEstrangeiro"
+                    rec.mdfe30_choice_tresponsible = "mdfe40_idEstrangeiro"
                 elif rec.partner_id.is_company:
-                    rec.mdfe30_choice1 = "mdfe30_CNPJ"
+                    rec.mdfe30_choice_tresponsible = "mdfe30_CNPJ"
                 else:
-                    rec.mdfe30_choice1 = "mdfe30_CPF"
+                    rec.mdfe30_choice_tresponsible = "mdfe30_CPF"
             else:
-                rec.mdfe30_choice1 = False
+                rec.mdfe30_choice_tresponsible = False
 
 
 class MDFeModalRodoviarioPagamentoFrete(spec_models.SpecModel):

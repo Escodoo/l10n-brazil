@@ -76,7 +76,7 @@ class ResCompany(spec_models.SpecModel):
 
     mdfe30_fone = fields.Char(related="partner_id.mdfe30_fone")
 
-    mdfe30_choice6 = fields.Selection(
+    mdfe30_choice_emit = fields.Selection(
         [("mdfe30_CNPJ", "CNPJ"), ("mdfe30_CPF", "CPF")],
         string="MDFe emit CNPJ/CPF",
         compute="_compute_mdfe_data",
@@ -85,9 +85,9 @@ class ResCompany(spec_models.SpecModel):
     def _compute_mdfe_data(self):
         for rec in self:
             if rec.partner_id.is_company:
-                rec.mdfe30_choice6 = "mdfe30_CNPJ"
+                rec.mdfe30_choice_emit = "mdfe30_CNPJ"
             else:
-                rec.mdfe30_choice6 = "mdfe30_CPF"
+                rec.mdfe30_choice_emit = "mdfe30_CPF"
 
     def _build_attr(self, node, fields, vals, path, attr):
         if attr[0] == "enderEmit" and self.env.context.get("edoc_type") == "in":
