@@ -7,7 +7,8 @@
     "version": "14.0.1.0.0",
     "category": "Localisation",
     "license": "AGPL-3",
-    "author": "KMEE, Odoo Community Association (OCA)",
+    "author": "KMEE,Escodoo,Odoo Community Association (OCA)",
+    "maintainers": ["mileo", "marcelsavegnago"],
     "website": "https://github.com/OCA/l10n-brazil",
     "development_status": "Alpha",
     "depends": [
@@ -18,6 +19,7 @@
     ],
     "data": [
         "security/ir.model.access.csv",
+        "data/ir_config_parameter.xml",
         # "views/document_line.xml",
         # 'views/document_related.xml',
         # 'views/res_partner.xml',
@@ -29,7 +31,11 @@
         "views/cte_document.xml",
         "wizards/document_correction_wizard.xml",
     ],
-    # "post_init_hook": "post_init_hook",
+    "demo": [
+        "demo/fiscal_document_demo.xml",
+        "demo/company_demo.xml",
+    ],
+    "post_init_hook": "post_init_hook",
     "installable": True,
     "auto_install": False,
     "external_dependencies": {

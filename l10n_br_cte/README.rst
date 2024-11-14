@@ -89,11 +89,24 @@ Authors
 ~~~~~~~
 
 * KMEE
+* Escodoo
 
 Contributors
 ~~~~~~~~~~~~
 
-* Ygor Carvalho <ygor.carvalho@kmee.com.br>
+
+* `KMEE <https://kmee.com.br>`_:
+
+  * Luis Felipe Mileo <mileo@kmee.com.br>
+  * Ygor Carvalho <ygor.carvalho@kmee.com.br>
+
+* `ESCODOO <https://escodoo.com.br>`_:
+
+  * Marcel Savegnago <marcel.savegnago@escodoo.com.br>
+
+* `AKRETION <https://akretion.com/pt-BR/>`_:
+
+  * Raphaël Valyi <raphael.valyi@akretion.com.br>
 
 Maintainers
 ~~~~~~~~~~~
@@ -107,6 +120,17 @@ This module is maintained by the OCA.
 OCA, or the Odoo Community Association, is a nonprofit organization whose
 mission is to support the collaborative development of Odoo features and
 promote its widespread use.
+
+.. |maintainer-mileo| image:: https://github.com/mileo.png?size=40px
+    :target: https://github.com/mileo
+    :alt: mileo
+.. |maintainer-marcelsavegnago| image:: https://github.com/marcelsavegnago.png?size=40px
+    :target: https://github.com/marcelsavegnago
+    :alt: marcelsavegnago
+
+Current `maintainers <https://odoo-community.org/page/maintainer-role>`__:
+
+|maintainer-mileo| |maintainer-marcelsavegnago| 
 
 This module is part of the `OCA/l10n-brazil <https://github.com/OCA/l10n-brazil/tree/14.0/l10n_br_cte>`_ project on GitHub.
 
