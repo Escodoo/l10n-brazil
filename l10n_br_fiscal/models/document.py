@@ -219,6 +219,7 @@ class Document(models.Model):
             ("4", "Outros"),
         ],
         string="Tomador do Serviço",
+        default="3",
     )
 
     @api.constrains("document_key")
