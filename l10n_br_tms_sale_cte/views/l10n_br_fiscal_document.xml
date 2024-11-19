@@ -6,7 +6,7 @@
     <record model="ir.ui.view" id="l10n_br_fiscal_document_form_view">
         <field name="model">l10n_br_fiscal.document</field>
         <field name="priority">10</field>
-        <field name="inherit_id" ref="l10n_br_cte.cte_document_form_inherit" />
+        <field name="inherit_id" ref="l10n_br_cte.cte_document_form_view" />
         <field name="arch" type="xml">
             <field name="partner_shipping_id" position="before">
                 <field name="partner_sendering_id" />
@@ -15,7 +15,7 @@
             <field name="partner_shipping_id" position="after">
                 <field name="partner_receivering_id" />
             </field>
-            <field name="cte40_rem" position="attributes">
+            <!-- <field name="cte40_rem" position="attributes">
                 <attribute name="invisible">1</attribute>
             </field>
             <field name="cte40_exped" position="attributes">
@@ -23,7 +23,7 @@
             </field>
             <field name="cte40_receb" position="attributes">
                 <attribute name="invisible">1</attribute>
-            </field>
+            </field> -->
 
             <field name="cte40_vCarga" position="after">
                 <field name="tms_main_product" />
