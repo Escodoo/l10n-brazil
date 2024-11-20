@@ -14,7 +14,7 @@
         "l10n_br_cte",
     ],
     "data": [
-        "views/l10n_br_fiscal_document.xml",
+        # "views/l10n_br_fiscal_document.xml",
     ],
     "demo": [],
 }
