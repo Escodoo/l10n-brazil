@@ -6,9 +6,14 @@
         <field name="action" ref="fiscal_invoice_nfe_action" />
     </record>
 
-        <!-- Incomming Documents -->
+    <!-- Incomming Documents -->
     <record id="l10n_br_fiscal.document_nfse_menu" model="ir.ui.menu">
         <field name="action" ref="fiscal_invoice_nfse_action" />
+    </record>
+
+    <!-- Incomming Documents -->
+    <record id="l10n_br_fiscal.document_cte_menu" model="ir.ui.menu">
+        <field name="action" ref="fiscal_invoice_cte_action" />
     </record>
 
     <!-- Incomming Documents -->
