@@ -68,19 +68,22 @@ class TestMDFeSerialize(TransactionCase):
                 },
             ),
         ]
-        mdfe.mdfe30_disp = [
-            (
-                0,
-                0,
-                {
-                    "mdfe30_CNPJForn": "99999999999999",
-                    "mdfe30_CNPJPg": "99999999999999",
-                    "mdfe30_nCompra": "1234",
-                    "mdfe30_vValePed": 5,
-                    "mdfe30_tpValePed": "01",
-                },
-            ),
-        ]
+        # TODO: no momento foi desativado a tag ValePed por
+        # ela mesmo vazia aparecer no xml
+
+        # mdfe.mdfe30_disp = [
+        #     (
+        #         0,
+        #         0,
+        #         {
+        #             "mdfe30_CNPJForn": "99999999999999",
+        #             "mdfe30_CNPJPg": "99999999999999",
+        #             "mdfe30_nCompra": "1234",
+        #             "mdfe30_vValePed": 5,
+        #             "mdfe30_tpValePed": "01",
+        #         },
+        #     ),
+        # ]
         mdfe.mdfe30_infPag = [
             (
                 0,
