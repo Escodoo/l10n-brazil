@@ -49,7 +49,7 @@
 .col-10,
 .col-11,
 .col-12 {
-    padding: 0px;
+    padding: 0;
 }
 td,
 th {
@@ -68,19 +68,20 @@ th {
     border-right: 1px solid black;
 }
 .rotulo {
-    padding: 8px 0px;
+    padding: 2px 0;
     font-size: 10px;
     text-align: center;
     font-weight: bold;
 }
 .rotulo-header {
-    padding: 8px 0px;
-    font-size: 10px;
+    padding: 4px 0;
+    font-size: 18px;
     text-align: center;
+    font-weight: bold;
 }
 .linha {
-    min-height: 30px;
-    padding: 5px 2px;
+    min-height: 25px;
+    padding: 2px 2px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -96,12 +97,39 @@ th {
 .centro {
     text-align: center;
 }
-row {
-    cols: 10;
+.row {
+    display: flex;
 }
             </style>
 
-             <div class="row bt bb br bl">
+
+            <!-- Primeira linha ocupando toda a largura -->
+            <div class="row bt bb br bl">
+                <div class="col-12 linha">
+                    Recebemos os serviços constantes na NFS-e de número 139, emitida por
+                    C-LOG CREATIVE LOGISTICS TRANSPORTES LTDA - CPF/CNPJ 08.318.053/0001-67
+                </div>
+            </div>
+
+            <!-- Segunda linha com duas colunas dividindo a largura igualmente -->
+            <div class="row bb br bl" style="min-height: 60px;">
+                <div class="col-4 linha br">
+                    Data
+                </div>
+                <div class="col-8 linha">
+                    Identificação e assinatura (eletrônica ou física) do recebedor:
+                </div>
+            </div>
+
+            <!-- Linha pontilhada -->
+            <div class="row">
+                <div
+                    class="col-12"
+                    style="border-bottom: 1px dotted #000; margin: 10px 0;"
+                />
+            </div>
+
+            <div class="row bt bb br bl">
                 <div class="col-2">
                     <img
                         t-att-src="'data:image/png;base64,%s' % to_text(doc.company_id.nfse_city_logo)"
@@ -124,45 +152,45 @@ row {
             </div>
 
             <div class="row bb br bl">
-                 <div class="col-2 rotulo br">
-                    Data e Hora da Emissão
+                <div class="col-1 rotulo br">
+                    Emissão
                 </div>
                 <div class="col-2 linha centro br">
                     <span t-field="doc.document_date" />
                 </div>
-                 <div class="col-2 rotulo br">
+                <div class="col-2 rotulo br">
                     Competência
                 </div>
-                <div class="col-2 linha centro br">
+                <div class="col-1 linha centro br">
                     <span
                         t-field="doc.document_date"
                         t-options='{"format": "MM/yyyy"}'
                     />
                 </div>
-                 <div class="col-2 rotulo br">
+                <div class="col-2 rotulo br">
                     Código de Verificação
                 </div>
-                <div class="col-2 linha centro">
+                <div class="col-4 linha centro">
                     <span t-field="doc.verify_code" />
                 </div>
             </div>
 
             <div class="row bb br bl">
-                 <div class="col-2 rotulo br">
-                    Número do RPS
+                 <div class="col-1 rotulo br">
+                    Número RPS
                 </div>
                 <div class="col-2 linha centro br">
                     <span t-field="doc.rps_number" />
                 </div>
                  <div class="col-2 rotulo br">
-                    No. da NFS-e substituída
+                    NFS-e substituída
                 </div>
-                <div class="col-2 linha centro br">
+                <div class="col-1 linha centro br">
                 </div>
                  <div class="col-2 rotulo br">
                     Local da Prestação
                 </div>
-                <div class="col-2 linha centro">
+                <div class="col-4 linha centro">
                     <t t-if="doc.fiscal_line_ids[0].issqn_fg_city_id">
                         <span
                             t-field="doc.fiscal_line_ids[0].issqn_fg_city_id"
@@ -179,9 +207,7 @@ row {
             </div>
 
              <div class="row bb br bl">
-                <div class="col-12 rotulo-header">
-                    <h4 style="margin: 0px;">Dados do Prestador de Serviços</h4>
-                </div>
+                <div class="col-12 rotulo-header">Dados do Prestador de Serviços</div>
             </div>
              <div class="row bb br bl">
                 <div class="col-2">
@@ -266,9 +292,7 @@ row {
             </div>
 
              <div class="row bb br bl">
-                <div class="col-12 rotulo-header">
-                    <h4 style="margin:0px;">Dados do Tomador de Serviços</h4>
-                </div>
+                <div class="col-12 rotulo-header">Dados do Tomador de Serviços</div>
             </div>
              <div class="row bb br bl">
                 <div class="col-2 rotulo br">
@@ -331,9 +355,7 @@ row {
                 </div>
             </div>
              <div class="row bb br bl">
-                <div class="col-12 rotulo-header">
-                    <h4 style="margin: 0px;">Discriminação dos serviços</h4>
-                </div>
+                <div class="col-12 rotulo-header">Discriminação dos serviços</div>
             </div>
              <div class="row bb br bl" style="padding: 7.5px 10px; min-height: 150px;">
                 <div class="col-12">
@@ -342,9 +364,7 @@ row {
             </div>
 
              <div class="row bb br bl">
-                <div class="col-12 rotulo-header">
-                    <h4 style="margin:0px;">Código do Serviço / Atividade</h4>
-                </div>
+                <div class="col-12 rotulo-header">Código do Serviço / Atividade</div>
             </div>
              <div class="row bb br bl">
                 <div class="col-12 centro" style="padding: 5px 0;">
@@ -375,13 +395,13 @@ row {
 <!--                </div>-->
 <!--             </div>-->
 
-             <div class="row bb br bl">
-                <div class="col-12 rotulo-header">
-                    <h4 style="margin:0px;">Tributos Federais (Lei 12.741/2012)</h4>
-                </div>
+            <div class="row bb br bl">
+                <div
+                    class="col-12 rotulo-header"
+                >Tributos Federais (Lei 12.741/2012)</div>
             </div>
 
-             <div class="row bb br bl">
+            <div class="row bb br bl">
                 <div class="col-2 rotulo br ">
                     PIS
                 </div>
@@ -457,7 +477,7 @@ row {
                 </div>
             </div>
 
-             <div class="row bb br bl">
+            <div class="row bb br bl">
                 <div class="col-3 rotulo br">
                     (-) Desconto Incondicionado
                 </div>
@@ -475,7 +495,7 @@ row {
                 </div>
             </div>
 
-             <div class="row bb br bl">
+            <div class="row bb br bl">
                 <div class="col-3 rotulo br">
                     (-) Desconto Condicionado
                 </div>
@@ -494,7 +514,7 @@ row {
                 </div>
             </div>
 
-             <div class="row bb br bl">
+            <div class="row bb br bl">
                 <div class="col-3 rotulo br">
                     (-) Retenções Federais
                 </div>
@@ -516,7 +536,7 @@ row {
                 </div>
             </div>
 
-             <div class="row bb br bl">
+            <div class="row bb br bl">
                 <div class="col-3 rotulo br">
                     Outras Retenções
                 </div>
@@ -539,7 +559,7 @@ row {
                 </div>
             </div>
 
-             <div class="row bb br bl">
+            <div class="row bb br bl">
                 <div class="col-3 rotulo br">
                     (-) ISS Retido
                 </div>
@@ -567,7 +587,7 @@ row {
                 </div>
             </div>
 
-             <div class="row bb br bl">
+            <div class="row bb br bl">
                 <div class="col-3 rotulo br">
                     (=) Valor Líquido R$
                 </div>
@@ -586,10 +606,10 @@ row {
             </div>
 
             <div class="row bb br bl">
-                <div class="col-1 centro">
-                    Avisos
+                <div class="col-1 centro" style="font-size:10px;">
+                    <b>Avisos</b>
                 </div>
-                <div class="col-11">
+                <div class="col-11" style="font-size:10px;">
                     1- Uma via desta Nota Fiscal será enviada através do e-mail fornecido pelo Tomador dos Serviços.<br
                     />
                     2- A autenticidade desta Nota Fiscal poderá ser verificada no site, <span
@@ -601,16 +621,25 @@ row {
                 </div>
             </div>
             <div class="row bb br bl">
-                <div class="col-1 centro">
-                    Dados Adicionais
+                <div class="col-1 centro" style="font-size:10px;">
+                    <b>Dados Adicionais</b>
                 </div>
-                <div class="col-11">
+                <div class="col-9" style="font-size:10px;">
                     <t t-if="doc.customer_additional_data">
                         <span t-field="doc.customer_additional_data" /><br />
                     </t>
                     <t t-if="doc.fiscal_additional_data">
                         <span t-field="doc.fiscal_additional_data" />
                     </t>
+                </div>
+                <div
+                    class="col-2 bl"
+                    style="display: flex; justify-content: center; align-items: center; "
+                >
+                    <t t-set="qr_code" t-value="doc.get_nfse_qrcode()" />
+                    <img
+                        t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s'%('QR', qr_code, 150, 150)"
+                    />
                 </div>
             </div>
         </div>

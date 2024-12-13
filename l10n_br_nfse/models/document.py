@@ -307,3 +307,8 @@ class Document(models.Model):
                 # o usuário clicar no gerar PDF novamente.
                 _logger.error("DANFSE Error \n {}".format(e))
         super()._exec_after_SITUACAO_EDOC_AUTORIZADA(old_state, new_state)
+
+    def get_nfse_qrcode(self):
+        if self.company_id.nfse_website and self.verify_code:
+            return self.company_id.nfse_website + self.verify_code
+        return
