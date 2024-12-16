@@ -180,14 +180,15 @@ def update_payment_mode_outbound(env):
         payment_mode.cnab_config_id = cnab_config
 
         # Codigos ainda Char
-        cnab_config.write(
-            {
-                "doc_finality_code": payment_mode.doc_finality_code,
-                "ted_finality_code": payment_mode.ted_finality_code,
-                "complementary_finality_code": payment_mode.complementary_finality_code,
-                "favored_warning": payment_mode.favored_warning,
-            }
-        )
+        # cnab_config.write(
+        #     {
+        #         "doc_finality_code": payment_mode.doc_finality_code,
+        #         "ted_finality_code": payment_mode.ted_finality_code,
+        #         "complementary_finality_code":
+        # payment_mode.complementary_finality_code,
+        #         "favored_warning": payment_mode.favored_warning,
+        #     }
+        # )
 
 
 def clean_demo_cnab_config(env):
