@@ -14,6 +14,13 @@
             <field name="partner_shipping_id" position="after">
                 <field name="partner_receivering_id" />
             </field>
+
+            <field name="tms_insured_value" position="after">
+                <field name="partner_insurance_id" />
+                <field name="insurance_policy" />
+                <field name="insurance_endorsement" />
+            </field>
+
         </field>
     </record>
 
