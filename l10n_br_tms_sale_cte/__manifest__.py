@@ -15,6 +15,7 @@
     ],
     "data": [
         # "views/l10n_br_fiscal_document.xml",
+        "views/sale_order.xml",
     ],
     "demo": [],
 }
