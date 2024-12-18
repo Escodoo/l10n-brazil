@@ -5,7 +5,6 @@ from odoo import api, fields, models
 
 
 class FiscalDocument(models.Model):
-
     _inherit = "l10n_br_fiscal.document"
 
     cte40_rem = fields.Many2one(
@@ -23,13 +22,13 @@ class FiscalDocument(models.Model):
         related="partner_receivering_id",
     )
 
-    @api.depends("commitment_date", "expected_date")
+    @api.depends("tms_commitment_date", "tms_expected_date")
     def _compute_cte40_dProg(self):
         for record in self:
-            if record.commitment_date:
-                record.cte40_dProg = record.commitment_date.date()
-            elif record.expected_date:
-                record.cte40_dProg = record.expected_date.date()
+            if record.tms_commitment_date:
+                record.cte40_dProg = record.tms_commitment_date.date()
+            elif record.tms_expected_date:
+                record.cte40_dProg = record.tms_expected_date.date()
             else:
                 record.cte40_dProg = False
 

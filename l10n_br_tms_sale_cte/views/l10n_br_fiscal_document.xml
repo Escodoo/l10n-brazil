@@ -48,12 +48,12 @@
 
             <field name="cte40_dProg" position="after">
                 <field
-                    name="commitment_date"
-                    attrs="{'invisible': [('commitment_date', '=', False)]}"
+                    name="tms_commitment_date"
+                    attrs="{'invisible': [('tms_commitment_date', '=', False)]}"
                 />
                 <field
-                    name="expected_date"
-                    attrs="{'invisible': [('commitment_date', '!=', False)]}"
+                    name="tms_expected_date"
+                    attrs="{'invisible': [('tms_commitment_date', '!=', False)]}"
                 />
             </field>
 
