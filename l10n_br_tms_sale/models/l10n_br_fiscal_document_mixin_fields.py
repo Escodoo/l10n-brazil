@@ -5,44 +5,10 @@ from odoo import fields, models
 
 
 class FiscalDocumentMixin(models.AbstractModel):
-
     _inherit = "l10n_br_fiscal.document.mixin.fields"
 
-    commitment_date = fields.Datetime("Delivery Date")
-    expected_date = fields.Datetime("Expected Date")
-
-    # Remetente
-    partner_sendering_id = fields.Many2one(
-        "res.partner",
-        string="Sender Address",
-        help="Responsible for sending the goods, usually the issuer of the NFe.",
-    )
-
-    # Expedidor
-    partner_shippering_id = fields.Many2one(
-        "res.partner",
-        string="Shipper Address",
-        help="The one responsible for delivering the cargo to the carrier when \
-            the shipment is not carried out by the sender.",
-    )
-
-    # # Destinatário
-    # partner_shipping_id = fields.Many2one(
-    #     "res.partner",
-    #     string="Recipient",
-    #     help="The one who receives the goods at the end of the transport \
-    #         route, can be an individual or a company.",
-    # )
-
-    # Recebedor
-    partner_receivering_id = fields.Many2one(
-        "res.partner",
-        string="Receiver Address",
-        help="Actor who receives the goods. He is considered an intermediary \
-            between the issuer and the final recipient.",
-    )
-
-    partner_insurance_id = fields.Many2one("res.partner", string="Insurance Partner")
+    tms_commitment_date = fields.Datetime("Delivery Date")
+    tms_expected_date = fields.Datetime("Expected Date")
 
     tms_product_transported_id = fields.Many2one(
         "product.product", string="Product Transported"
