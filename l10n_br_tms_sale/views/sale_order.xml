@@ -20,10 +20,9 @@
                     <field name="tms_weight" />
                     <field name="tms_distance" />
                     <field name="tms_cargo_value" />
-                    <field name="tms_insured_value" />
                 </group>
-                <group name="tms_partners" string="Others Partners">
-
+                <group name="tms_insurance" string="Insurance Info">
+                    <field name="tms_insured_value" />
                 </group>
             </page>
         </field>
