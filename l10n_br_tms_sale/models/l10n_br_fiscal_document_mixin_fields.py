@@ -29,14 +29,14 @@ class FiscalDocumentMixin(models.AbstractModel):
     tms_insured_value = fields.Float(string="Insured Value")
     tms_distance = fields.Float(string="Distance (km)")
 
-    tms_transport_modal = fields.Selection(
-        selection=[
-            ("01", "Road"),
-            ("02", "Air"),
-            ("03", "Water"),
-            ("04", "Rail"),
-            ("05", "Pipeline"),
-            ("06", "Multimodal"),
-        ],
-        string="Transport Mode",
-    )
+    # tms_transport_modal = fields.Selection(
+    #     selection=[
+    #         ("01", "Road"),
+    #         ("02", "Air"),
+    #         ("03", "Water"),
+    #         ("04", "Rail"),
+    #         ("05", "Pipeline"),
+    #         ("06", "Multimodal"),
+    #     ],
+    #     string="Transport Mode",
+    # )
