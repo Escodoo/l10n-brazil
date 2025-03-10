@@ -301,23 +301,46 @@ class Registro0200(models.Model):
     _description = textwrap.dedent("    %s" % (__doc__,))
     _name = "l10n_br_sped.efd_icms_ipi.0200"
     _inherit = "l10n_br_sped.efd_icms_ipi.17.0200"
+    _odoo_model = "product.product"
 
-    # @api.model
-    # def _map_from_odoo(self, record, parent_record, declaration, index=0):
-    #     return {
-    #         "COD_ITEM": 0,  # Código do item
-    #         "DESCR_ITEM": 0,  # Descrição do item
-    #         "COD_BARRA": 0,  # Representação alfanumérico do código de barra do p...
-    #         "COD_ANT_ITEM": 0,  # Código anterior do item com relação à última in...
-    #         "UNID_INV": 0,  # Unidade de medida utilizada na quantificação de est...
-    #         "TIPO_ITEM": 0,  # Tipo do item – Atividades Industriais, Comerciais ...
-    #         "COD_NCM": 0,  # Código da Nomenclatura Comum do Mercosul
-    #         "EX_IPI": 0,  # Código EX, conforme a TIPI
-    #         "COD_GEN": 0,  # Código do gênero do item, conforme a Tabela 4.2.1
-    #         "COD_LST": 0,  # Código do serviço conforme lista do Anexo I da Lei C...
-    #         "ALIQ_ICMS": 0,  # Alíquota de ICMS aplicável ao item nas operações i...
-    #         "CEST": 0,  # Código Especificador da Substituição Tributária
-    #     }
+    @api.model
+    def _odoo_domain(self, parent_record, declaration):
+        to_date = "%s 23:59:00" % (datetime.strftime(declaration.DT_FIN, "%Y-%m-%d"))
+        context = dict(self.env.context, to_date=to_date)
+        product = self.env["product.product"].with_context(context)
+        records = product.search([("qty_available", ">", 0)])
+        return [
+            ("id", "in", records.ids),
+        ]
+
+    @api.model
+    def _map_from_odoo(self, record, parent_record, declaration, index=0):
+        state_id = record.company_id.state_id or self.env.company.state_id
+        tax_definition_id = self.env["l10n_br_fiscal.tax.definition"].search(
+            [
+                ("tax_group_id.name", "ilike", "ICMS"),
+                ("state_from_id", "=", state_id.id),
+                ("state_to_ids", "ilike", state_id.id),
+                ("ncm_ids", "ilike", record.ncm_id.id),
+            ],
+            limit=1,
+        )
+        aliq_icms = tax_definition_id.tax_id.percent_amount
+        product_cest = record.cest_id.code.replace(".", "") if record.cest_id else ""
+        return {
+            "COD_ITEM": record.default_code,  # Código do item
+            "DESCR_ITEM": record.name,  # Descrição do item
+            "COD_BARRA": record.barcode or "",  # Representação alfanumérico do códi...
+            "COD_ANT_ITEM": "",  # Código anterior do item com relação à última in...
+            "UNID_INV": record.uom_id.code,  # Unidade de medida utilizada na quanti...
+            "TIPO_ITEM": record.fiscal_type,  # Tipo do item – Atividades Industriai...
+            "COD_NCM": record.ncm_id.code.replace(".", ""),  # Código da Nomenclatur...
+            "EX_IPI": "",  # Código EX, conforme a TIPI
+            "COD_GEN": record.fiscal_genre_id.code,  # Código do gênero do item
+            "COD_LST": record.service_type_id.code or "",  # Código do serviço
+            "ALIQ_ICMS": aliq_icms or "",  # Alíquota de ICMS
+            "CEST": product_cest,  # Código Especificador da Substituição Tributária
+        }
 
 
 class Registro0205(models.Model):
