@@ -47,7 +47,7 @@
                                 required="cnpj_provider == 'serpro'"/>
                         </setting>
                     </div>
-                </div>
+                </block>
             </xpath>
         </field>
     </record>
