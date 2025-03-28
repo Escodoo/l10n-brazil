@@ -12,55 +12,43 @@
         />
         <field name="arch" type="xml">
             <xpath expr="//div[@name='disable_ie_validation']" position="after">
-                <div
-                    class="col-12 col-lg-6 o_setting_box"
-                    name="l10n_br_cnpj_search_api"
-                    attrs="{'invisible': [('disable_cpf_cnpj_validation', '=', True)]}"
-                >
-                    <div class="o_setting_left_pane" />
-                    <div class="o_setting_right_pane">
-                        <span class="o_form_label">Brazilian CNPJ service API</span>
-                        <div class="text-muted">
-                            Brazilian CNPJ service API to search partner information using cnpj code.
-                        </div>
-                        <div class="content-group mt16">
-                            <label for="cnpj_provider" class="o_light_label" />
-                            <field name="cnpj_provider" />
-                        </div>
-                        <div
-                            class="content-group mt16"
-                            attrs="{'invisible': [('cnpj_provider', '!=', 'serpro')]}"
+                <block 
+                    title="Brazilian CNPJ service API" 
+                    id="l10n_br_cnpj_search_api" 
+                    invisible="disable_cpf_cnpj_validation">
+                    <div class="text-muted">
+                        Brazilian CNPJ service API to search partner information using cnpj code.
+                    </div>
+                        <setting 
+                            string="CNPJ Provider">
+                            <field 
+                                name="cnpj_provider"/>
+                        </setting>
+                        <setting
+                            string="Serpro Token" 
+                            invisible="cnpj_provider != 'serpro'"
                         >
-                            <label for="serpro_token" class="o_light_label" />
-                            <field
-                                name="serpro_token"
-                                attrs="{'required': [('cnpj_provider', '=', 'serpro')]}"
-                            />
-                        </div>
-                        <div
-                            class="content-group mt16"
-                            attrs="{'invisible': [('cnpj_provider', '!=', 'serpro')]}"
-                        >
-                            <label for="serpro_trial" class="o_light_label" />
-                            <field
-                                name="serpro_trial"
-                                attrs="{'required': [('cnpj_provider', '=', 'serpro')]}"
-                            />
-                        </div>
-                        <div
-                            class="content-group mt16"
-                            attrs="{'invisible': [('cnpj_provider', '!=', 'serpro')]}"
-                        >
-                            <label for="serpro_schema" class="o_light_label" />
-                            <field
-                                name="serpro_schema"
-                                attrs="{'required': [('cnpj_provider', '=', 'serpro')]}"
-                            />
-                        </div>
+                            <field 
+                                name="serpro_token" 
+                                required="cnpj_provider == 'serpro'"/>
+                        </setting>
+                        <setting 
+                            string="Serpro Trial" 
+                            invisible="cnpj_provider != 'serpro'">
+                            <field 
+                                name="serpro_trial" 
+                                required="cnpj_provider == 'serpro'"/>
+                        </setting>
+                        <setting 
+                            string="Serpro Schema" 
+                            invisible="cnpj_provider != 'serpro'">
+                            <field 
+                                name="serpro_schema" 
+                                required="cnpj_provider == 'serpro'"/>
+                        </setting>
                     </div>
                 </div>
             </xpath>
         </field>
     </record>
-
 </odoo>
