@@ -11,9 +11,19 @@ class AccountChartTemplate(models.AbstractModel):
 
     @template("br_oca", "account.tax")
     def _get_br_oca_fiscal_account_tax(self):
-        data = self._parse_csv(
-            "br_oca", "account.tax", module="l10n_br_account"
+        return self._link_existing_fiscal_tax_groups_to_account_tax_data(
+            self._parse_csv(
+                "br_oca", "account.tax", module="l10n_br_account"
+            )
         )
+    
+    @template("br_oca", "account.tax.group")
+    def _get_br_oca_fiscal_account_tax_group(self):
+        return self._parse_csv(
+            "br_oca", "account.tax.group", module="l10n_br_account"
+        )
+    
+    def _link_existing_fiscal_tax_groups_to_account_tax_data(self, data):
         group_key = "fiscal_tax_ids@tax_group_id"
         for pseudoid, rec_data in data.items():
             if not group_key in rec_data:
@@ -25,11 +35,3 @@ class AccountChartTemplate(models.AbstractModel):
             )]
             del rec_data[group_key]
         return data
-    
-    @template("br_oca", "account.tax.group")
-    def _get_br_oca_fiscal_account_tax_group(self):
-        return self._parse_csv(
-            "br_oca", "account.tax.group", module="l10n_br_account"
-        )
-    
-
