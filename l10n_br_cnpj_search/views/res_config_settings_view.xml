@@ -11,8 +11,8 @@
             ref="l10n_br_base.l10n_br_base_res_config_settings_form"
         />
         <field name="arch" type="xml">
-            <xpath expr="//app" position="inside">
-                <group
+            <xpath expr="//div[@name='disable_ie_validation']" position="after">
+                <block title="Brazilian CNPJ service API"
                     string="Brazilian CNPJ service API"
                     id="l10n_br_cnpj_search_api"
                     invisible="disable_cpf_cnpj_validation">
@@ -45,7 +45,7 @@
                             name="serpro_schema" 
                             required="cnpj_provider == 'serpro'"/>
                     </setting>
-                </group>
+                </block>
             </xpath>
         </field>
     </record>
