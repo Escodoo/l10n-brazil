@@ -32,19 +32,6 @@ class CNPJWebservice(models.AbstractModel):
 
     _name = "l10n_br_cnpj_search.webservice.abstract"
     _description = "CNPJ Webservice"
-    
-    @api.model
-    def receitaws_query_cnpj(self, cnpj):
-        # Obtém a URL do webservice para o cnpj
-        url = self.receitaws_get_api_url(cnpj)
-        # Obtém os headers necessários para a requisição
-        headers = self.receitaws_get_headers()
-        # Realiza a chamada HTTP
-        response = requests.get(url, headers=headers)
-        # Valida a resposta (pode lançar exceção se houver erro)
-        data = self.receitaws_validate(response)
-        # Processa e importa os dados retornados
-        return self._receitaws_import_data(data)
 
     @api.model
     def get_provider(self):
