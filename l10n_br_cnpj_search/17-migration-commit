@@ -1,4 +1,6 @@
-8db8bde32344ead18b3fdf7f61b8f424dc5bedcd Sun, 30 Mar 2025 18:20:28 -0300  Migration: update to v17 res_config_settings
-a2785ee3a82027a0a63ba7ef7fe6744cb08d23f0 Sun, 30 Mar 2025 18:19:57 -0300  Migration: update to v17
+fab5b6fb5374c0a33b90896b89068d3b75829875 Mon, 31 Mar 2025 14:46:24 -0300 Migration : Eol fixing (2-migrate to v17 in eol LF)
+2c3846dffa91169e596a963a820d3357977dde88 Mon, 31 Mar 2025 14:45:29 -0300 Migration : Eol fixing (1-return to original)
+c7590669b6d45a55da590559c72f65f312bb4416 Mon, 31 Mar 2025 14:35:05 -0300 Migration: cnpj_webservice  fixing
+701a1f5f61bc636a67d22af85c740cd70d0b9b17 Mon, 31 Mar 2025 12:35:49 -0300 Migration: res_config_settings_view tag fixin
 
 Merge pull request #4 from l10n_brazil/XIPP-10955
