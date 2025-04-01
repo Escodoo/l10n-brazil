@@ -1,6 +1,3 @@
-fab5b6fb5374c0a33b90896b89068d3b75829875 Mon, 31 Mar 2025 14:46:24 -0300 Migration : Eol fixing (2-migrate to v17 in eol LF)
-2c3846dffa91169e596a963a820d3357977dde88 Mon, 31 Mar 2025 14:45:29 -0300 Migration : Eol fixing (1-return to original)
-c7590669b6d45a55da590559c72f65f312bb4416 Mon, 31 Mar 2025 14:35:05 -0300 Migration: cnpj_webservice  fixing
-701a1f5f61bc636a67d22af85c740cd70d0b9b17 Mon, 31 Mar 2025 12:35:49 -0300 Migration: res_config_settings_view tag fixin
+f5102162a7953a9fd8e52f374c2e62f8dbb7ea18 Tue, 20 Aug 2024 20:51:03 -0300 Update modules with the latest features from oca/15.0/16.0 and Escodoo 14.0
 
 Merge pull request #4 from l10n_brazil/XIPP-10955
