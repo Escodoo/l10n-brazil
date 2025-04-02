@@ -14,7 +14,7 @@
 
             <field name="cnpj_cpf" position="replace">
                 <label for="cnpj_cpf" string="CNPJ" />
-                     <div class="o_row" colspan="1">
+                    <div class="o_row" colspan="1">
                         <field name="cnpj_cpf" />
                         <button
                         name="action_open_cnpj_search_wizard"

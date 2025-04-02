@@ -6,7 +6,7 @@ import logging
 from os.path import dirname
 
 from erpbrasil.base.misc import punctuation_rm
-
+import requests
 from odoo import _, api, models
 from odoo.exceptions import UserError, ValidationError
 
