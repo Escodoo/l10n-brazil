@@ -15037,11 +15037,14 @@ class RegistroH005(models.AbstractModel):
 
     DT_INV = fields.Date(string="Data do inventário", required=True, sped_length="8*")
 
-    VL_INV = fields.Monetary(
+    VL_INV = fields.Float(
         string="Valor total do estoque",
         required=True,
-        xsd_type="TDec_1602",
-        currency_field="brl_currency_id",
+        xsd_type="TDec_1606",
+        digits=(
+            16,
+            2,
+        ),
     )
 
     MOT_INV = fields.Char(
@@ -15099,15 +15102,18 @@ class RegistroH010(models.AbstractModel):
         xsd_type="TDec_1606",
         digits=(
             16,
-            6,
+            2,
         ),
     )
 
-    VL_ITEM = fields.Monetary(
+    VL_ITEM = fields.Float(
         string="Valor do item",
         required=True,
-        xsd_type="TDec_1602",
-        currency_field="brl_currency_id",
+        xsd_type="TDec_1606",
+        digits=(
+            16,
+            2,
+        ),
     )
 
     IND_PROP = fields.Char(

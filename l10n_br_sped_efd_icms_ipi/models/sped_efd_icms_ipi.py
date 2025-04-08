@@ -159,10 +159,13 @@ class Registro0002(models.Model):
 
     @api.model
     def _map_from_odoo(self, record, parent_record, declaration, index=0):
-        if declaration.IND_ATIV == "0":
-            return {
-                "CLAS_ESTAB_IND": declaration.IND_ATIV,
-            }
+        # if declaration.IND_ATIV == "0":
+        #     return {
+        #         "CLAS_ESTAB_IND": declaration.IND_ATIV,
+        #     }
+        return {
+            "CLAS_ESTAB_IND": "",
+        }
 
 
 class Registro0005(models.Model):
@@ -178,6 +181,10 @@ class Registro0005(models.Model):
 
     @api.model
     def _map_from_odoo(self, record, parent_record, declaration, index=0):
+        phone = misc.punctuation_rm(record.phone)
+        phone_number = phone.replace(" ", "")
+        if phone_number[:2] == "55":
+            phone_number = phone_number[2:]
         return {
             "FANTASIA": record.name,
             "CEP": misc.punctuation_rm(record.zip),
@@ -185,7 +192,7 @@ class Registro0005(models.Model):
             "NUM": misc.punctuation_rm(record.street_number),
             "COMPL": record.street2,
             "BAIRRO": record.district,
-            "FONE": misc.punctuation_rm(record.phone),
+            "FONE": phone_number,
             # "FAX": 0,  # Número do fax.
             "EMAIL": record.email,
         }
@@ -3717,7 +3724,7 @@ class RegistroH005(models.Model):
         return {
             "DT_INV": declaration.DT_FIN,  # Data do inventário
             "VL_INV": inventory_amount,  # Valor total do estoque
-            "MOT_INV": 1,  # Informe o motivo do Inventário: 01 – No final no per...
+            "MOT_INV": "",  # Informe o motivo do Inventário: 01 – No final no per...
         }
 
 
