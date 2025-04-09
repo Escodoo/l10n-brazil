@@ -21,7 +21,7 @@
                         <button
                         name="action_open_cnpj_search_wizard"
                         type="object"
-                        invisible="country_id != 100 and not is_company"
+                        invisible="country_id != %(base.br)d and not is_company"
                         class="btn-sm btn-link mb4 fa fa-search oe_edit_only oe_inline"
                         aria-label="Pesquisar CNPJ"
                         title="Pesquisar CNPJ"/>
