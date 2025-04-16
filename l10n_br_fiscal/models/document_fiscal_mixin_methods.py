@@ -2,6 +2,7 @@
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
 from odoo import api, models
+from odoo.tools import ormcache
 
 from ..constants.fiscal import COMMENT_TYPE_COMMERCIAL, COMMENT_TYPE_FISCAL
 
@@ -41,6 +42,7 @@ class FiscalDocumentMixinMethods(models.AbstractModel):
         return amount_fields
     
     @api.model
+    @ormcache("self._name", "field_name")
     def _get_matched_line_amount_field(self, field_name):
         line_model_fs = self[self._get_lines_field_name()]._fields
         if field_name in line_model_fs:
