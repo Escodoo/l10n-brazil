@@ -64,7 +64,7 @@ class DataAbstract(models.AbstractModel):
             return name
             
         for rec in self:
-            if self._context.get("show_code_only"):
+            if self._context.get("show_code_only") or not rec.name:
                 rec.display_name = rec.code
             else:
                 rec.display_name = "{} - {}".format(
