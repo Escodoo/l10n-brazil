@@ -185,7 +185,7 @@ class DataNcmNbsAbstract(models.AbstractModel):
         if view_type == "form":
             xml_button = arch.xpath("//button[@name='action_ibpt_inquiry']")
             if xml_button and not self.env.company.ibpt_api:
-                xml_button[0].attrib["invisible"] = 1
+                xml_button[0].attrib["invisible"] = "1"
         return arch, view
 
     @api.model
