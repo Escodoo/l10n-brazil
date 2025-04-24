@@ -101,7 +101,7 @@
                         string="Confirmar"
                         groups="l10n_br_fiscal.group_user"
                         class="btn-primary"
-                        attrs="{'invisible': [('state_edoc', '!=', 'em_digitacao')]}"
+                        invisible="state_edoc != 'em_digitacao'"
                     />
             <button
                         name="action_document_send"
@@ -109,7 +109,7 @@
                         string="Enviar"
                         groups="l10n_br_fiscal.group_user"
                         class="btn-primary"
-                        attrs="{'invisible': [('state_edoc','!=','a_enviar')]}"
+                        invisible="state_edoc != 'a_enviar'"
                     />
             <button
                         name="action_document_send"
@@ -117,7 +117,7 @@
                         string="Consultar Recibo"
                         groups="l10n_br_fiscal.group_user"
                         class="btn-primary"
-                        attrs="{'invisible': [('state_edoc','!=','enviada')]}"
+                        invisible="state_edoc != 'enviada'"
                     />
             <button
                         name="action_document_back2draft"
@@ -125,7 +125,7 @@
                         string="Voltar p/ Em Digitação"
                         groups="l10n_br_fiscal.group_user"
                         class="btn-secondary"
-                        attrs="{'invisible': ['|', ('state_edoc', 'not in', ('a_enviar', 'rejeitada', 'enviada')), ('document_electronic', '=', False)]}"
+                        invisible="state_edoc not in ('a_enviar', 'rejeitada', 'enviada') or document_electronic == False"
                     />
             <button
                         name="view_pdf"
@@ -133,7 +133,7 @@
                         string="Visualizar PDF"
                         groups="l10n_br_fiscal.group_user"
                         class="btn-primary"
-                        attrs="{'invisible': [('state_edoc', '=', 'em_digitacao')]}"
+                        invisible="state_edoc == 'em_digitacao'"
                     />
             <button
                         name="view_xml"
@@ -141,42 +141,42 @@
                         string="Visualizar XML"
                         groups="l10n_br_fiscal.group_user"
                         class="btn-primary"
-                        attrs="{'invisible': ['|', ('document_electronic', '=', False), ('state_edoc', '=', 'em_digitacao')]}"
+                        invisible="document_electronic == False or state_edoc == 'em_digitacao'"
                     />
             <button
                         name="action_document_cancel"
                         type="object"
                         string="Cancelar"
                         groups="l10n_br_fiscal.group_user"
-                        attrs="{'invisible': ['|', ('state_edoc', '!=', 'autorizada'), ('document_electronic', '=', False)]}"
+                        invisible="state_edoc != 'autorizada' or document_electronic == False"
                     />
             <button
                         name="action_document_invalidate"
                         type="object"
                         string="Invalidar Numeração"
                         groups="l10n_br_fiscal.group_user"
-                        attrs="{'invisible': [('state_edoc', 'in', ('em_digitacao', 'autorizada', 'cancelada', 'denegada'))]}"
+                        invisible="state_edoc in ('em_digitacao', 'autorizada', 'cancelada', 'denegada')"
                     />
             <button
                         name="action_document_correction"
                         type="object"
                         string="Carta de correção"
                         groups="l10n_br_fiscal.group_user"
-                        attrs="{'invisible': [('state_edoc', '!=', 'autorizada')]}"
+                        invisible="state_edoc != 'autorizada'"
                     />
             <button
                         name="action_create_return"
                         type="object"
                         string="Devolver"
                         groups="l10n_br_fiscal.group_user"
-                        attrs="{'invisible': [('state_edoc', '!=', 'autorizada')]}"
+                        invisible="state_edoc != 'autorizada'"
                     />
             <button
                         name="action_send_email"
                         type="object"
                         string="Send Email"
                         groups="l10n_br_fiscal.group_user"
-                        attrs="{'invisible': [('state_edoc', 'not in', ('autorizada', 'cancelada', 'denegada'))]}"
+                        invisible="state_edoc not in ('autorizada', 'cancelada', 'denegada')"
                     />
             <field
                         name="state_edoc"
@@ -187,7 +187,7 @@
         <div
                     class="alert alert-danger"
                     role="alert"
-                    attrs="{'invisible': [('xml_error_message','=',False)]}"
+                    invisible="xml_error_message == False"
                 >
             <strong>XML validation errors:</strong>
             <field name="xml_error_message" readonly="1" />
@@ -195,7 +195,7 @@
         <div
                     class="alert alert-danger"
                     role="alert"
-                    attrs="{'invisible': [('state_edoc','not in',('rejeitada', 'denegada'))]}"
+                    invisible="state_edoc not in ('rejeitada', 'denegada')"
                 >
             Fiscal Document: <field name="document_type_id" readonly="1" /> is <strong
                     ><field name="state_edoc" readonly="1" /></strong>
@@ -203,7 +203,7 @@
         <div
                     class="alert alert-success"
                     role="alert"
-                    attrs="{'invisible': [('state_edoc','!=','autorizada')]}"
+                    invisible="state_edoc != 'autorizada'"
                 >
             Fiscal Document: <field name="document_type_id" readonly="1" /> is <strong
                     >Authorized</strong>
@@ -211,7 +211,7 @@
         <div
                     class="alert alert-warning"
                     role="alert"
-                    attrs="{'invisible': [('state_edoc','!=','cancelada')]}"
+                    invisible="state_edoc != 'cancelada'"
                 >
             Fiscal Document: <field name="document_type_id" readonly="1" /> is <strong
                     >Cancelled</strong>
@@ -223,7 +223,8 @@
                 <field name="document_type_id" readonly="1" />:
                 <field
                                 name="document_number"
-                                attrs="{'readonly': [('issuer', '=', 'company')], 'required': [('issuer', '=', 'partner')]}"
+                                readonly="issuer == 'company'"
+                                required="issuer == 'partner'"
                             />
             </h1>
           </div>
@@ -239,13 +240,12 @@
           <group>
             <field name="issuer" />
             <field name="document_type_id" required="1" />
-            <label
-                            for="document_key"
-                            attrs="{'invisible': [('document_electronic', '=', False)]}"
-                        />
+            <label for="document_key" invisible="document_electronic == False" />
             <div
                             class="o_row"
-                            attrs="{'readonly': [('issuer', '=', 'company')], 'required': [('issuer', '=', 'partner'), ('document_electronic', '=', True)], 'invisible': [('document_electronic', '=', False)]}"
+                            readonly="issuer == 'company'"
+                            required="issuer == 'partner' and document_electronic == True"
+                            invisible="document_electronic == False"
                         >
               <field name="document_key" force_save="1" class="oe_inline" />
               <!--button
