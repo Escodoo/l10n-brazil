@@ -67,7 +67,7 @@ class ContractLine(models.Model):
             and contract.fiscal_operation_id.deductible_taxes
         ):
             tax_ids |= self.fiscal_tax_ids.account_taxes(
-                user_type=contract.contract_type, deductible=True
+                user_type=contract.contract_type
             )
 
         if invoice_line_vals:
