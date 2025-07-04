@@ -254,5 +254,4 @@ class SpedDeclaration(models.AbstractModel):
 
         line_total += line_count[0] + len(count_by_register.keys()) + 4
         sped.write("\n|9999|%s|" % (line_total,))
-        sped.write("\n ")
         return sped.getvalue()
