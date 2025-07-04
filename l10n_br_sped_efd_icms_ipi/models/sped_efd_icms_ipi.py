@@ -237,12 +237,12 @@ class Registro0100(models.Model):
             "NOME": accountant.name,
             "CPF": misc.punctuation_rm(accountant.cnpj_cpf),
             "CRC": misc.punctuation_rm(accountant.crc_code),
-            "CNPJ": misc.punctuation_rm(record.cnpj_cpf),
+            "CNPJ": misc.punctuation_rm(record.cnpj_cpf) or "",
             "CEP": misc.punctuation_rm(record.zip),
             "END": record.street,
             "NUM": misc.punctuation_rm(record.street_number),
-            "COMPL": record.street2,
-            "BAIRRO": record.district,
+            "COMPL": record.street2 or "",
+            "BAIRRO": record.district or "",
             "FONE": misc.punctuation_rm(record.phone),
             # "FAX": 0,  # Número do fax.
             "EMAIL": record.email,
@@ -294,13 +294,25 @@ class Registro0190(models.Model):
     _description = textwrap.dedent("    %s" % (__doc__,))
     _name = "l10n_br_sped.efd_icms_ipi.0190"
     _inherit = "l10n_br_sped.efd_icms_ipi.17.0190"
+    _odoo_model = "uom.uom"
 
-    # @api.model
-    # def _map_from_odoo(self, record, parent_record, declaration, index=0):
-    #     return {
-    #         "UNID": 0,  # Código da unidade de medida
-    #         "DESCR": 0,  # Descrição da unidade de medida
-    #     }
+    @api.model
+    def _odoo_domain(self, parent_record, declaration):
+        product = self.env["product.product"]
+        records = product.search([("qty_available", ">", 0)])
+        uom_ids = records.mapped("uom_id")
+        return [
+            ("id", "in", uom_ids.ids),
+            ("name", "!=", False),
+            ("code", "!=", False),
+        ]
+
+    @api.model
+    def _map_from_odoo(self, record, parent_record, declaration, index=0):
+        return {
+            "UNID": record.code,  # Código da unidade de medida
+            "DESCR": record.name,  # Descrição da unidade de medida
+        }
 
 
 class Registro0200(models.Model):
