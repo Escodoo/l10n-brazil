@@ -1,1 +1,1 @@
-from . import test_sped_spec
+from . import test_sped_base

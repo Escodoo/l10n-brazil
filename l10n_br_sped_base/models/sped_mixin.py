@@ -2,6 +2,8 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0.en.html).
 
 import datetime
+from collections import defaultdict
+from io import StringIO
 
 from lxml.builder import E
 
@@ -14,9 +16,12 @@ LAYOUT_VERSIONS = {
     "ecf": "9",
     "efd_icms_ipi": "17",
     "efd_pis_cofins": "6",
+    "fake": "9",  # tests; similar to ecd
 }
 
 MAX_REGISTER_NAME = 40
+
+EDITABLE_ON_DRAFT = "{'readonly': [('state', 'not in', ['draft'])]}"
 
 
 class SpedMixin(models.AbstractModel):
@@ -65,7 +70,7 @@ class SpedMixin(models.AbstractModel):
             if not model:
                 raise UserError(
                     _("Undefined mapping model for Register %s and model")
-                    % (self._name, res.res_model)
+                    % (self._name, self.res_model)
                 )
             res.reference = "%s,%s" % (model.model, res.res_id)
 
@@ -87,14 +92,14 @@ class SpedMixin(models.AbstractModel):
             return super()._valid_field_parameter(field, name)
 
     @api.model
-    def _odoo_domain(self):
+    def _odoo_domain(self, parent_record, declaration):
         return []
 
     @api.model
     def _get_alphanum_sequence(self, model_name):
         """
-        Used to order the SPED register in the same order
-        as in the SPED layout (the register name alone won't cut it)
+        Helper method to get alphanumeric sequence for sorting registers.
+        (the register name alone won't cut it)
         """
         register_code = model_name[-4:]
         bloco_key = register_code[0]
@@ -110,8 +115,12 @@ class SpedMixin(models.AbstractModel):
     @api.model
     def _get_top_registers(self, kind):
         """
-        Get the "blocos" registers
+        Get the top register classes, the "blocos", for a specific kind.
+
+        :param kind: Type of SPED register
+        :return: List of top register classes
         """
+
         register_model_names = list(
             filter(lambda x: "l10n_br_sped.%s" % (kind,) in x, self.env.keys())
         )
@@ -134,8 +143,9 @@ class SpedMixin(models.AbstractModel):
         desc = self._description
         tree = E.tree(string=desc)
         fields = self.fields_get()
-
         added_fields = set()
+
+        tree.append(E.field(name="state", invisible="1"))
         if not self._name.endswith("0000"):
             tree.append(E.field(name="declaration_id"))
 
@@ -192,14 +202,15 @@ class SpedMixin(models.AbstractModel):
         return tree
 
     @api.model
-    def _get_default_form_view(self):
+    def _get_default_form_view(self, inline=False):
         """Generate a default single-line form view using all fields
 
         :return: a tree view as an lxml document
         :rtype: etree._Element
         """
         group = E.group(col="4")
-        self._append_top_view_elements(group)
+        self._append_top_view_elements(group, inline=inline)
+        group.append(E.field(name="state", invisible="1"))
 
         for fname, field in self._fields.items():
             if field.automatic:
@@ -210,13 +221,17 @@ class SpedMixin(models.AbstractModel):
                 continue
             if not fname.isupper() and (
                 # skip mail.thread fields
-                fname != "declaration_id"
-                and not fname.startswith("reg_")
+                fname != "declaration_id" and not fname.startswith("reg_")
             ):
                 continue
             elif field.type in ("one2many", "many2many", "text", "html"):
                 group.append(E.newline())
-                field_tag = E.field(name=fname, colspan="4")
+                field_tag = E.field(
+                    name=fname,
+                    colspan="4",
+                    attrs=EDITABLE_ON_DRAFT,
+                    context="{'default_declaration_id': declaration_id}",
+                )
                 if field.type == "one2many":
                     tree_fields = [
                         (f, native_field)
@@ -235,11 +250,19 @@ class SpedMixin(models.AbstractModel):
                     ):
                         # few fields -> editable tree
                         field_tree = E.tree(editable="bottom")
+                        field_tree.append(E.field(name="declaration_id", invisible="1"))
+                        field_tree.append(E.field(name="state", invisible="1"))
+                        field_tree.append(E.field(name="reference", widget="reference"))
                         for tree_field in tree_fields:
-                            field_tree.append(E.field(name=tree_field[0]))
+                            field_tree.append(
+                                E.field(
+                                    name=tree_field[0],
+                                )
+                            )
                         field_tag.append(field_tree)
                     else:
                         field_tree = E.tree()
+                        field_tree.append(E.field(name="state", invisible="1"))
                         for index, tree_field in enumerate(tree_fields):
                             if index > 6:
                                 break
@@ -249,18 +272,27 @@ class SpedMixin(models.AbstractModel):
                             ):
                                 continue
                             field_tree.append(
-                                E.field(name=tree_field[0], string=tree_field[0])
+                                E.field(
+                                    name=tree_field[0],
+                                    string=tree_field[0],
+                                )
                             )
                         field_tag.append(field_tree)
+                        field_form = self.env[
+                            field.comodel_name
+                        ]._get_default_form_view(inline=True)
+                        field_tag.append(field_form)
                 group.append(field_tag)
                 group.append(E.newline())
             elif fname.isupper():
-                group.append(E.field(name=fname))
+                group.append(E.field(name=fname, attrs=EDITABLE_ON_DRAFT))
         group.append(E.separator())
         form = E.form()
-        self._append_view_header(form)
+        if not inline:
+            self._append_view_header(form)
         form.append(E.sheet(group, string=self._description))
-        self._append_view_footer(form)
+        if not inline:
+            self._append_view_footer(form)
         return form
 
     @api.model
@@ -272,13 +304,29 @@ class SpedMixin(models.AbstractModel):
         pass
 
     @api.model
-    def _append_top_view_elements(self, group):
-        group.append(E.field(name="declaration_id", required="True"))
+    def _append_top_view_elements(self, group, inline=False):
+        group.append(
+            E.field(
+                name="declaration_id",
+                attrs=(
+                    "{'readonly': "
+                    "[('state', 'not in', ['draft']), "
+                    "('declaration_id', '!=', False)]}"
+                ),
+                invisible="1" if inline else "0",
+            )
+        )
         group.append(E.field(name="reference", widget="reference"))
         group.append(E.separator(colspan="4"))
 
     @api.model
-    def flush_registers(self, kind, declaration_id=None):
+    def _flush_registers(self, kind, declaration_id=None):
+        """
+        Flush the SPED registers for a specific kind and declaration.
+
+        :param kind: Type of SPED register
+        :param declaration_id: Declaration ID to flush
+        """
         if declaration_id:
             domain = [("declaration_id", "=", declaration_id)]
         else:
@@ -290,7 +338,7 @@ class SpedMixin(models.AbstractModel):
             registers.unlink()
 
     @api.model
-    def import_file(self, filename, kind, version=None):
+    def _import_file(self, filename, kind, version=None, declaration=None):
         """
         Import SPED files into Odoo.
 
@@ -300,9 +348,16 @@ class SpedMixin(models.AbstractModel):
         :return: Declaration record created in Odoo.
 
         examples:
-        env["l10n_br_sped.mixin"].import_file("/odoo/links/l10n_br_sped/demo/demo_ecd.txt", "ecd")
-        env["l10n_br_sped.mixin"].import_file("/odoo/links/l10n_br_sped/demo/demo_ecd.txt", "ecd")
-        env["l10n_br_sped.mixin"].import_file("/odoo/links/l10n_br_sped/demo/demo_efd_pis_cofins_multi.txt", "efd_pis_cofins")
+        env["l10n_br_sped.mixin"]._import_file(
+            "/odoo/links/l10n_br_sped/demo/demo_ecd.txt", "ecd"
+        )
+        env["l10n_br_sped.mixin"]._import_file(
+            "/odoo/links/l10n_br_sped/demo/demo_ecd.txt", "ecd"
+        )
+        env["l10n_br_sped.mixin"]._import_file(
+            "/odoo/links/l10n_br_sped/demo/demo_efd_pis_cofins_multi.txt",
+            "efd_pis_cofins",
+        )
         """
         if version is None:
             version = LAYOUT_VERSIONS[kind]
@@ -311,9 +366,12 @@ class SpedMixin(models.AbstractModel):
             previous_register = None
             parent = None
             parents = []
-            declaration = None
+            level_2_registers = defaultdict(list)
             for line in [line.rstrip("\r\n") for line in spedfile]:
                 reg_code = line.split("|")[1]
+
+                if declaration is not None and reg_code == "0000":
+                    continue
                 register_class = self.env.get(
                     "l10n_br_sped.%s.%s"
                     % (
@@ -322,6 +380,7 @@ class SpedMixin(models.AbstractModel):
                     ),
                     None,
                 )
+
                 if register_class is None:
                     if "001" in reg_code or "990" in reg_code or reg_code == "9999":
                         continue
@@ -343,7 +402,7 @@ class SpedMixin(models.AbstractModel):
                     parent = parents[-1]
                     last_level = register_class._sped_level
 
-                vals = register_class.read_register_line(line, version)
+                vals = register_class._read_register_line(line, version)
                 if declaration is not None:
                     vals["declaration_id"] = declaration.id
 
@@ -358,12 +417,21 @@ class SpedMixin(models.AbstractModel):
                 register = register_class.create(vals)
                 if reg_code == "0000":
                     declaration = register
+                if register_class._sped_level == 2:
+                    level_2_registers[reg_code].append(register)
+
                 previous_register = register
+
+        log_msg = StringIO()
+        log_msg.write("<h3>%s</h3>" % (_("Imported from file:"),))
+        for _code, registers in level_2_registers.items():
+            registers[0]._log_chatter_sped_item(log_msg, 2, registers)
+        declaration.message_post(body=log_msg.getvalue())
 
         return declaration
 
     @api.model
-    def read_register_line(self, line, version):
+    def _read_register_line(self, line, version):
         """
         Read a single SPED register line and convert it into Odoo record values.
 
@@ -403,89 +471,125 @@ class SpedMixin(models.AbstractModel):
                 register_vals[fname] = val
         return register_vals
 
-    # flake8: noqa: C901
-    def generate_register_text(self, sped, version, line_count, count_by_register):
+    def _generate_register_text(self, sped, version, line_count, count_by_register):
         """
-        Recursively generate the SPED text of the registers.
+        Recursively generate the SPED text for a register.
+
+        :param sped: StringIO object to write SPED text
+        :param version: Layout version
+        :param line_count: Line count list
+        :param count_by_register: Dictionary to count registers
         """
-        code = self._name[-4:]
+        code = self._name[-4:].upper()
         register_spec_model = self._name.replace(
-            ".%s" % (code), ".%s.%s" % (version, code)
+            f".{code.lower()}", f".{version}.{code.lower()}"
         )
-        code = code.upper()
         register_spec = self.env[register_spec_model]
-        keys = [i[0] for i in register_spec._fields.items()]
-        if (
-            not keys
-        ):  # happens with ECD I550, I555 and I555 with "LEIAUTE PARAMETRIZÁVEL"
-            keys = ["id"]  # BUT should not happen!
+        keys = [k for k, v in register_spec._fields.items()] or ["id"]
+
         if len(self):
             count_by_register[code] += len(self)
-        if code == "0000":
-            line_start = ""
-        else:
-            line_start = "\n"
-        for vals in self.read(keys):
-            sped.write("%s|%s|" % (line_start, code))
-            line_count[0] += 1
-            children = []
-            should_break_next = False
-            for fname, value in vals.items():
-                if register_spec._fields[fname].type == "one2many" and fname.startswith(
-                    "reg_"
-                ):
-                    children.append(
-                        self.env[self._fields[fname].comodel_name].search(
-                            [("id", "in", value)]
-                        )
-                    )
-                    should_break_next = True
-                    continue  # we assume it's the last register specific field
-                elif should_break_next:  # if the register has a parent but no children
-                    break
-                elif not fname.isupper():  # not a SPED field
-                    continue
 
-                # Handle different field types
-                if self._fields[fname].type == "date":
-                    val = value.strftime("%d%m%Y") if value else ""
-                elif self._fields[fname].type == "char":
-                    val = str(value) if value else ""
-                elif self._fields[fname].type == "selection":
-                    val = value if value else ""
-                elif self._fields[fname].type == "integer":
-                    if value == 0:
-                        val = ""
-                    else:
-                        val = str(value)
-                elif self._fields[fname].type == "float":
-                    if float_is_zero(value % 1, 6):  # ex: aliquota ICMS
-                        val = str(int(value))
-                    else:
-                        val = str(value).replace(".", ",")
-                elif self._fields[fname].type == "monetary":
-                    if float_is_zero(value, precision_digits=8):
-                        val = ""
-                    elif float_is_zero(value % 1, precision_digits=8):
-                        val = str(int(value))
-                    else:
-                        val = str(value)
-
-                else:
-                    val = str(value)
-                sped.write(val + "|")
-
-            children = sorted(children, key=lambda reg: reg._name)
-            for child in children:
-                child.generate_register_text(
-                    sped, version, line_count, count_by_register
-                )
+        for rec in self:
+            self._write_register_line(sped, code, rec, keys, line_count, register_spec)
+            self._process_children(
+                sped, version, line_count, count_by_register, rec, keys, register_spec
+            )
         return sped
 
+    def _write_register_line(self, sped, code, rec, keys, line_count, register_spec):
+        """
+        Write a line for the register.
+
+        :param sped: StringIO object to write SPED text
+        :param code: Register code
+        :param rec: Record
+        :param keys: List of field keys
+        :param line_count: Line count list
+        :param register_spec: Register specification model
+        """
+        line_start = "" if code == "0000" else "\n"
+        sped.write(f"{line_start}|{code}|")
+        line_count[0] += 1
+
+        for fname, value in {k: getattr(rec, k) for k in keys}.items():
+            if not fname.isupper():
+                continue
+
+            val = self._format_field_value(register_spec, fname, value)
+            sped.write(f"{val}|")
+
+    def _format_field_value(self, register_spec, fname, value):
+        """
+        Format the field value based on its type.
+
+        :param register_spec: Register specification model
+        :param fname: Field name
+        :param value: Field value
+        :return: Formatted field value as string
+        """
+        field = register_spec._fields[fname]
+        if field.type == "date":
+            return value.strftime("%d%m%Y") if value else ""
+        elif field.type == "char" or field.type == "selection":
+            return str(value) if value else ""
+        elif field.type == "integer":
+            return "" if value == 0 else str(value)
+        elif field.type == "float":
+            return (
+                str(int(value))
+                if float_is_zero(value % 1, 6)
+                else str(round(value, 6)).replace(".", ",")
+            )
+        elif field.type == "monetary":
+            return (
+                ""
+                if float_is_zero(value, precision_digits=8)
+                else str(int(value))
+                if float_is_zero(value % 1, precision_digits=8)
+                else str(value)
+            )
+        else:
+            return str(value)
+
+    def _process_children(
+        self, sped, version, line_count, count_by_register, rec, keys, register_spec
+    ):
+        """
+        Process child registers recursively.
+
+        :param sped: StringIO object to write SPED text
+        :param version: Layout version
+        :param line_count: Line count list
+        :param count_by_register: Dictionary to count registers
+        :param rec: Record
+        :param keys: List of field keys
+        :param register_spec: Register specification model
+        """
+        children_groups = [
+            getattr(rec, fname)
+            for fname in keys
+            if register_spec._fields[fname].type == "one2many"
+            and fname.startswith("reg_")
+        ]
+        for children in sorted(children_groups, key=lambda c: c._name):
+            children._generate_register_text(
+                sped, version, line_count, count_by_register
+            )
+
     @api.model
-    def pull_records_from_odoo(
+    def _pull_records_from_odoo(
         self, kind, level, parent_register=None, parent_record=None, log_msg=None
     ):
+        """
+        Pull records from Odoo and populate the SPED registers.
+
+        :param kind: Type of SPED register
+        :param level: Depth level for pulling records
+        :param parent_register: Parent register if any
+        :param parent_record: Parent record if any
+        :param log_msg: StringIO object for logging
+        """
         declaration = self._context["declaration"]
 
         children = [
@@ -507,10 +611,11 @@ class SpedMixin(models.AbstractModel):
             records = self.env[self._odoo_model].search(
                 self._odoo_domain(parent_record, declaration)
             )
+
         elif hasattr(self, "_odoo_query"):
             self._cr.execute(*self._odoo_query(parent_record, declaration))
-
             records = self._cr.dictfetchall()
+
         elif hasattr(self, "_map_from_odoo"):
             # in this case we will generate a register without any
             # specific Odoo record. Example: ECD I010
@@ -519,22 +624,26 @@ class SpedMixin(models.AbstractModel):
                 register_vals[parent_field] = parent_register.id
             register = self.create(register_vals)
             for child in children:
-                self.env[child].pull_records_from_odoo(
+                self.env[child]._pull_records_from_odoo(
                     kind,
                     level + 1,
                     parent_register=register,
                     parent_record=None,
                     log_msg=log_msg,
                 )
-            self.log_chatter_sped_item(log_msg, level, [register])
-            return
-        else:
-            self.log_chatter_sped_item(log_msg, level)
+            self._log_chatter_sped_item(log_msg, level, [register])
             return
 
-        self.log_chatter_sped_item(log_msg, level, records)
+        else:
+            self._log_chatter_sped_item(log_msg, level)
+            return
+
+        self._log_chatter_sped_item(log_msg, level, records)
 
         for index, record in enumerate(records):
+            # TODO find a way/mode to skip pulling existing records
+            # may be search for existing register with res_model/res_id
+            # or even parent_field and skip
             register_vals = self._map_from_odoo(
                 record, parent_record, declaration, index=index
             )
@@ -546,7 +655,7 @@ class SpedMixin(models.AbstractModel):
             register = self.create(register_vals)
 
             for child in children:
-                self.env[child].pull_records_from_odoo(
+                self.env[child]._pull_records_from_odoo(
                     kind,
                     level + 1,
                     parent_register=register,
@@ -555,18 +664,15 @@ class SpedMixin(models.AbstractModel):
                 )
 
     @api.model
-    def log_chatter_sped_item(self, log_msg, level, records=None):
-        actions = self.env["ir.actions.act_window"].search(
-            [("res_model", "=", self._name)]
+    def _log_chatter_sped_item(self, log_msg, level, records=None):
+        action = self.env["ir.actions.act_window"].search(
+            [("res_model", "=", self._name)], limit=1
         )
-        if actions:
-            body = """
-            <div>%s<a href="/web#action=%s" class="o_mail_redirect"
-            target="_blank">%s%s</a></div>
-            """ % (
-                "&nbsp;" * level * 4,
-                actions[0].id,
-                self._name[-4:].upper(),
-                records and " (%s records)" % (str(len(records)),) or "",
+        if action:
+            record_count = f" ({len(records)} records)" if records else ""
+            body = (
+                f"<div>{'&nbsp;' * level * 4}"
+                f'<a href="/web#action={action.id}" >'
+                f"{self._name[-4:].upper()}{record_count}</a></div>"
             )
             log_msg.write(body)
