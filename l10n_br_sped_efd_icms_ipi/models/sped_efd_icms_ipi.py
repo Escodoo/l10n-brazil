@@ -330,6 +330,8 @@ class Registro0200(models.Model):
         records = product.search([("qty_available", ">", 0)])
         return [
             ("id", "in", records.ids),
+            ("default_code", "!=", False),
+            ("fiscal_type", "!=", False),
         ]
 
     @api.model
@@ -348,7 +350,7 @@ class Registro0200(models.Model):
         product_cest = record.cest_id.code.replace(".", "") if record.cest_id else ""
         return {
             "COD_ITEM": record.default_code,  # Código do item
-            "DESCR_ITEM": record.name,  # Descrição do item
+            "DESCR_ITEM": record.name.strip(),  # Descrição do item
             "COD_BARRA": record.barcode or "",  # Representação alfanumérico do códi...
             "COD_ANT_ITEM": "",  # Código anterior do item com relação à última in...
             "UNID_INV": record.uom_id.code,  # Unidade de medida utilizada na quanti...
@@ -3166,12 +3168,12 @@ class RegistroE100(models.Model):
     _name = "l10n_br_sped.efd_icms_ipi.e100"
     _inherit = "l10n_br_sped.efd_icms_ipi.17.e100"
 
-    # @api.model
-    # def _map_from_odoo(self, record, parent_record, declaration, index=0):
-    #     return {
-    #         "DT_INI": 0,  # Data inicial a que a apuração se refere
-    #         "DT_FIN": 0,  # Data final a que a apuração se refere
-    #     }
+    @api.model
+    def _map_from_odoo(self, record, parent_record, declaration, index=0):
+        return {
+            "DT_INI": declaration.DT_INI,  # Data inicial a que a apuração se refere
+            "DT_FIN": declaration.DT_FIN,  # Data final a que a apuração se refere
+        }
 
 
 class RegistroE110(models.Model):
@@ -3531,13 +3533,13 @@ class RegistroE500(models.Model):
     _name = "l10n_br_sped.efd_icms_ipi.e500"
     _inherit = "l10n_br_sped.efd_icms_ipi.17.e500"
 
-    # @api.model
-    # def _map_from_odoo(self, record, parent_record, declaration, index=0):
-    #     return {
-    #         "IND_APUR": 0,  # Indicador de período de apuração do IPI: 0 - Mensal...
-    #         "DT_INI": 0,  # Data inicial a que a apuração se refere
-    #         "DT_FIN": 0,  # Data final a que a apuração se refere
-    #     }
+    @api.model
+    def _map_from_odoo(self, record, parent_record, declaration, index=0):
+        return {
+            "IND_APUR": 0,  # Indicador de período de apuração do IPI: 0 - Mensal...
+            "DT_INI": declaration.DT_INI,  # Data inicial a que a apuração se refere
+            "DT_FIN": declaration.DT_FIN,  # Data final a que a apuração se refere
+        }
 
 
 class RegistroE510(models.Model):
@@ -3736,7 +3738,7 @@ class RegistroH005(models.Model):
         return {
             "DT_INV": declaration.DT_FIN,  # Data do inventário
             "VL_INV": inventory_amount,  # Valor total do estoque
-            "MOT_INV": "",  # Informe o motivo do Inventário: 01 – No final no per...
+            "MOT_INV": "01",  # Informe o motivo do Inventário: 01 – No final no per...
         }
 
 
@@ -3755,6 +3757,7 @@ class RegistroH010(models.Model):
         records = product.search([("qty_available", ">", 0)])
         return [
             ("id", "in", records.ids),
+            ("default_code", "!=", False),
         ]
 
     @api.model
@@ -3766,7 +3769,7 @@ class RegistroH010(models.Model):
             "VL_UNIT": record.standard_price,  # Valor unitário do item
             "VL_ITEM": record.qty_available * record.standard_price,  # Valor do item
             "IND_PROP": 0,  # Indicador de propriedade/posse do item: 0- Item de ...
-            "COD_PART": 0,  # Código do participante (campo 02 do Registro 0150):...
+            "COD_PART": "",  # Código do participante (campo 02 do Registro 0150):...
             "TXT_COMPL": 0,  # Descrição complementar.
             "COD_CTA": 0,  # Código da conta analítica contábil debitada/creditad...
             "VL_ITEM_IR": 0,  # Valor do item para efeitos do Imposto de Renda.
@@ -3833,6 +3836,8 @@ class RegistroK200(models.Model):
         records = product.search([("qty_available", ">", 0)])
         return [
             ("id", "in", records.ids),
+            ("fiscal_type", "in", ["00", "01", "02", "03", "04", "05", "06", "10"]),
+            ("default_code", "!=", False),
         ]
 
     @api.model
@@ -3842,7 +3847,7 @@ class RegistroK200(models.Model):
             "COD_ITEM": record.default_code,  # Código do item (campo 02 do Registro 0200)
             "QTD": record.qty_available,  # Quantidade em estoque
             "IND_EST": 0,  # Indicador do tipo de estoque: 0 - Estoque de proprie...
-            "COD_PART": 0,  # Código do participante (campo 02 do Registro 0150):...
+            "COD_PART": "",  # Código do participante (campo 02 do Registro 0150):...
         }
 
 
