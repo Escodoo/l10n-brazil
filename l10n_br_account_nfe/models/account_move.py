@@ -27,3 +27,18 @@ class AccountMove(models.Model):
                     "amount_currency": -dup.nfe40_vDup,
                 }
         return res
+
+    def _reverse_moves(self, default_values_list=None, cancel=False):
+        new_moves = super()._reverse_moves(
+            default_values_list=default_values_list, cancel=cancel
+        )
+
+        payment_mode_id = False
+        if self.env.context.get("payment_mode_id"):
+            payment_mode_id = self.env["account.payment.mode"].browse(
+                self.env.context.get("payment_mode_id")
+            )
+        for move in new_moves:
+            move.payment_mode_id = payment_mode_id
+
+        return new_moves
