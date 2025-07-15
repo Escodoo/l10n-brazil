@@ -121,8 +121,8 @@ class Registro0000(models.Model):
     )
 
     @api.model
-    def _append_top_view_elements(self, group):
-        super()._append_top_view_elements(group)
+    def _append_top_view_elements(self, group, inline=False):
+        super()._append_top_view_elements(group, inline=inline)
         group.append(E.field(name="cod_obrigacao", required="1"))
         group.append(E.field(name="cod_receita", required="1"))
         group.append(E.field(name="ind_apur", required="1"))
