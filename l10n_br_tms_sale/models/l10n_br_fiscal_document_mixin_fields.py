@@ -4,8 +4,8 @@
 from odoo import fields, models
 
 
-class FiscalDocumentMixin(models.AbstractModel):
-    _inherit = "l10n_br_fiscal.document.mixin.fields"
+class DocumentMixin(models.AbstractModel):
+    _inherit = "l10n_br_fiscal.document.mixin"
 
     tms_commitment_date = fields.Datetime("Delivery Date")
     tms_expected_date = fields.Datetime("Expected Date")
