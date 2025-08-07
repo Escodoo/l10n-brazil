@@ -101,5 +101,5 @@ def delete_obsolete_data(env):
 @openupgrade.migrate(use_env=True)
 def migrate(env, version):
     update_model_data(env)
-    delete_obsolete_models(env)
-    delete_obsolete_data(env)
+    # delete_obsolete_models(env)
+    # delete_obsolete_data(env)
