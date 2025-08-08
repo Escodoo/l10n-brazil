@@ -10,7 +10,6 @@ from erpbrasil.base import misc
 from lxml.builder import E
 
 from odoo import api, fields, models
-from odoo.exceptions import UserError
 
 from odoo.addons.l10n_br_sped_base.models.sped_mixin import LAYOUT_VERSIONS
 
@@ -120,6 +119,23 @@ class Registro0000(models.Model):
         default="0",
     )
 
+    CLAS_ESTAB_IND = fields.Selection(
+        [
+            ("00", "Industrial - Transformação"),
+            ("01", "Industrial - Beneficiamento"),
+            ("02", "Industrial - Montagem"),
+            ("03", "Industrial - Acondicionamento ou Reacondicionamento"),
+            ("04", "Industrial - Renovação ou Recondicionamento"),
+            ("05", "Equiparado a industrial - Por opção"),
+            ("06", "Equiparado a industrial - Importação Direta"),
+            ("07", "Equiparado a industrial - Por lei específica"),
+            ("08", "Equiparado a industrial - Não enquadrado nos códigos 05, 06 ou 07"),
+            ("09", "Outros"),
+        ],
+        string="classificação do estabelecimento conforme tabela 4",
+        help="classificação do estabelecimento conforme tabela 4.5.5",
+    )
+
     @api.model
     def _append_top_view_elements(self, group, inline=False):
         super()._append_top_view_elements(group, inline=inline)
@@ -159,12 +175,8 @@ class Registro0002(models.Model):
 
     @api.model
     def _map_from_odoo(self, record, parent_record, declaration, index=0):
-        # if declaration.IND_ATIV == "0":
-        #     return {
-        #         "CLAS_ESTAB_IND": declaration.IND_ATIV,
-        #     }
         return {
-            "CLAS_ESTAB_IND": "",
+            "CLAS_ESTAB_IND": declaration.CLAS_ESTAB_IND,
         }
 
 
@@ -221,22 +233,16 @@ class Registro0100(models.Model):
 
     @api.model
     def _odoo_domain(self, parent_record, declaration):
-        return [("id", "=", declaration.company_id.accountant_id.id)]
+        return [("id", "=", declaration.company_id.accounting_office.id)]
 
     @api.model
     def _map_from_odoo(self, record, parent_record, declaration, index=0):
-        if record.child_ids:
-            accountant = record.child_ids[0]
-        else:
-            msg_err = (
-                "Cadastre o contador Pessoa Fisica dentro do Contato da Contabilidade"
-            )
-            raise UserError(msg_err)
+        accountant = declaration.company_id.accountant_id
 
         return {
-            "NOME": accountant.name,
-            "CPF": misc.punctuation_rm(accountant.cnpj_cpf),
-            "CRC": misc.punctuation_rm(accountant.crc_code),
+            "NOME": accountant.name or "",
+            "CPF": misc.punctuation_rm(accountant.cnpj_cpf or "0"),
+            "CRC": misc.punctuation_rm(accountant.crc_code or "0"),
             "CNPJ": misc.punctuation_rm(record.cnpj_cpf) or "",
             "CEP": misc.punctuation_rm(record.zip),
             "END": record.street,
@@ -298,11 +304,7 @@ class Registro0190(models.Model):
 
     @api.model
     def _odoo_domain(self, parent_record, declaration):
-        product = self.env["product.product"]
-        records = product.search([("qty_available", ">", 0)])
-        uom_ids = records.mapped("uom_id")
         return [
-            ("id", "in", uom_ids.ids),
             ("name", "!=", False),
             ("code", "!=", False),
         ]
