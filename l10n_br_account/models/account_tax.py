@@ -47,6 +47,7 @@ class AccountTax(models.Model):
         icmssn_range=None,  # no longer used, kept for compatibility
         icms_origin=None,
         ind_final=FINAL_CUSTOMER_NO,
+        **kwargs,
     ):
         """Returns all information required to apply taxes
             (in self + their children in case of a tax goup).
@@ -121,6 +122,7 @@ class AccountTax(models.Model):
             operation_line=operation_line,
             icms_origin=icms_origin or product.icms_origin,
             ind_final=ind_final,
+            **kwargs,
         )
 
         taxes_results["amount_tax_included"] = fiscal_taxes_results["amount_included"]
@@ -233,6 +235,7 @@ class AccountTax(models.Model):
 
         if taxes:
             # line = base_line["record"]
+            manual_tax_values = base_line["record"]._prepare_br_manual_tax_dict()
             taxes_res = taxes.with_context(**base_line["extra_context"]).compute_all(
                 price_unit_after_discount,
                 currency=currency,
@@ -259,6 +262,7 @@ class AccountTax(models.Model):
                 uot_id=line.uot_id,
                 icms_origin=line.icms_origin,
                 ind_final=line.ind_final,
+                **manual_tax_values,
             )
 
             to_update_vals = {
