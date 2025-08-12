@@ -346,6 +346,7 @@ class AccountMoveLine(models.Model):
 
             # Compute 'price_total'.
             if line.tax_ids:
+                manual_tax_values = line._get_manual_tax_values_from_context()
                 taxes_res = line.tax_ids._origin.with_context().compute_all(
                     line_discount_price_unit,
                     currency=line.currency_id,
@@ -374,6 +375,7 @@ class AccountMoveLine(models.Model):
                     icmssn_range=line.icmssn_range_id,
                     icms_origin=line.icms_origin,
                     ind_final=line.ind_final,
+                    **manual_tax_values,
                 )
 
                 line.price_subtotal = taxes_res["total_excluded"]
@@ -425,6 +427,7 @@ class AccountMoveLine(models.Model):
 
         for line in self:
             sign = line.move_id.direction_sign
+            manual_tax_values = line._prepare_br_manual_tax_dict()
             if line.display_type == "tax":
                 line.compute_all_tax = {}
                 line.compute_all_tax_dirty = False
@@ -465,6 +468,7 @@ class AccountMoveLine(models.Model):
                 icmssn_range=line.icmssn_range_id,
                 icms_origin=line.icms_origin,
                 ind_final=line.ind_final,
+                **manual_tax_values,
             )
             rate = (
                 line.amount_currency / line.balance
