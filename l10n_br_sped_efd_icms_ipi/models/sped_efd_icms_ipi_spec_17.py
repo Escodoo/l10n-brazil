@@ -15276,6 +15276,26 @@ class RegistroH030(models.AbstractModel):
     )
 
 
+class RegistroK010(models.AbstractModel):
+    "Informação sobre o Tipo de Leiaute"
+    _description = textwrap.dedent("    %s" % (__doc__,))
+    _name = "l10n_br_sped.efd_icms_ipi.17.k010"
+    _inherit = "l10n_br_sped.mixin.efd_icms_ipi"
+    _sped_level = 2
+
+    IND_TP_LEIAUTE = fields.Char(
+        string="Indicador do Tipo de Leiaute",
+        required=True,
+        xsd_type="numeric_code",
+        sped_length="1",
+        help=(
+            "Informação sobre o Tipo de Leiaute: 0 - Leiaute simplificado; "
+            "1 - Leiaute completo; ",
+            "2 - Leiaute restrito aos saldos de estoque.",
+        ),
+    )
+
+
 class RegistroK100(models.AbstractModel):
     "Período de Apuração do ICMS/IPI"
     _description = textwrap.dedent("    %s" % (__doc__,))

@@ -136,6 +136,21 @@ class Registro0000(models.Model):
         help="classificação do estabelecimento conforme tabela 4.5.5",
     )
 
+    IND_TP_LEIAUTE = fields.Selection(
+        [
+            ("0", "Leiaute simplificado"),
+            ("1", "Leiaute completo"),
+            ("2", "Leiaute restrito aos saldos de estoque"),
+        ],
+        string="Tipo de Leiaute do Bloco K",
+        default="0",
+        help=(
+            "Informação sobre o Tipo de Leiaute: 0 - Leiaute simplificado; "
+            "1 - Leiaute completo; ",
+            "2 - Leiaute restrito aos saldos de estoque.",
+        ),
+    )
+
     @api.model
     def _append_top_view_elements(self, group, inline=False):
         super()._append_top_view_elements(group, inline=inline)
@@ -3807,6 +3822,19 @@ class RegistroH030(models.Model):
     #         "VL_ICMS_ST": 0,  # Valor médio unitário do ICMS ST
     #         "VL_FCP": 0,  # Valor médio unitário do FCP
     #     }
+
+
+class RegistroK010(models.Model):
+    "Informação sobre o Tipo de Leiaute"
+    _description = textwrap.dedent("    %s" % (__doc__,))
+    _name = "l10n_br_sped.efd_icms_ipi.k010"
+    _inherit = "l10n_br_sped.efd_icms_ipi.17.k010"
+
+    @api.model
+    def _map_from_odoo(self, record, parent_record, declaration, index=0):
+        return {
+            "IND_TP_LEIAUTE": declaration.IND_TP_LEIAUTE,  # Indicador de tipo de leiaute
+        }
 
 
 class RegistroK100(models.Model):
