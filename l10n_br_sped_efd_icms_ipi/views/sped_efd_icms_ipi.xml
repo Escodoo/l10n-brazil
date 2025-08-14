@@ -546,6 +546,17 @@
 
     <menuitem name="BLOCO K" parent="efd_icms_ipi" id="efd_icms_ipi_k" />
 
+    <record id="efd_icms_ipi_k010_action" model="ir.actions.act_window">
+        <field name="name">K010 Informação sobre o Tipo de Leiaute</field>
+        <field name="res_model">l10n_br_sped.efd_icms_ipi.k010</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+    <menuitem
+        action="efd_icms_ipi_k010_action"
+        parent="efd_icms_ipi_k"
+        id="efd_icms_ipi_k010"
+    />
+
     <record id="efd_icms_ipi_k100_action" model="ir.actions.act_window">
         <field name="name">K100 Período de Apuração do ICMS/IPI</field>
         <field name="res_model">l10n_br_sped.efd_icms_ipi.k100</field>
