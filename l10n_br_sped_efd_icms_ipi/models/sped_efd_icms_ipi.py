@@ -3752,14 +3752,18 @@ class RegistroH005(models.Model):
 
     @api.model
     def _map_from_odoo(self, record, parent_record, declaration, index=0):
-
         to_date = "%s 23:59:00" % (datetime.strftime(declaration.DT_FIN, "%Y-%m-%d"))
         context = dict(self.env.context, to_date=to_date)
         product = self.env["product.product"].with_context(context)
-        records = product.search([("qty_available", ">", 0)])
+        records = product.search(
+            [
+                ("qty_available", ">", 0),
+                ("default_code", "!=", False),
+            ]
+        )
         inventory_amount = 0.0
         for record in records:
-            inventory_amount += record.qty_available * record.standard_price
+            inventory_amount += round((record.qty_available * record.standard_price), 2)
         return {
             "DT_INV": declaration.DT_FIN,  # Data do inventário
             "VL_INV": inventory_amount,  # Valor total do estoque
