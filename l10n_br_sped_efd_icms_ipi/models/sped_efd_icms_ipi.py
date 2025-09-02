@@ -361,6 +361,10 @@ class Registro0200(models.Model):
 
     @api.model
     def _map_from_odoo(self, record, parent_record, declaration, index=0):
+        to_date = "%s 23:59:00" % (datetime.strftime(declaration.DT_FIN, "%Y-%m-%d"))
+        context = dict(self.env.context, to_date=to_date)
+        record = record.with_context(context)
+
         state_id = record.company_id.state_id or self.env.company.state_id
         tax_definition_id = self.env["l10n_br_fiscal.tax.definition"].search(
             [
@@ -3791,6 +3795,10 @@ class RegistroH010(models.Model):
 
     @api.model
     def _map_from_odoo(self, record, parent_record, declaration, index=0):
+        to_date = "%s 23:59:00" % (datetime.strftime(declaration.DT_FIN, "%Y-%m-%d"))
+        context = dict(self.env.context, to_date=to_date)
+        record = record.with_context(context)
+
         return {
             "COD_ITEM": record.default_code,  # Código do item (campo 02 do Registro 0200)
             "UNID": record.uom_id.code,  # Unidade do item
@@ -3884,6 +3892,10 @@ class RegistroK200(models.Model):
 
     @api.model
     def _map_from_odoo(self, record, parent_record, declaration, index=0):
+        to_date = "%s 23:59:00" % (datetime.strftime(declaration.DT_FIN, "%Y-%m-%d"))
+        context = dict(self.env.context, to_date=to_date)
+        record = record.with_context(context)
+
         return {
             "DT_EST": declaration.DT_FIN,  # Data do estoque final
             "COD_ITEM": record.default_code,  # Código do item (campo 02 do Registro 0200)
