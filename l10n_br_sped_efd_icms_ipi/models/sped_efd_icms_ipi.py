@@ -3798,13 +3798,13 @@ class RegistroH010(models.Model):
         to_date = "%s 23:59:00" % (datetime.strftime(declaration.DT_FIN, "%Y-%m-%d"))
         context = dict(self.env.context, to_date=to_date)
         record = record.with_context(context)
-
+        vl_item = round((record.qty_available * record.standard_price), 2)
         return {
             "COD_ITEM": record.default_code,  # Código do item (campo 02 do Registro 0200)
             "UNID": record.uom_id.code,  # Unidade do item
             "QTD": record.qty_available,  # Quantidade do item
             "VL_UNIT": record.standard_price,  # Valor unitário do item
-            "VL_ITEM": record.qty_available * record.standard_price,  # Valor do item
+            "VL_ITEM": vl_item,  # Valor do item
             "IND_PROP": 0,  # Indicador de propriedade/posse do item: 0- Item de ...
             "COD_PART": "",  # Código do participante (campo 02 do Registro 0150):...
             "TXT_COMPL": 0,  # Descrição complementar.
