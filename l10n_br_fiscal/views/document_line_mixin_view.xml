@@ -208,6 +208,23 @@
                                             attrs="{'readonly': [('issqn_tax_id', '!=', False)]}"
                                         />
                                     </group>
+                                    <group name="issqn_manual" string="Manual">
+                                        <div
+                                            class="text-muted"
+                                            colspan="2"
+                                        >Keep empty for automatic
+                                            calculation</div>
+                                        <field
+                                            name="issqn_base_manual"
+                                            string="Base"
+                                            force_save="1"
+                                        />
+                                        <field
+                                            name="issqn_value_manual"
+                                            string="Value"
+                                            force_save="1"
+                                        />
+                                    </group>
                                     <group>
                                         <field
                                             name="issqn_deduction_amount"
@@ -265,6 +282,23 @@
                                             name="issqn_wh_value"
                                             force_save="1"
                                             attrs="{'readonly': [('issqn_wh_tax_id', '!=', False)]}"
+                                        />
+                                    </group>
+                                    <group name="issqn_wh_manual" string="Manual">
+                                        <div
+                                            class="text-muted"
+                                            colspan="2"
+                                        >Keep empty for automatic
+                                            calculation</div>
+                                        <field
+                                            name="issqn_wh_base_manual"
+                                            string="Base"
+                                            force_save="1"
+                                        />
+                                        <field
+                                            name="issqn_wh_value_manual"
+                                            string="Value"
+                                            force_save="1"
                                         />
                                     </group>
                                 </group>
@@ -375,10 +409,28 @@
                                             attrs="{'readonly': [('icms_cst_code', '!=', '500')]}"
                                         />
                                     </group>
+                                    <group name="icms_manual" string="Manual">
+                                        <div
+                                            class="text-muted"
+                                            colspan="2"
+                                        >Keep empty for automatic
+                                            calculation</div>
+                                        <field
+                                            name="icms_base_manual"
+                                            string="Base"
+                                            force_save="1"
+                                        />
+                                        <field
+                                            name="icms_value_manual"
+                                            string="Value"
+                                            force_save="1"
+                                        />
+                                    </group>
                                 </group>
                                 <group>
                                     <group
                                         name="icmsst"
+                                        colspan="2"
                                         string="ICMS ST"
                                         attrs="{'invisible': [('icms_cst_code', 'not in', ('10', '30', '70', '90', '201', '202', '203', '500', '900'))]}"
                                     >
@@ -417,6 +469,23 @@
                                             force_save="1"
                                             attrs="{'readonly': [('icms_tax_id', '!=', False)], 'invisible': [('icms_cst_code', 'in', ('60', '500'))]}"
                                         />
+                                        <group name="icmsst_manual" string="Manual">
+                                            <div
+                                                class="text-muted"
+                                                colspan="2"
+                                            >Keep empty for
+                                                automatic calculation</div>
+                                            <field
+                                                name="icmsst_base_manual"
+                                                string="Base"
+                                                force_save="1"
+                                            />
+                                            <field
+                                                name="icmsst_value_manual"
+                                                string="Value"
+                                                force_save="1"
+                                            />
+                                        </group>
                                         <field
                                             name="icmsst_wh_base"
                                             force_save="1"
@@ -432,6 +501,23 @@
                                             force_save="1"
                                             attrs="{'readonly': [('icms_tax_id', '!=', False)], 'invisible': [('icms_cst_code', 'not in', ('60', '500'))]}"
                                         />
+                                        <group name="icmsst_wh_manual" string="Manual">
+                                            <div
+                                                class="text-muted"
+                                                colspan="2"
+                                            >Keep empty for
+                                                automatic calculation</div>
+                                            <field
+                                                name="icmsst_base_manual"
+                                                string="Base"
+                                                force_save="1"
+                                            />
+                                            <field
+                                                name="icmsst_value_manual"
+                                                string="Value"
+                                                force_save="1"
+                                            />
+                                        </group>
                                     </group>
                                     <group
                                         name="icms_fcp"
@@ -622,6 +708,23 @@
                                             attrs="{'readonly': [('ipi_tax_id', '!=', False)]}"
                                         />
                                     </group>
+                                    <group name="ipi_manual" string="Manual">
+                                        <div
+                                            class="text-muted"
+                                            colspan="2"
+                                        >Keep empty for automatic
+                                            calculation</div>
+                                        <field
+                                            name="ipi_base_manual"
+                                            string="Base"
+                                            force_save="1"
+                                        />
+                                        <field
+                                            name="ipi_value_manual"
+                                            string="Value"
+                                            force_save="1"
+                                        />
+                                    </group>
                                 </group>
                                 <group
                                     string="Devolução do IPI"
@@ -646,6 +749,23 @@
                                     <group>
                                         <field name="ii_base" />
                                         <field name="ii_value" />
+                                    </group>
+                                    <group name="ii_manual" string="Manual">
+                                        <div
+                                            class="text-muted"
+                                            colspan="2"
+                                        >Keep empty for automatic
+                                            calculation</div>
+                                        <field
+                                            name="ii_base_manual"
+                                            string="Base"
+                                            force_save="1"
+                                        />
+                                        <field
+                                            name="ii_value_manual"
+                                            string="Value"
+                                            force_save="1"
+                                        />
                                     </group>
                                     <group>
                                         <field name="ii_iof_value" />
@@ -713,6 +833,23 @@
                                             attrs="{'readonly': [('pis_tax_id', '!=', False)]}"
                                         />
                                     </group>
+                                    <group name="pis_manual" string="Manual">
+                                        <div
+                                            class="text-muted"
+                                            colspan="2"
+                                        >Keep empty for automatic
+                                            calculation</div>
+                                        <field
+                                            name="pis_base_manual"
+                                            string="Base"
+                                            force_save="1"
+                                        />
+                                        <field
+                                            name="pis_value_manual"
+                                            string="Value"
+                                            force_save="1"
+                                        />
+                                    </group>
                                 </group>
                                 <group name="pis_st" string="PIS ST">
                                     <field
@@ -761,6 +898,23 @@
                                             attrs="{'readonly': [('pisst_tax_id', '!=', False)]}"
                                         />
                                     </group>
+                                    <group name="pisst_manual" string="Manual">
+                                        <div
+                                            class="text-muted"
+                                            colspan="2"
+                                        >Keep empty for automatic
+                                            calculation</div>
+                                        <field
+                                            name="pisst_base_manual"
+                                            string="Base"
+                                            force_save="1"
+                                        />
+                                        <field
+                                            name="pisst_value_manual"
+                                            string="Value"
+                                            force_save="1"
+                                        />
+                                    </group>
                                 </group>
                                 <group string="Retenções">
                                     <field
@@ -791,6 +945,23 @@
                                             name="pis_wh_value"
                                             force_save="1"
                                             attrs="{'readonly': [('pis_wh_tax_id', '!=', False)]}"
+                                        />
+                                    </group>
+                                    <group name="pis_wh_manual" string="Manual">
+                                        <div
+                                            class="text-muted"
+                                            colspan="2"
+                                        >Keep empty for automatic
+                                            calculation</div>
+                                        <field
+                                            name="pis_wh_base_manual"
+                                            string="Base"
+                                            force_save="1"
+                                        />
+                                        <field
+                                            name="pis_wh_value_manual"
+                                            string="Value"
+                                            force_save="1"
                                         />
                                     </group>
                                 </group>
@@ -855,6 +1026,23 @@
                                             attrs="{'readonly': [('cofins_tax_id', '!=', False)]}"
                                         />
                                     </group>
+                                    <group name="cofins_manual" string="Manual">
+                                        <div
+                                            class="text-muted"
+                                            colspan="2"
+                                        >Keep empty for automatic
+                                            calculation</div>
+                                        <field
+                                            name="cofins_base_manual"
+                                            string="Base"
+                                            force_save="1"
+                                        />
+                                        <field
+                                            name="cofins_value_manual"
+                                            string="Value"
+                                            force_save="1"
+                                        />
+                                    </group>
                                 </group>
                                 <group name="cofins_st" string="COFINS ST">
                                     <field
@@ -903,6 +1091,23 @@
                                             attrs="{'readonly': [('cofinsst_tax_id', '!=', False)]}"
                                         />
                                     </group>
+                                    <group name="cofinsst_manual" string="Manual">
+                                        <div
+                                            class="text-muted"
+                                            colspan="2"
+                                        >Keep empty for automatic
+                                            calculation</div>
+                                        <field
+                                            name="cofinsst_base_manual"
+                                            string="Base"
+                                            force_save="1"
+                                        />
+                                        <field
+                                            name="cofinsst_value_manual"
+                                            string="Value"
+                                            force_save="1"
+                                        />
+                                    </group>
                                 </group>
                                 <group string="Retenções">
                                     <field
@@ -933,6 +1138,23 @@
                                             name="cofins_wh_value"
                                             force_save="1"
                                             attrs="{'readonly': [('cofins_wh_tax_id', '!=', False)]}"
+                                        />
+                                    </group>
+                                    <group name="cofins_wh_manual" string="Manual">
+                                        <div
+                                            class="text-muted"
+                                            colspan="2"
+                                        >Keep empty for automatic
+                                            calculation</div>
+                                        <field
+                                            name="cofins_wh_base_manual"
+                                            string="Base"
+                                            force_save="1"
+                                        />
+                                        <field
+                                            name="cofins_wh_value_manual"
+                                            string="Value"
+                                            force_save="1"
                                         />
                                     </group>
                                 </group>
@@ -970,6 +1192,23 @@
                                             attrs="{'readonly': [('csll_tax_id', '!=', False)]}"
                                         />
                                     </group>
+                                    <group name="csll_manual" string="Manual">
+                                        <div
+                                            class="text-muted"
+                                            colspan="2"
+                                        >Keep empty for automatic
+                                            calculation</div>
+                                        <field
+                                            name="csll_base_manual"
+                                            string="Base"
+                                            force_save="1"
+                                        />
+                                        <field
+                                            name="csll_value_manual"
+                                            string="Value"
+                                            force_save="1"
+                                        />
+                                    </group>
                                 </group>
                                 <group string="Retenções">
                                     <field
@@ -1000,6 +1239,23 @@
                                             name="csll_wh_value"
                                             force_save="1"
                                             attrs="{'readonly': [('csll_wh_tax_id', '!=', False)]}"
+                                        />
+                                    </group>
+                                    <group name="csll_wh_manual" string="Manual">
+                                        <div
+                                            class="text-muted"
+                                            colspan="2"
+                                        >Keep empty for automatic
+                                            calculation</div>
+                                        <field
+                                            name="csll_wh_base_manual"
+                                            string="Base"
+                                            force_save="1"
+                                        />
+                                        <field
+                                            name="csll_wh_value_manual"
+                                            string="Value"
+                                            force_save="1"
                                         />
                                     </group>
                                 </group>
@@ -1040,6 +1296,23 @@
                                             attrs="{'readonly': [('irpj_tax_id', '!=', False)]}"
                                         />
                                     </group>
+                                    <group name="irpj_manual" string="Manual">
+                                        <div
+                                            class="text-muted"
+                                            colspan="2"
+                                        >Keep empty for automatic
+                                            calculation</div>
+                                        <field
+                                            name="irpj_base_manual"
+                                            string="Base"
+                                            force_save="1"
+                                        />
+                                        <field
+                                            name="irpj_value_manual"
+                                            string="Value"
+                                            force_save="1"
+                                        />
+                                    </group>
                                 </group>
                                 <group string="Retenções">
                                     <field
@@ -1070,6 +1343,23 @@
                                             name="irpj_wh_value"
                                             force_save="1"
                                             attrs="{'readonly': [('irpj_wh_tax_id', '!=', False)]}"
+                                        />
+                                    </group>
+                                    <group name="irpj_wh_manual" string="Manual">
+                                        <div
+                                            class="text-muted"
+                                            colspan="2"
+                                        >Keep empty for automatic
+                                            calculation</div>
+                                        <field
+                                            name="irpj_wh_base_manual"
+                                            string="Base"
+                                            force_save="1"
+                                        />
+                                        <field
+                                            name="irpj_wh_value_manual"
+                                            string="Value"
+                                            force_save="1"
                                         />
                                     </group>
                                 </group>
@@ -1110,6 +1400,23 @@
                                             attrs="{'readonly': [('inss_tax_id', '!=', False)]}"
                                         />
                                     </group>
+                                    <group name="inss_manual" string="Manual">
+                                        <div
+                                            class="text-muted"
+                                            colspan="2"
+                                        >Keep empty for automatic
+                                            calculation</div>
+                                        <field
+                                            name="inss_base_manual"
+                                            string="Base"
+                                            force_save="1"
+                                        />
+                                        <field
+                                            name="inss_value_manual"
+                                            string="Value"
+                                            force_save="1"
+                                        />
+                                    </group>
                                 </group>
                                 <group string="Retenções">
                                     <field
@@ -1140,6 +1447,23 @@
                                             name="inss_wh_value"
                                             force_save="1"
                                             attrs="{'readonly': [('inss_wh_tax_id', '!=', False)]}"
+                                        />
+                                    </group>
+                                    <group name="inss_wh_manual" string="Manual">
+                                        <div
+                                            class="text-muted"
+                                            colspan="2"
+                                        >Keep empty for automatic
+                                            calculation</div>
+                                        <field
+                                            name="inss_wh_base_manual"
+                                            string="Base"
+                                            force_save="1"
+                                        />
+                                        <field
+                                            name="inss_wh_value_manual"
+                                            string="Value"
+                                            force_save="1"
                                         />
                                     </group>
                                 </group>
