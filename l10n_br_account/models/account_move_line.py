@@ -7,6 +7,10 @@ from contextlib import contextmanager
 from odoo import Command, _, api, fields, models
 from odoo.tools import frozendict
 
+from odoo.addons.l10n_br_fiscal.models.document_line_mixin_methods import (
+    FISCAL_TAX_PREFIXES,
+)
+
 
 class AccountMoveLine(models.Model):
     _name = "account.move.line"
@@ -297,6 +301,17 @@ class AccountMoveLine(models.Model):
         self.env.add_to_compute(self._fields["debit"], container["records"])
         self.env.add_to_compute(self._fields["credit"], container["records"])
 
+    def _get_manual_tax_values_from_context(self):
+        tax_values = {}
+        suffixes = ["_base_manual", "_value_manual"]
+
+        for tax_prefix in FISCAL_TAX_PREFIXES:
+            for suffix in suffixes:
+                attr_name = tax_prefix + suffix
+                tax_values[attr_name] = self.env.context.get(attr_name)
+
+        return tax_values
+
     @api.depends(
         "quantity",
         "discount",
@@ -322,6 +337,44 @@ class AccountMoveLine(models.Model):
         "icmssn_range_id",
         "icms_origin",
         "ind_final",
+        "icms_base_manual",
+        "icms_value_manual",
+        "icmsst_base_manual",
+        "icmsst_value_manual",
+        "issqn_base_manual",
+        "issqn_value_manual",
+        "issqn_wh_base_manual",
+        "issqn_wh_value_manual",
+        "icmsst_wh_base_manual",
+        "icmsst_wh_value_manual",
+        "ipi_base_manual",
+        "ipi_value_manual",
+        "ii_base_manual",
+        "ii_value_manual",
+        "cofins_base_manual",
+        "cofins_value_manual",
+        "cofinsst_base_manual",
+        "cofinsst_value_manual",
+        "cofins_wh_base_manual",
+        "cofins_wh_value_manual",
+        "pis_base_manual",
+        "pis_value_manual",
+        "pisst_base_manual",
+        "pisst_value_manual",
+        "pis_wh_base_manual",
+        "pis_wh_value_manual",
+        "csll_base_manual",
+        "csll_value_manual",
+        "csll_wh_base_manual",
+        "csll_wh_value_manual",
+        "irpj_base_manual",
+        "irpj_value_manual",
+        "irpj_wh_base_manual",
+        "irpj_wh_value_manual",
+        "inss_base_manual",
+        "inss_value_manual",
+        "inss_wh_base_manual",
+        "inss_wh_value_manual",
     )
     def _compute_totals(self):
         """
@@ -345,6 +398,7 @@ class AccountMoveLine(models.Model):
 
             # Compute 'price_total'.
             if line.tax_ids:
+                manual_tax_values = line._get_manual_tax_values_from_context()
                 taxes_res = line.tax_ids._origin.with_context().compute_all(
                     line_discount_price_unit,
                     currency=line.currency_id,
@@ -373,6 +427,7 @@ class AccountMoveLine(models.Model):
                     icmssn_range=line.icmssn_range_id,
                     icms_origin=line.icms_origin,
                     ind_final=line.ind_final,
+                    **manual_tax_values,
                 )
 
                 line.price_subtotal = taxes_res["total_excluded"]
@@ -424,6 +479,7 @@ class AccountMoveLine(models.Model):
 
         for line in self:
             sign = line.move_id.direction_sign
+            manual_tax_values = line._prepare_br_manual_tax_dict()
             if line.display_type == "tax":
                 line.compute_all_tax = {}
                 line.compute_all_tax_dirty = False
@@ -464,6 +520,7 @@ class AccountMoveLine(models.Model):
                 icmssn_range=line.icmssn_range_id,
                 icms_origin=line.icms_origin,
                 ind_final=line.ind_final,
+                **manual_tax_values,
             )
             rate = (
                 line.amount_currency / line.balance
