@@ -35,6 +35,10 @@ class ResCompany(models.Model):
     city_taxation_code_id = fields.Many2many(
         comodel_name="l10n_br_fiscal.city.taxation.code", string="City Taxation Code"
     )
+    national_taxation_code_id = fields.Many2one(
+        comodel_name="l10n_br_fiscal.national.taxation.code",
+        string="National Taxation Code",
+    )
 
     def prepare_company_servico(self):
         return {
