@@ -162,6 +162,14 @@ class Document(models.Model):
         base_calculo = 0
         valor_liquido_nfse = 0
         valor_desconto_incondicionado = 0
+        # Campos adicionais para NFSe Nacional
+        situacao_tributaria_pis = ""
+        situacao_tributaria_cofins = ""
+        base_calculo_pis = 0
+        base_calculo_cofins = 0
+        aliquota_pis = 0
+        aliquota_cofins = 0
+        tipo_retencao_pis_cofins = "2"
 
         for line in lines:
             result_line.update(line._prepare_line_service())
@@ -185,6 +193,21 @@ class Document(models.Model):
             valor_desconto_incondicionado += result_line.get(
                 "valor_desconto_incondicionado"
             )
+            # Campos adicionais para NFSe Nacional
+            if result_line.get("situacao_tributaria_pis"):
+                situacao_tributaria_pis = result_line.get("situacao_tributaria_pis")
+            if result_line.get("situacao_tributaria_cofins"):
+                situacao_tributaria_cofins = result_line.get(
+                    "situacao_tributaria_cofins"
+                )
+            base_calculo_pis += result_line.get("base_calculo_pis", 0)
+            base_calculo_cofins += result_line.get("base_calculo_cofins", 0)
+            if result_line.get("aliquota_pis"):
+                aliquota_pis = result_line.get("aliquota_pis")
+            if result_line.get("aliquota_cofins"):
+                aliquota_cofins = result_line.get("aliquota_cofins")
+            if result_line.get("tipo_retencao_pis_cofins"):
+                tipo_retencao_pis_cofins = result_line.get("tipo_retencao_pis_cofins")
 
         result = {
             "valor_servicos": valor_servicos,
@@ -221,6 +244,14 @@ class Document(models.Model):
             "codigo_cnae": misc.punctuation_rm(self.fiscal_line_ids[0].cnae_id.code)
             or None,
             "valor_desconto_incondicionado": valor_desconto_incondicionado,
+            # Campos adicionais para NFSe Nacional
+            "situacao_tributaria_pis": situacao_tributaria_pis,
+            "situacao_tributaria_cofins": situacao_tributaria_cofins,
+            "base_calculo_pis": round(base_calculo_pis, 2),
+            "base_calculo_cofins": round(base_calculo_cofins, 2),
+            "aliquota_pis": round(aliquota_pis, 2),
+            "aliquota_cofins": round(aliquota_cofins, 2),
+            "tipo_retencao_pis_cofins": tipo_retencao_pis_cofins,
         }
 
         result.update(self.company_id._prepare_company_service())
