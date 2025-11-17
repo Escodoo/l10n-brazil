@@ -174,6 +174,14 @@ class Document(models.Model):
         base_calculo = 0
         valor_liquido_nfse = 0
         valor_desconto_incondicionado = 0
+        nbs_code = ""
+        for line in lines:
+            if getattr(line, "nbs_id", False) and line.nbs_id.code:
+                nbs_code = line.nbs_id.code
+                break
+
+        if nbs_code:
+            nbs_code = misc.punctuation_rm(nbs_code)
 
         for line in lines:
             result_line.update(line.prepare_line_servico())
@@ -197,6 +205,11 @@ class Document(models.Model):
             valor_desconto_incondicionado += result_line.get(
                 "valor_desconto_incondicionado"
             )
+
+        cclass_trib = ""
+        mapping = self.fiscal_line_ids[0].city_taxation_code_id.ibs_cbs_mapping_ids
+        if mapping:
+            cclass_trib = mapping[0].cclass_id.code
 
         result = {
             "valor_servicos": valor_servicos,
@@ -233,6 +246,8 @@ class Document(models.Model):
             "codigo_cnae": misc.punctuation_rm(self.fiscal_line_ids[0].cnae_id.code)
             or None,
             "valor_desconto_incondicionado": valor_desconto_incondicionado,
+            "cclass_tributacao": cclass_trib,
+            "nbs": nbs_code,
         }
 
         result.update(self.company_id.prepare_company_servico())

@@ -259,6 +259,18 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         comodel_name="l10n_br_fiscal.city.taxation.code", string="City Taxation Code"
     )
 
+    cClassTribIBSCBS = fields.Char(
+        string="cClassTrib",
+        store=False,
+        readonly=True,
+    )
+
+    cstIBSCBS = fields.Char(
+        string="CST",
+        store=False,
+        readonly=True,
+    )
+
     partner_order = fields.Char(string="Partner Order (xPed)", size=15)
 
     partner_order_line = fields.Char(string="Partner Order Line (nItemPed)", size=6)

@@ -40,3 +40,10 @@ class CityTaxationCode(models.Model):
         readonly=True,
         string="Tax Definition",
     )
+
+    # TODO: HOT-FIX
+    ibs_cbs_mapping_ids = fields.One2many(
+        "l10n_br_fiscal.city.taxation.ibs_cbs",
+        "city_taxation_code_id",
+        string="IBS/CBS",
+    )

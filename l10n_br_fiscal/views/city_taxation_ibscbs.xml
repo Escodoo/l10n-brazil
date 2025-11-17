@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+  <record id="city_taxation_ibscbs_tree" model="ir.ui.view">
+    <field name="name">l10n_br_fiscal.city.taxation.ibs_cbs.tree</field>
+    <field name="model">l10n_br_fiscal.city.taxation.ibs_cbs</field>
+    <field name="arch" type="xml">
+      <tree editable="bottom">
+        <field name="company_id" />
+        <field name="cst_id" />
+        <field name="cclass_id" />
+      </tree>
+    </field>
+  </record>
+
+  <record id="city_taxation_ibscbs_form" model="ir.ui.view">
+    <field name="name">l10n_br_fiscal.city.taxation.ibs_cbs.form</field>
+    <field name="model">l10n_br_fiscal.city.taxation.ibs_cbs</field>
+    <field name="arch" type="xml">
+      <form>
+        <sheet>
+        <field name="company_id" required="1" />
+        <field name="city_taxation_code_id" invisible="1" />
+        <field name="cst_id" />
+        <field name="cclass_id" />
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <record id="view_ibs_cbs_cst_tree" model="ir.ui.view">
+    <field name="name">l10n_br_fiscal.ibs_cbs.cst.tree</field>
+    <field name="model">l10n_br_fiscal.ibs_cbs.cst</field>
+    <field name="arch" type="xml">
+      <tree editable="bottom" string="CST (IBS/CBS)">
+        <field name="code" required="1" />
+        <field name="name" required="1" />
+      </tree>
+    </field>
+  </record>
+
+  <record id="view_ibs_cbs_cst_form" model="ir.ui.view">
+    <field name="name">l10n_br_fiscal.ibs_cbs.cst.form</field>
+    <field name="model">l10n_br_fiscal.ibs_cbs.cst</field>
+    <field name="arch" type="xml">
+      <form string="CST (IBS/CBS)">
+        <sheet>
+          <group>
+            <field name="code" required="1"/>
+            <field name="name" required="1"/>
+          </group>
+          <notebook>
+            <page string="Classes Tributárias (cClassTrib)">
+              <field name="cclass_ids" context="{'default_cst_id': active_id}">
+                <tree editable="bottom">
+                  <field name="code" required="1"/>
+                  <field name="name" required="1"/>
+                </tree>
+                <form>
+                  <group>
+                    <field name="code" required="1"/>
+                    <field name="name" required="1"/>
+                    <field name="cst_id" invisible="1"/>
+                  </group>
+                </form>
+              </field>
+            </page>
+          </notebook>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_ibs_cbs_cst" model="ir.actions.act_window">
+    <field name="name">CST (IBS/CBS)</field>
+    <field name="res_model">l10n_br_fiscal.ibs_cbs.cst</field>
+    <field name="view_mode">tree,form</field>
+  </record>
+
+  <record id="view_ibs_cbs_cclass_tree" model="ir.ui.view">
+    <field name="name">l10n_br_fiscal.ibs_cbs.cclass.tree</field>
+    <field name="model">l10n_br_fiscal.ibs_cbs.cclass</field>
+    <field name="arch" type="xml">
+      <tree editable="bottom" string="cClassTrib (IBS/CBS)">
+        <field name="code" required="1"/>
+        <field name="name" required="1"/>
+        <field name="cst_id" required="1"/>
+      </tree>
+    </field>
+  </record>
+
+  <record id="view_ibs_cbs_cclass_form" model="ir.ui.view">
+    <field name="name">l10n_br_fiscal.ibs_cbs.cclass.form</field>
+    <field name="model">l10n_br_fiscal.ibs_cbs.cclass</field>
+    <field name="arch" type="xml">
+      <form string="cClassTrib (IBS/CBS)">
+        <sheet>
+          <group>
+            <field name="code" required="1"/>
+            <field name="name" required="1"/>
+            <field name="cst_id" required="1"/>
+          </group>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_ibs_cbs_cclass" model="ir.actions.act_window">
+    <field name="name">Classes Tributárias (cClassTrib)</field>
+    <field name="res_model">l10n_br_fiscal.ibs_cbs.cclass</field>
+    <field name="view_mode">tree,form</field>
+    <field name="context">{}</field>
+  </record>
+
+
+</odoo>
