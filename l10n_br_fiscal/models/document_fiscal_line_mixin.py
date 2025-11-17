@@ -259,6 +259,41 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         comodel_name="l10n_br_fiscal.city.taxation.code", string="City Taxation Code"
     )
 
+    cClassTribIBSCBS = fields.Char(
+        string="IBS/CBS",
+        compute="_compute_city_taxation_ibs_cbs",
+        store=False,
+        readonly=True,
+    )
+
+    cstIBSCBS = fields.Char(
+        string="CST IBS/CBS",
+        compute="_compute_city_taxation_ibs_cbs",
+        store=False,
+        readonly=True,
+    )
+
+    @api.depends("city_taxation_code_id", "company_id")
+    def _compute_city_taxation_ibs_cbs(self):
+        for line in self:
+            line.cClassTribIBSCBS = False
+            line.cstIBSCBS = False
+
+            if not line.city_taxation_code_id or not line.company_id:
+                continue
+
+            mapping = self.env["l10n_br_fiscal.city.taxation.ibs_cbs"].search(
+                [
+                    ("city_taxation_code_id", "=", line.city_taxation_code_id.id),
+                    ("company_id", "=", line.company_id.id),
+                ],
+                limit=1,
+            )
+
+            if mapping:
+                line.cClassTribIBSCBS = mapping.cClassTribIBSCBS or False
+                line.cstIBSCBS = mapping.cstIBSCBS or False
+
     partner_order = fields.Char(string="Partner Order (xPed)", size=15)
 
     partner_order_line = fields.Char(string="Partner Order Line (nItemPed)", size=6)

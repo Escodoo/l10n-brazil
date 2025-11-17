@@ -83,6 +83,7 @@
         "views/uom_uom.xml",
         "views/invalidate_number_view.xml",
         "views/city_taxation_code.xml",
+        "views/city_taxation_ibscbs.xml",
         "views/operation_dashboard_view.xml",
         "views/document_event_view.xml",
         # Reports
