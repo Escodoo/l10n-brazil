@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 
 from erpbrasil.base import misc
-from nfselib.paulistana.v03.PedidoEnvioLoteRPS import (
+from nfselib.paulistana.v03.PedidoEnvioLoteRPS_v02 import (
     CabecalhoType,
     PedidoEnvioLoteRPS,
     tpChaveRPS,
