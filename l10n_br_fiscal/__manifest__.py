@@ -38,6 +38,8 @@
         "data/l10n_br_fiscal_server_action.xml",
         "data/ir_cron.xml",
         "data/l10n_br_fiscal_comment_data.xml",
+        "data/l10n_br_fiscal.ibs_cbs.cst.csv",
+        "data/l10n_br_fiscal.ibs_cbs.cclass.csv",
         # Views
         "views/cnae_view.xml",
         "views/cfop_view.xml",

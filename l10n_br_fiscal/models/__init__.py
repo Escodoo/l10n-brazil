@@ -71,3 +71,5 @@ from . import subsequent_document
 from . import document_email
 from . import city_taxation_code
 from . import city_taxation_code_ibs_cbs
+from . import city_taxation_ibs_cbs_class
+from . import city_taxation_ibs_cbs_cst

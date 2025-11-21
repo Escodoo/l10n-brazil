@@ -1,0 +1,22 @@
+id,code,name
+ibs_cbs_cst_0,0,Tributação integral
+ibs_cbs_cst_10,10,Tributação com alíquotas uniformes
+ibs_cbs_cst_11,11,Tributação com alíquotas uniformes reduzidas
+ibs_cbs_cst_200,200,Alíquota reduzida
+ibs_cbs_cst_210,210,Redução de alíquota com redutor de base de cálculo
+ibs_cbs_cst_220,220,Alíquota fixa
+ibs_cbs_cst_222,222,Redução de base de cálculo
+ibs_cbs_cst_221,221,Alíquota fixa proporcional
+ibs_cbs_cst_400,400,Isenção
+ibs_cbs_cst_410,410,Imunidade e não incidência
+ibs_cbs_cst_510,510,Diferimento
+ibs_cbs_cst_550,550,Suspensão
+ibs_cbs_cst_620,620,Tributação monofásica
+ibs_cbs_cst_800,800,Transferência de crédito
+ibs_cbs_cst_810,810,Ajustes
+ibs_cbs_cst_820,820,Tributação em declaração de regime específico
+ibs_cbs_cst_830,830,Exclusão de base de cálculo
+ibs_cbs_cst_nan,nan,nan
+ibs_cbs_cst_nan,nan,Legenda:
+ibs_cbs_cst_nan,nan,0 = Não é permitido
+ibs_cbs_cst_nan,nan,1 = Exige

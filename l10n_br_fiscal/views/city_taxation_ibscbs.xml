@@ -6,8 +6,8 @@
     <field name="arch" type="xml">
       <tree editable="bottom">
         <field name="company_id" />
-        <field name="cClassTribIBSCBS" />
-        <field name="cstIBSCBS" />
+        <field name="cst_id" />
+        <field name="cclass_id" />
       </tree>
     </field>
   </record>
@@ -20,8 +20,8 @@
         <sheet>
         <field name="company_id" required="1" />
         <field name="city_taxation_code_id" invisible="1" />
-        <field name="cClassTribIBSCBS" />
-        <field name="cstIBSCBS" />
+        <field name="cst_id" />
+        <field name="cclass_id" />
         </sheet>
       </form>
     </field>
