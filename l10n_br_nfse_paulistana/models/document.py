@@ -269,6 +269,13 @@ class Document(models.Model):
         )
 
     def assinatura_rps(self, dados_lote_rps, dados_servico, dados_tomador):
+        """
+        Retorna os BYTES que devem ser assinados e atribuídos ao campo
+        tpRPS.Assinatura (antes do Base64). A assinatura digital deve ser
+        aplicada posteriormente.
+        """
+
+        # 1) MONTA A STRING CRUA
         assinatura = ""
 
         inscr_mun = misc.punctuation_rm(dados_lote_rps["inscricao_municipal"] or "")
@@ -299,22 +306,24 @@ class Document(models.Model):
         assinatura += (
             ("%.2f" % float(valor_base_assinatura)).replace(".", "").zfill(15)
         )
+
         valor_deducoes = dados_servico.get("valor_deducoes", 0.0)
         assinatura += (
             ("%.2f" % float(valor_deducoes)).replace(".", "").zfill(15)
         )
+
         assinatura += str(dados_servico["codigo_tributacao_municipio"]).zfill(5)
+
         has_cnpj_tomador = bool(dados_tomador.get("cnpj"))
         assinatura += "2" if has_cnpj_tomador else "1"
+
         doc_tomador = misc.punctuation_rm(
             dados_tomador.get("cnpj") or dados_tomador.get("cpf") or ""
         )
         assinatura += doc_tomador.zfill(14)
-        # OBS: Campos de intermediário (Indicador/CPF/CNPJ/NIF/ISSRetidoIntermediario)
-        # também aparecem na tabela da versão 2, mas aqui deixei fora por enquanto.
-        # Se você quiser seguir 100% o quadro (campos 13 a 16), dá para estender
-        # a assinatura aqui adicionando esses campos com os padrões do manual.
-        return assinatura
+
+        # 2) RETORNA BYTES — ESSENCIAL!
+        return assinatura.encode("ascii")
 
     def _map_taxation_rps(self, operation_nature):
         # FIXME: Lidar com diferença de tributado em São Paulo ou não
