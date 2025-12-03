@@ -137,6 +137,7 @@ class Document(models.Model):
     @staticmethod
     def _get_protocolo(record, processador, vals):
         for edoc in record.serialize():
+            protocolo = None
             processo = None
             for p in processador.processar_documento(edoc):
                 processo = p
