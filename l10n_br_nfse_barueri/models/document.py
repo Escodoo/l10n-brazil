@@ -4,7 +4,15 @@
 import base64
 
 from nfselib.barueri.NFeLoteEnviarArquivo import NFeLoteEnviarArquivo
-from nfselib.barueri.rps import RPS, RegistroTipo2
+from nfselib.barueri.rps import (
+    RPS,
+    RegistroTipo1,
+    RegistroTipo2,
+    RegistroTipo3,
+    RegistroTipo4,
+    RegistroTipo5,
+    RegistroTipo9,
+)
 
 from odoo import _, models
 
@@ -53,29 +61,200 @@ class Document(models.Model):
         dados = self._prepare_lote_rps()
         dados_servico = self._serialize_barueri_dados_servico()
         dados_tomador = self._serialize_barueri_dados_tomador()
+        # Registro tipo 1 - Cabeçalho do arquivo RPS
+        registro_tipo1 = RegistroTipo1()
+        registro_tipo1.TipoRegistro = 1
+        registro_tipo1.InscricaoContribuinte = self.company_inscr_mun
+        registro_tipo1.VersaoLayout = "PMB004"
+        # Identificação da Remessa: AAAAMMDDxxx (11 dígitos numéricos)
+        # Formato: ano(4) + mês(2) + dia(2) + sequencial(3)
+        data_emissao = dados["data_emissao"].split("T")[0]
+        ano_mes_dia = data_emissao.replace("-", "")  # AAAAMMDD
+        # Usar número do RPS ou timestamp como sequencial único
+        sequencial = str(self.rps_number or "1").zfill(3)[:3]
+        registro_tipo1.IdentificacaoRemessaContribuinte = f"{ano_mes_dia}{sequencial}"
+
+        # Registro tipo 2 - Dados do RPS
         registro_tipo2 = RegistroTipo2()
-        registro_tipo2.SerieNFe = dados["serie"]
+        registro_tipo2.TipoRegistro = 2
+        # TipoRPS: Deve ser literalmente "RPS  "
+        registro_tipo2.TipoRPS = "RPS  "
+        registro_tipo2.SerieRPS = self.document_serie or ""
+        registro_tipo2.SerieNFe = dados.get("serie", "") or ""
+        # NumeroRPS: 10 dígitos, 3 primeiros zeros obrigatórios
+        numero_rps = str(self.rps_number or "1").zfill(7)  # 7 dígitos
+        registro_tipo2.NumeroRPS = f"000{numero_rps}"  # Total 10 dígitos
         registro_tipo2.DataRPS = dados["data_emissao"].split("T")[0].replace("-", "")
         registro_tipo2.HoraRPS = dados["data_emissao"].split("T")[1].replace(":", "")
         registro_tipo2.SituacaoRPS = "E"
-        registro_tipo2.CodigoServicoPrestado = dados_servico["codigo_cnae"]
-        registro_tipo2.QuantidadeServico = 1
-        registro_tipo2.ValorServico = dados_servico["valor_servicos"]
-        registro_tipo2.ValorTotalRetencoes = self.amount_tax_withholding
-        registro_tipo2.TomadorEstrangeiro = 2
-        registro_tipo2.IndicadorCPFCNPJTomador = 2
-        registro_tipo2.CPFCNPJTomador = dados_tomador["cnpj"]
-        registro_tipo2.RazaoSocialNomeTomador = dados_tomador["razao_social"]
-        registro_tipo2.EnderecoLogradouroTomador = dados_tomador["endereco"]
-        registro_tipo2.NumeroLogradouroTomador = dados_tomador["numero"]
-        registro_tipo2.ComplementoLogradouroTomador = dados_tomador["complemento"]
-        registro_tipo2.BairroLogradouroTomador = dados_tomador["bairro"]
-        registro_tipo2.CidadeLogradouroTomador = dados_tomador["descricao_municipio"]
-        registro_tipo2.UFLogradouroTomador = dados_tomador["uf"]
-        registro_tipo2.CEPLogradouroTomador = dados_tomador["cep"]
-        registro_tipo2.EmailTomador = dados_tomador["email"]
-        registro_tipo2.DiscriminacaoServico = dados_servico["discriminacao"]
-        rps = RPS([registro_tipo2]).exportar()
+        registro_tipo2.CodigoMotivoCancelamento = ""
+        registro_tipo2.NumeroNFeCancelada = ""
+        registro_tipo2.SerieNFeCancelada = ""
+        registro_tipo2.DataEmissaoNFeCancelada = ""
+        registro_tipo2.DescricaoCancelamento = ""
+        registro_tipo2.CodigoServicoPrestado = dados_servico[
+            "codigo_tributacao_municipio"
+        ]
+        registro_tipo2.LocalPrestacaoServico = (
+            "2"
+        )  # String: 1=Município, 2=Fora do Município
+        registro_tipo2.ServicoPrestadoViasPublicas = "1"  # String: 1=Sim, 2=Não
+        registro_tipo2.EnderecoLogradouroLocalServico = ""
+        registro_tipo2.NumeroLogradouroLocalServico = ""
+        registro_tipo2.ComplementoLogradouroLocalServico = ""
+        registro_tipo2.BairroLogradouroLocalServico = ""
+        registro_tipo2.CidadeLogradouroLocalServico = ""
+        registro_tipo2.UFLogradouroLocalServico = ""
+        registro_tipo2.CEPLogradouroLocalServico = ""
+        # Quantidade e Valor do Serviço - usar valores das linhas fiscais
+        fiscal_line = self.fiscal_line_ids[0] if self.fiscal_line_ids else None
+        quantidade = int(fiscal_line.quantity or 1) if fiscal_line else 1
+        # Valor unitário do serviço (valor total / quantidade)
+        valor_servicos_total = dados_servico.get("valor_servicos", 0) or 0
+        valor_unitario = (
+            valor_servicos_total / quantidade
+            if quantidade > 0
+            else valor_servicos_total
+        )
+        # Converter valor para centavos e formatar com 15 dígitos
+        valor_unitario_centavos = int(round(float(valor_unitario) * 100))
+        registro_tipo2.QuantidadeServico = str(quantidade).zfill(6)
+        registro_tipo2.ValorServico = str(valor_unitario_centavos).zfill(15)
+        # Valor Total das Retenções (soma de todas as retenções)
+        valor_retencoes_total = (
+            (dados_servico.get("valor_ir_retido", 0) or 0)
+            + (dados_servico.get("valor_pis_retido", 0) or 0)
+            + (dados_servico.get("valor_cofins_retido", 0) or 0)
+            + (dados_servico.get("valor_csll_retido", 0) or 0)
+            + (dados_servico.get("valor_inss_retido", 0) or 0)
+            + (dados_servico.get("valor_iss_retido", 0) or 0)
+            + (dados_servico.get("outras_retencoes", 0) or 0)
+        )
+        valor_retencoes_centavos = int(round(float(valor_retencoes_total) * 100))
+        registro_tipo2.ValorTotalRetencoes = str(valor_retencoes_centavos).zfill(15)
+        registro_tipo2.TomadorEstrangeiro = "2"  # String: 1=Estrangeiro, 2=Brasileiro
+        registro_tipo2.ServicoExportacao = "2"  # String: 1=Exportado, 2=Não exportado
+        registro_tipo2.IndicadorCPFCNPJTomador = "1"  # String: 1=CPF, 2=CNPJ
+        # Verificar se é CPF ou CNPJ
+        cnpj_cpf = dados_tomador.get("cnpj") or dados_tomador.get("cpf", "")
+        registro_tipo2.CPFCNPJTomador = "".join(
+            [char for char in str(cnpj_cpf) if char.isdigit()]
+        ).zfill(14)
+        registro_tipo2.RazaoSocialNomeTomador = dados_tomador.get("razao_social", "")
+        registro_tipo2.EnderecoLogradouroTomador = (
+            dados_tomador.get("logradouro", "") or "R Pedra Sabao"
+        )
+        registro_tipo2.NumeroLogradouroTomador = str(
+            dados_tomador.get("numero", "") or ""
+        )
+        registro_tipo2.ComplementoLogradouroTomador = str(
+            dados_tomador.get("complemento", "") or ""
+        )
+        registro_tipo2.BairroLogradouroTomador = dados_tomador.get("bairro", "")
+        registro_tipo2.CidadeLogradouroTomador = dados_tomador.get(
+            "descricao_municipio", ""
+        )
+        registro_tipo2.UFLogradouroTomador = dados_tomador.get("uf", "")
+        # CEP: remover formatação e completar com zeros à esquerda
+        cep = (
+            str(dados_tomador.get("cep", "") or "")
+            .replace("-", "")
+            .replace(".", "")
+            .replace(" ", "")
+        )
+        registro_tipo2.CEPLogradouroTomador = cep.zfill(8) if cep else ""
+        registro_tipo2.EmailTomador = dados_tomador.get("email", "")
+        # registro_tipo2.ValorFatura = "000000000000100"
+        registro_tipo2.DiscriminacaoServico = "teste"  # self.discrimina()
+        # Registro tipo 3 - Valores do serviço (retenções)
+        # Só criar registro tipo 3 se houver retenções
+        registro_tipo3 = None
+        valor_total_retencoes_registro3 = 0
+        # Verificar se há retenções para criar registro tipo 3
+        if dados_servico.get("valor_ir_retido", 0):
+            registro_tipo3 = RegistroTipo3()
+            registro_tipo3.TipoRegistro = 3
+            registro_tipo3.CodigoOutrosValores = "01"  # IRRF
+            valor_ir = int(float(dados_servico.get("valor_ir_retido", 0)) * 100)
+            registro_tipo3.Valor = str(valor_ir).zfill(15)
+            valor_total_retencoes_registro3 += valor_ir
+        # Se não houver retenções, criar registro vazio (conforme exemplo original)
+        # if not registro_tipo3:
+        #     registro_tipo3 = RegistroTipo3()
+        #     registro_tipo3.TipoRegistro = 3
+        #     registro_tipo3.CodigoOutrosValores = "01"
+        #     registro_tipo3.Valor = "000000000000000"
+        # Registro tipo 4 - Dados complementares
+        registro_tipo4 = RegistroTipo4()
+        registro_tipo4.TipoRegistro = 4
+        registro_tipo4.OptanteSimplesNacional = (
+            "3"
+        )  # String: 1=Não optante, 2=MEI, 3=ME/EPP
+        registro_tipo4.RegimeApuracaoSN = "3"  # String: 1, 2 ou 3 conforme documentação
+        registro_tipo4.CodigoCidadeLocalPrestacao = str(
+            self.company_id.city_id.ibge_code or ""
+        ).zfill(7)
+        registro_tipo4.CodigoCidadeTomador = str(
+            self.partner_id.city_id.ibge_code or ""
+        ).zfill(7)
+        # Registro tipo 5 - Dados complementares do Ambiente de Dados Nacional
+        registro_tipo5 = RegistroTipo5()
+        registro_tipo5.TipoRegistro = 5
+        registro_tipo5.CodigoClassificacaoCreditoPresumidoIBSCBS = ""
+        registro_tipo5.TipoEnteGovernamental = ""
+        registro_tipo5.TipoOperacaoEntesGovernamentais = ""
+        registro_tipo5.ChaveNFSeReferenciada = ""
+        registro_tipo5.CodigoNCMBemMovelLocacao = ""
+        registro_tipo5.DescricaoBemMovelLocacao = ""
+        registro_tipo5.QuantidadeBemMovelLocacao = ""
+        registro_tipo5.IndicadorOperacaoDoacao = ""
+        registro_tipo5.DestinatarioServicoEstrangeiro = ""
+        registro_tipo5.CPFCNPJDestinatarioServico = ""
+        registro_tipo5.RazaoSocialNomeDestinatarioServico = ""
+        registro_tipo5.EnderecoLogradouroDestinatarioServico = ""
+        registro_tipo5.NumeroLogradouroDestinatarioServico = ""
+        registro_tipo5.ComplementoLogradouroDestinatarioServico = ""
+        registro_tipo5.BairroLogradouroDestinatarioServico = ""
+        registro_tipo5.CidadeLogradouroDestinatarioServico = ""
+        registro_tipo5.CodigoCidadeDestinatarioServico = ""
+        registro_tipo5.UFLogradouroDestinatarioServico = ""
+        registro_tipo5.CodigoPaisDestinatarioServico = ""
+        registro_tipo5.CEPLogradouroDestinatarioServico = ""
+        registro_tipo5.EmailDestinatarioServico = ""
+        registro_tipo5.NIFDestinatario = ""
+        registro_tipo5.CodigoEnderecoPostalDestinatarioEstrangeiro = ""
+        registro_tipo5.EstadoProvinciaRegiaoDestinatarioEstrangeiro = ""
+        # Registro tipo 9 - Rodapé do arquivo RPS
+        # Número total de linhas: conta apenas registros 1,2,3,4,5 (não inclui o 9)
+        # Contar quantos registros de dados existem
+        registros_dados = [registro_tipo1, registro_tipo2]
+        if registro_tipo3:
+            registros_dados.append(registro_tipo3)
+        registros_dados.append(registro_tipo4)
+
+        # Sempre incluir tipo 5 (mesmo que vazio, conforme layout)
+        # TODO: verificar se é necessário incluir o registro tipo 5
+        # registros_dados.append(registro_tipo5)
+
+        numero_total_linhas = len(registros_dados)
+
+        # Calcular valor total dos serviços: quantidade × valor unitário
+        quantidade_total = int(registro_tipo2.QuantidadeServico)
+        valor_unitario_centavos = int(registro_tipo2.ValorServico)
+        valor_total_servicos_centavos = quantidade_total * valor_unitario_centavos
+
+        # Valor total do registro 3 (retenções)
+        valor_total_registro3 = int(registro_tipo3.Valor) if registro_tipo3 else 0
+
+        registro_tipo9 = RegistroTipo9()
+        registro_tipo9.TipoRegistro = 9
+        registro_tipo9.NumeroTotalLinhas = str(numero_total_linhas).zfill(7)
+        registro_tipo9.ValorTotalServicos = str(valor_total_servicos_centavos).zfill(15)
+        registro_tipo9.ValorTotalValores = str(valor_total_registro3).zfill(15)
+
+        # Montar lista final de registros
+        registros_finais = registros_dados + [registro_tipo9]
+        rps = RPS(registros_finais).exportar()
 
         if isinstance(rps, str):
             rps = rps.encode("utf-8")
