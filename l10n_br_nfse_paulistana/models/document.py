@@ -234,6 +234,10 @@ class Document(models.Model):
                     dados_servico["codigo_municipio"],
                 ),
             ),
+            cstIBSCBS=self.convert_type_nfselib(tpRPS, "cstIBSCBS", "001"),
+            cClassTribIBSCBS=self.convert_type_nfselib(
+                tpRPS, "cClassTribIBSCBS", "001"
+            ),
         )
 
     def _serialize_rps(self, dados):

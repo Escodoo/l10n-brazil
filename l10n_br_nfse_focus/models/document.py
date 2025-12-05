@@ -363,7 +363,7 @@ class Document(models.Model):
         Returns:
             A string indicating the current status of the document.
         """
-        result = super(FiscalDocument, self)._document_status()
+        result = super()._document_status()
         for record in self.filtered(filter_processador_edoc_nfse).filtered(
             filter_focusnfe
         ):
