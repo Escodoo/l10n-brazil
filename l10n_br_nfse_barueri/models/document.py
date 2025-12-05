@@ -11,7 +11,6 @@ from odoo import _, models
 from odoo.addons.l10n_br_fiscal.constants.fiscal import (
     MODELO_FISCAL_NFSE,
     PROCESSADOR_OCA,
-    SITUACAO_EDOC_AUTORIZADA,
     SITUACAO_EDOC_REJEITADA,
 )
 
@@ -143,7 +142,7 @@ class Document(models.Model):
                 processo = p
 
                 if processo.webservice in CONSULTAR_NFSE_POR_RPS:
-                    if processo.resposta.Protocolo is None:
+                    if processo.resposta.ProtocoloRemessa is None:
                         mensagem_completa = ""
                         if processo.resposta.ListaMensagemRetorno:
                             lista_msgs = processo.resposta.ListaMensagemRetorno
@@ -164,52 +163,82 @@ class Document(models.Model):
                         record._change_state(SITUACAO_EDOC_REJEITADA)
                         record.write(vals)
                         return
-                    protocolo = processo.resposta.Protocolo
+                    protocolo = processo.resposta.ProtocoloRemessa
 
             if processo.webservice in CONSULTAR_SITUACAO_LOTE_RPS:
-                vals["status_code"] = processo.resposta.Situacao
+                vals["status_code"] = int(
+                    processo.resposta.ListaNfeArquivosRPS.SituacaoArq
+                )
+                vals[
+                    "return_filename"
+                ] = processo.resposta.ListaNfeArquivosRPS.NomeArqRetorno
 
         return vals, protocolo
 
     @staticmethod
     def _set_response(record, processador, protocolo, vals):
-        processo = processador.consultar_lote_rps(protocolo)
+        processo = processador.baixar_lote_rps(vals.get("return_filename"))
 
         if processo.resposta:
             mensagem_completa = ""
             if processo.resposta.ListaMensagemRetorno:
                 lista_msgs = processo.resposta.ListaMensagemRetorno
-                for mr in lista_msgs.MensagemRetorno:
-                    correcao = ""
-                    if mr.Correcao:
-                        correcao = mr.Correcao
 
+                if lista_msgs.Codigo != "OK200":
                     mensagem_completa += (
-                        mr.Codigo
+                        lista_msgs.Codigo
                         + " - "
-                        + mr.Mensagem
+                        + lista_msgs.Mensagem
                         + " - Correção: "
-                        + correcao
+                        + lista_msgs.Correcao
                         + "\n"
                     )
+                else:
+                    error_messages = {
+                        "000": "Layout Inválido",
+                        "103": "Versão Incorreta",
+                    }
+
+                    file_content = processo.retorno.ArquivoRPSBase64.decode(
+                        "utf-8"
+                    ).strip()
+                    parts = file_content.split(";")
+                    values = []
+                    for i in range(len(parts) - 1):
+                        segment = parts[i]
+                        if len(segment) >= 3:
+                            last_3 = segment[-3:]
+                            values.append(last_3)
+
+                    if values:
+                        for value in values:
+                            mensagem_completa += (
+                                value
+                                + " - "
+                                + error_messages.get(value, "Erro desconhecido")
+                                + " - Correção: "
+                                + "Efetuar correção do arquivo"
+                                + "\n"
+                            )
             vals["edoc_error_message"] = mensagem_completa
-            if vals.get("status_code") == 3:
+            if vals.get("status_code") == 2:
                 record._change_state(SITUACAO_EDOC_REJEITADA)
 
-        if processo.resposta.ListaNfse:
-            xml_file = processo.retorno
-            for comp in processo.resposta.ListaNfse.CompNfse:
-                vals["document_number"] = comp.Nfse.InfNfse.Numero
-                vals["authorization_date"] = comp.Nfse.InfNfse.DataEmissao
-                vals["verify_code"] = comp.Nfse.InfNfse.CodigoVerificacao
-            record.authorization_event_id.set_done(
-                status_code=vals["status_code"],
-                response=vals["status_name"],
-                protocol_date=vals["authorization_date"],
-                protocol_number=protocolo,
-                file_response_xml=xml_file,
-            )
-            record._change_state(SITUACAO_EDOC_AUTORIZADA)
+        # TODO:
+        # if processo.resposta.ListaNfse:
+        #     xml_file = processo.retorno
+        #     for comp in processo.resposta.ListaNfse.CompNfse:
+        #         vals["document_number"] = comp.Nfse.InfNfse.Numero
+        #         vals["authorization_date"] = comp.Nfse.InfNfse.DataEmissao
+        #         vals["verify_code"] = comp.Nfse.InfNfse.CodigoVerificacao
+        #     record.authorization_event_id.set_done(
+        #         status_code=vals["status_code"],
+        #         response=vals["status_name"],
+        #         protocol_date=vals["authorization_date"],
+        #         protocol_number=protocolo,
+        #         file_response_xml=xml_file,
+        #     )
+        #     record._change_state(SITUACAO_EDOC_AUTORIZADA)
 
         return vals
 
@@ -225,23 +254,27 @@ class Document(models.Model):
                 vals, protocolo = self._get_protocolo(record, processador, vals)
 
             else:
-                vals["status_code"] = 4
+                vals["status_code"] = 0
 
-            if vals.get("status_code") == 1:
-                vals["status_name"] = _("Not received")
+            if vals.get("status_code") == -1:
+                vals["status_name"] = _("Processing")
 
-            elif vals.get("status_code") == 2:
-                vals["status_name"] = _("Batch not yet processed")
+            elif vals.get("status_code") == -2:
+                vals["status_name"] = _("Waiting for Processing")
 
-            elif vals.get("status_code") == 3:
-                vals["status_name"] = _("Processed with Error")
-
-            elif vals.get("status_code") == 4:
-                vals["status_name"] = _("Successfully Processed")
+            elif vals.get("status_code") == 0:
+                vals["status_name"] = _("Validated")
                 vals["authorization_protocol"] = protocolo
 
-            if vals.get("status_code") in (3, 4):
+            elif vals.get("status_code") == 1:
+                vals["status_name"] = _("Imported")
+
+            elif vals.get("status_code") == 2:
+                vals["status_name"] = _("Processed with Error")
+
+            if vals.get("status_code") in (0, 2):
                 vals = self._set_response(record, processador, protocolo, vals)
+                vals.pop("return_filename")
 
             record.write(vals)
         return
