@@ -224,7 +224,7 @@ class Document(models.Model):
         registro_tipo5.TipoRegistro = 5
         registro_tipo5.CodigoClassificacaoCreditoPresumidoIBSCBS = ""
         registro_tipo5.TipoEnteGovernamental = ""
-        registro_tipo5.TipoOperacaoEntesGovernamentais = ""
+        registro_tipo5.TipoOperacaoEntesGovernamentais = "1"
         registro_tipo5.ChaveNFSeReferenciada = ""
         registro_tipo5.CodigoNCMBemMovelLocacao = ""
         registro_tipo5.DescricaoBemMovelLocacao = ""
