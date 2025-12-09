@@ -1,7 +1,6 @@
 # Copyright 2023 - KMEE INFORMATICA LTDA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-import base64
 
 from nfselib.barueri.NFeLoteEnviarArquivo import NFeLoteEnviarArquivo
 from nfselib.barueri.rps import (
@@ -65,7 +64,7 @@ class Document(models.Model):
         registro_tipo1 = RegistroTipo1()
         registro_tipo1.TipoRegistro = 1
         registro_tipo1.InscricaoContribuinte = self.company_inscr_mun
-        registro_tipo1.VersaoLayout = "PMB004"
+        registro_tipo1.VersaoLayout = "PMB003"
         # Identificação da Remessa: AAAAMMDDxxx (11 dígitos numéricos)
         # Formato: ano(4) + mês(2) + dia(2) + sequencial(3)
         data_emissao = dados["data_emissao"].split("T")[0]
@@ -78,9 +77,9 @@ class Document(models.Model):
         registro_tipo2 = RegistroTipo2()
         registro_tipo2.TipoRegistro = 2
         # TipoRPS: Deve ser literalmente "RPS  "
-        registro_tipo2.TipoRPS = "RPS  "
-        registro_tipo2.SerieRPS = self.document_serie or ""
-        registro_tipo2.SerieNFe = dados.get("serie", "") or ""
+        registro_tipo2.TipoRPS = "RPS"
+        # registro_tipo2.SerieRPS = self.document_serie or ""
+        # registro_tipo2.SerieNFe = dados.get("serie", "") or ""
         # NumeroRPS: 10 dígitos, 3 primeiros zeros obrigatórios
         numero_rps = str(self.rps_number or "1").zfill(7)  # 7 dígitos
         registro_tipo2.NumeroRPS = f"000{numero_rps}"  # Total 10 dígitos
@@ -96,9 +95,9 @@ class Document(models.Model):
             "codigo_tributacao_municipio"
         ]
         registro_tipo2.LocalPrestacaoServico = (
-            "2"
+            "1"
         )  # String: 1=Município, 2=Fora do Município
-        registro_tipo2.ServicoPrestadoViasPublicas = "1"  # String: 1=Sim, 2=Não
+        registro_tipo2.ServicoPrestadoViasPublicas = "2"  # String: 1=Sim, 2=Não
         registro_tipo2.EnderecoLogradouroLocalServico = ""
         registro_tipo2.NumeroLogradouroLocalServico = ""
         registro_tipo2.ComplementoLogradouroLocalServico = ""
@@ -134,7 +133,7 @@ class Document(models.Model):
         registro_tipo2.ValorTotalRetencoes = str(valor_retencoes_centavos).zfill(15)
         registro_tipo2.TomadorEstrangeiro = "2"  # String: 1=Estrangeiro, 2=Brasileiro
         registro_tipo2.ServicoExportacao = "2"  # String: 1=Exportado, 2=Não exportado
-        registro_tipo2.IndicadorCPFCNPJTomador = "1"  # String: 1=CPF, 2=CNPJ
+        registro_tipo2.IndicadorCPFCNPJTomador = "2"  # String: 1=CPF, 2=CNPJ
         # Verificar se é CPF ou CNPJ
         cnpj_cpf = dados_tomador.get("cnpj") or dados_tomador.get("cpf", "")
         registro_tipo2.CPFCNPJTomador = "".join(
@@ -145,15 +144,20 @@ class Document(models.Model):
             dados_tomador.get("logradouro", "") or "R Pedra Sabao"
         )
         registro_tipo2.NumeroLogradouroTomador = str(
-            dados_tomador.get("numero", "") or ""
+            dados_tomador.get("numero", "") or "10"
         )
         registro_tipo2.ComplementoLogradouroTomador = str(
-            dados_tomador.get("complemento", "") or ""
+            dados_tomador.get("complemento", "") or "N/A"
         )
-        registro_tipo2.BairroLogradouroTomador = dados_tomador.get("bairro", "")
-        registro_tipo2.CidadeLogradouroTomador = dados_tomador.get(
-            "descricao_municipio", ""
+        registro_tipo2.BairroLogradouroTomador = dados_tomador.get(
+            "bairro", "Bairro N/A"
         )
+        # registro_tipo2.CidadeLogradouroTomador = dados_tomador.get(
+        #     "descricao_municipio", "Cidade N/A"
+        # )
+
+        registro_tipo2.CidadeLogradouroTomador = "Aluminio"
+
         registro_tipo2.UFLogradouroTomador = dados_tomador.get("uf", "")
         # CEP: remover formatação e completar com zeros à esquerda
         cep = (
@@ -163,9 +167,11 @@ class Document(models.Model):
             .replace(" ", "")
         )
         registro_tipo2.CEPLogradouroTomador = cep.zfill(8) if cep else ""
-        registro_tipo2.EmailTomador = dados_tomador.get("email", "")
+        registro_tipo2.EmailTomador = dados_tomador.get("email", "tomador@email.com")
         # registro_tipo2.ValorFatura = "000000000000100"
-        registro_tipo2.DiscriminacaoServico = "teste"  # self.discrimina()
+        registro_tipo2.DiscriminacaoServico = (
+            "testeasdasdasdasdasdasdasdadasdasdasdasdddddddddddddddddddddddddddddddddd"
+        )  # self.discrimina()
         # Registro tipo 3 - Valores do serviço (retenções)
         # Só criar registro tipo 3 se houver retenções
         registro_tipo3 = None
@@ -188,15 +194,31 @@ class Document(models.Model):
         registro_tipo4 = RegistroTipo4()
         registro_tipo4.TipoRegistro = 4
         registro_tipo4.OptanteSimplesNacional = (
-            "3"
+            1
         )  # String: 1=Não optante, 2=MEI, 3=ME/EPP
-        registro_tipo4.RegimeApuracaoSN = "3"  # String: 1, 2 ou 3 conforme documentação
+        registro_tipo4.RegimeApuracaoSN = ""  # String: 1, 2 ou 3 conforme documentação
         registro_tipo4.CodigoCidadeLocalPrestacao = str(
             self.company_id.city_id.ibge_code or ""
         ).zfill(7)
         registro_tipo4.CodigoCidadeTomador = str(
             self.partner_id.city_id.ibge_code or ""
         ).zfill(7)
+        registro_tipo4.CodigoNBS = "114012100"
+        registro_tipo4.CodigoIndicadorOperacaoFornecimento = "100301"
+        registro_tipo4.CodigoClassificacaoTributariaIBSCBS = "000001"
+        registro_tipo4.CodigoSituacaoTributariaIBSCBS = "000"
+        registro_tipo4.OperacaoUsoConsumoPessoal = "0"
+        registro_tipo4.IndicadorDestinatarioServico = "0"
+
+        # registro_tipo4.OptanteSimplesNacional = 2  # 1=Não optante, 2=MEI, 3=ME/EPP
+        # registro_tipo4.RegimeApuracaoSN = 1  # String: 1, 2 ou 3 conforme documentação
+        # registro_tipo4.CodigoCidadeLocalPrestacao = str(
+        #    self.company_id.city_id.ibge_code or ""
+        # ).zfill(7)
+        # registro_tipo4.CodigoCidadeTomador = str(
+        #    self.partner_id.city_id.ibge_code or ""
+        # ).zfill(7)
+
         # Registro tipo 5 - Dados complementares do Ambiente de Dados Nacional
         registro_tipo5 = RegistroTipo5()
         registro_tipo5.TipoRegistro = 5
@@ -236,7 +258,7 @@ class Document(models.Model):
         # TODO: verificar se é necessário incluir o registro tipo 5
         # registros_dados.append(registro_tipo5)
 
-        numero_total_linhas = len(registros_dados)
+        numero_total_linhas = len(registros_dados) + 1
 
         # Calcular valor total dos serviços: quantidade × valor unitário
         quantidade_total = int(registro_tipo2.QuantidadeServico)
@@ -263,7 +285,7 @@ class Document(models.Model):
                 "O conteúdo fornecido para a codificação base64 não está em formato de bytes."
             )
 
-        rps = base64.b64encode(rps)
+        # rps = base64.b64encode(rps)
         return rps
 
     def serialize_nfse_barueri(self):
