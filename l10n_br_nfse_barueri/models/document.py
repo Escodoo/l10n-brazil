@@ -64,7 +64,7 @@ class Document(models.Model):
         registro_tipo1 = RegistroTipo1()
         registro_tipo1.TipoRegistro = 1
         registro_tipo1.InscricaoContribuinte = self.company_inscr_mun
-        registro_tipo1.VersaoLayout = "PMB003"
+        registro_tipo1.VersaoLayout = "PMB004"
         # Identificação da Remessa: AAAAMMDDxxx (11 dígitos numéricos)
         # Formato: ano(4) + mês(2) + dia(2) + sequencial(3)
         data_emissao = dados["data_emissao"].split("T")[0]
@@ -254,9 +254,8 @@ class Document(models.Model):
             registros_dados.append(registro_tipo3)
         registros_dados.append(registro_tipo4)
 
-        # Sempre incluir tipo 5 (mesmo que vazio, conforme layout)
-        # TODO: verificar se é necessário incluir o registro tipo 5
-        # registros_dados.append(registro_tipo5)
+        # Sempre incluir tipo 5 (obrigatório conforme layout v4)
+        registros_dados.append(registro_tipo5)
 
         numero_total_linhas = len(registros_dados) + 1
 
