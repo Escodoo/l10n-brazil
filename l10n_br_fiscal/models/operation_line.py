@@ -11,6 +11,8 @@ from ..constants.fiscal import (
     OPERATION_STATE,
     OPERATION_STATE_DEFAULT,
     PRODUCT_FISCAL_TYPE,
+    TAX_DOMAIN_CBS,
+    TAX_DOMAIN_IBS,
     TAX_DOMAIN_ICMS,
     TAX_DOMAIN_IPI,
     TAX_DOMAIN_ISSQN,
@@ -171,6 +173,14 @@ class OperationLine(models.Model):
         if tax_definition and tax_definition.ipi_guideline_id:
             mapping_result["ipi_guideline"] = tax_definition.ipi_guideline_id
 
+    def _build_mapping_result_cbs(self, mapping_result, tax_definition):
+        if tax_definition and tax_definition.tax_classification_id:
+            mapping_result["tax_classification"] = tax_definition.tax_classification_id
+
+    def _build_mapping_result_ibs(self, mapping_result, tax_definition):
+        if tax_definition and tax_definition.tax_classification_id:
+            mapping_result["tax_classification"] = tax_definition.tax_classification_id
+
     def _build_mapping_result_icms(self, mapping_result, tax_definition):
         if tax_definition and tax_definition.is_benefit:
             mapping_result["icms_tax_benefit_id"] = tax_definition.id
@@ -184,6 +194,14 @@ class OperationLine(models.Model):
         self._build_mapping_result_ipi(
             mapping_result,
             tax_definition.filtered(lambda t: t.tax_domain == TAX_DOMAIN_IPI),
+        )
+        self._build_mapping_result_cbs(
+            mapping_result,
+            tax_definition.filtered(lambda t: t.tax_domain == TAX_DOMAIN_CBS),
+        )
+        self._build_mapping_result_ibs(
+            mapping_result,
+            tax_definition.filtered(lambda t: t.tax_domain == TAX_DOMAIN_IBS),
         )
 
     def map_fiscal_taxes(
@@ -246,12 +264,15 @@ class OperationLine(models.Model):
               (l10n_br_fiscal.tax.ipi.guideline).
             - 'icms_tax_benefit_id': The determined ICMS tax benefit record
               ID (l10n_br_fiscal.tax.definition) or False.
+            - 'tax_classification': The determined Tax Classification record
+              (l10n_br_fiscal.tax.classification).
         """
         mapping_result = {
             "taxes": {},
             "cfop": False,
             "ipi_guideline": self.env.ref("l10n_br_fiscal.tax_guideline_999"),
             "icms_tax_benefit_id": False,
+            "tax_classification": False,
         }
 
         self.ensure_one()
