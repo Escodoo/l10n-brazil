@@ -269,6 +269,11 @@ class TaxDefinition(models.Model):
         domain="['|', ('cst_in_id', '=', cst_id), ('cst_out_id', '=', cst_id)]",
     )
 
+    tax_classification_id = fields.Many2one(
+        comodel_name="l10n_br_fiscal.tax.classification",
+        string="Tax Classification",
+    )
+
     fiscal_profile_id = fields.Many2one(
         comodel_name="l10n_br_fiscal.partner.profile", string="Partner Profile"
     )
