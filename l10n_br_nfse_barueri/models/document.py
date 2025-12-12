@@ -494,7 +494,7 @@ class Document(models.Model):
                     vals["authorization_date"] = datetime.strptime(
                         nfse_date + nfse_time, "%Y%m%d%H%M%S"
                     )
-                    vals["nfse_status"] = nfse_status
+                    vals["status_name"] = nfse_status
 
                     record.write(
                         {
@@ -509,7 +509,7 @@ class Document(models.Model):
                     if nfse_status == "A":
                         record.authorization_event_id.set_done(
                             status_code=vals["status_code"],
-                            response=vals["status_name"],
+                            response=nfse_status,
                             protocol_date=vals["authorization_date"],
                             protocol_number=protocolo,
                             file_response_xml=xml_file,
