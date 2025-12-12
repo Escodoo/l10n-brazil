@@ -358,14 +358,21 @@ class Document(models.Model):
             )
 
             status, mensagem = processador.analisa_retorno_consulta(processo)
-
+            vals = dict()
             if status == 1 and int(record.status_code) in [-1, -2]:
-                vals = dict()
                 vals[
                     "return_filename"
                 ] = processo.resposta.ListaNfeArquivosRPS.NomeArqRetorno
                 vals["status_name"] = _("Successfully Processed")
                 vals["status_code"] = 1
+                vals = record._set_response(record, processador, protocolo, vals)
+
+            if status == 2 and int(record.status_code) in [-1, -2]:
+                vals[
+                    "return_filename"
+                ] = processo.resposta.ListaNfeArquivosRPS.NomeArqRetorno
+                vals["status_name"] = _("Processed with Error")
+                vals["status_code"] = 2
                 vals = record._set_response(record, processador, protocolo, vals)
 
         return mensagem
@@ -450,6 +457,7 @@ class Document(models.Model):
                 else:
                     error_messages = {
                         "000": "Layout Inválido",
+                        "102": "inválida ou já informada em outro arquivo de remessa",
                         "103": "Versão Incorreta",
                     }
 
@@ -475,8 +483,15 @@ class Document(models.Model):
                                 + "\n"
                             )
                 vals["edoc_error_message"] = mensagem_completa
-                if vals.get("status_code") == 2:
-                    record._change_state(SITUACAO_EDOC_REJEITADA)
+
+                record.write(
+                    {
+                        "status_name": vals["status_name"],
+                        "status_code": vals["status_code"],
+                        "edoc_error_message": mensagem_completa,
+                    }
+                )
+                record._change_state(SITUACAO_EDOC_REJEITADA)
             else:
                 if vals.get("status_code") == 1:
                     arquivo_bytes = processo.retorno.ArquivoRPSBase64
@@ -501,6 +516,8 @@ class Document(models.Model):
                             "verify_code": nfse_auth_code,
                             "document_number": nfse_number,
                             "authorization_date": vals["authorization_date"],
+                            "status_name": nfse_status,
+                            "status_code": vals["status_code"],
                         }
                     )
 
