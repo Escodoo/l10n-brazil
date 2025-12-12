@@ -1,8 +1,17 @@
 # Copyright 2023 - KMEE INFORMATICA LTDA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
+from datetime import datetime
 
+import requests
 from nfselib.barueri.NFeLoteEnviarArquivo import NFeLoteEnviarArquivo
+from nfselib.barueri.nfse import (
+    NFSeRegistroTipo1,
+    NFSeRegistroTipo2,
+    NFSeRegistroTipo3,
+    NFSeRegistroTipo4,
+    NFSeRegistroTipo9,
+)
 from nfselib.barueri.rps import (
     RPS,
     RegistroTipo1,
@@ -18,10 +27,16 @@ from odoo import _, models
 from odoo.addons.l10n_br_fiscal.constants.fiscal import (
     MODELO_FISCAL_NFSE,
     PROCESSADOR_OCA,
+    SITUACAO_EDOC_AUTORIZADA,
+    SITUACAO_EDOC_ENVIADA,
     SITUACAO_EDOC_REJEITADA,
 )
 
-from ..constants.barueri import CONSULTAR_NFSE_POR_RPS, CONSULTAR_SITUACAO_LOTE_RPS
+from ..constants.barueri import (
+    CONSULTAR_NFSE_POR_RPS,
+    CONSULTAR_SITUACAO_LOTE_RPS,
+    ENVIO_LOTE_RPS,
+)
 
 
 def filter_oca_nfse(record):
@@ -36,6 +51,24 @@ def filter_barueri(record):
     if record.company_id.provedor_nfse == "barueri":
         return True
     return False
+
+
+def parse_linha_exporta(line: str):
+    tipo = line[0]
+    if tipo == "1":
+        reg = NFSeRegistroTipo1.from_line(line)
+    elif tipo == "2":
+        reg = NFSeRegistroTipo2.from_line(line)
+    elif tipo == "3":
+        reg = NFSeRegistroTipo3.from_line(line)
+    elif tipo == "4":
+        reg = NFSeRegistroTipo4.from_line(line)
+    elif tipo == "9":
+        reg = NFSeRegistroTipo9.from_line(line)
+    else:
+        raise ValueError(f"Tipo de registro desconhecido: {tipo}")
+
+    return reg
 
 
 class Document(models.Model):
@@ -284,7 +317,6 @@ class Document(models.Model):
                 "O conteúdo fornecido para a codificação base64 não está em formato de bytes."
             )
 
-        # rps = base64.b64encode(rps)
         return rps
 
     def serialize_nfse_barueri(self):
@@ -317,21 +349,37 @@ class Document(models.Model):
         status = super()._document_status()
         for record in self.filtered(filter_oca_nfse).filtered(filter_barueri):
             processador = record._processador_erpbrasil_nfse()
+            protocolo = record.authorization_event_id.lot_receipt_number
             processo = processador.consulta_nfse_rps(
                 rps_number=int(record.rps_number),
                 rps_serie=record.document_serie,
                 rps_type=int(record.rps_type),
+                lot_receipt_number=protocolo,
             )
 
-            status = _(
-                processador.analisa_retorno_consulta(
-                    processo,
-                    record.document_number,
-                    record.company_cnpj_cpf,
-                    record.company_legal_name,
-                )
-            )
-        return status
+            status, mensagem = processador.analisa_retorno_consulta(processo)
+
+            if status == 1 and int(record.status_code) in [-1, -2]:
+                vals = dict()
+                vals[
+                    "return_filename"
+                ] = processo.resposta.ListaNfeArquivosRPS.NomeArqRetorno
+                vals["status_name"] = _("Successfully Processed")
+                vals["status_code"] = 1
+                vals = record._set_response(record, processador, protocolo, vals)
+
+        return mensagem
+
+    def _baixar_xml_nfse(self, autenticidade, cnpj):
+        url = (
+            "https://testeeiss.barueri.sp.gov.br/nfe/xmlNFe.ashx"
+            f"?codigoautenticidade={autenticidade}"
+            f"&numdoc={cnpj}"
+        )
+        resp = requests.get(url, timeout=15)
+        resp.raise_for_status()
+
+        return resp.text
 
     @staticmethod
     def _get_protocolo(record, processador, vals):
@@ -340,6 +388,12 @@ class Document(models.Model):
             processo = None
             for p in processador.processar_documento(edoc):
                 processo = p
+
+                if processo.webservice in ENVIO_LOTE_RPS:
+                    record.authorization_event_id.lot_receipt_number = (
+                        processo.resposta.ProtocoloRemessa
+                    )
+                    protocolo = processo.resposta.ProtocoloRemessa
 
                 if processo.webservice in CONSULTAR_NFSE_POR_RPS:
                     if processo.resposta.ProtocoloRemessa is None:
@@ -365,13 +419,13 @@ class Document(models.Model):
                         return
                     protocolo = processo.resposta.ProtocoloRemessa
 
-            if processo.webservice in CONSULTAR_SITUACAO_LOTE_RPS:
-                vals["status_code"] = int(
-                    processo.resposta.ListaNfeArquivosRPS.SituacaoArq
-                )
-                vals[
-                    "return_filename"
-                ] = processo.resposta.ListaNfeArquivosRPS.NomeArqRetorno
+                if processo.webservice in CONSULTAR_SITUACAO_LOTE_RPS:
+                    vals["status_code"] = int(
+                        processo.resposta.ListaNfeArquivosRPS.SituacaoArq
+                    )
+                    vals[
+                        "return_filename"
+                    ] = processo.resposta.ListaNfeArquivosRPS.NomeArqRetorno
 
         return vals, protocolo
 
@@ -381,7 +435,7 @@ class Document(models.Model):
 
         if processo.resposta:
             mensagem_completa = ""
-            if processo.resposta.ListaMensagemRetorno:
+            if vals.get("status_code") == 2 and processo.resposta.ListaMensagemRetorno:
                 lista_msgs = processo.resposta.ListaMensagemRetorno
 
                 if lista_msgs.Codigo != "OK200":
@@ -420,26 +474,48 @@ class Document(models.Model):
                                 + "Efetuar correção do arquivo"
                                 + "\n"
                             )
-            vals["edoc_error_message"] = mensagem_completa
-            if vals.get("status_code") == 2:
-                record._change_state(SITUACAO_EDOC_REJEITADA)
+                vals["edoc_error_message"] = mensagem_completa
+                if vals.get("status_code") == 2:
+                    record._change_state(SITUACAO_EDOC_REJEITADA)
+            else:
+                if vals.get("status_code") == 1:
+                    arquivo_bytes = processo.retorno.ArquivoRPSBase64
+                    arquivo_texto = arquivo_bytes.decode("latin1")
+                    linhas = arquivo_texto.splitlines()
+                    registros_exporta = [parse_linha_exporta(linha) for linha in linhas]
 
-        # TODO:
-        # if processo.resposta.ListaNfse:
-        #     xml_file = processo.retorno
-        #     for comp in processo.resposta.ListaNfse.CompNfse:
-        #         vals["document_number"] = comp.Nfse.InfNfse.Numero
-        #         vals["authorization_date"] = comp.Nfse.InfNfse.DataEmissao
-        #         vals["verify_code"] = comp.Nfse.InfNfse.CodigoVerificacao
-        #     record.authorization_event_id.set_done(
-        #         status_code=vals["status_code"],
-        #         response=vals["status_name"],
-        #         protocol_date=vals["authorization_date"],
-        #         protocol_number=protocolo,
-        #         file_response_xml=xml_file,
-        #     )
-        #     record._change_state(SITUACAO_EDOC_AUTORIZADA)
+                    nfse_number = registros_exporta[1].campos[2].valor
+                    nfse_date = registros_exporta[1].campos[3].valor
+                    nfse_time = registros_exporta[1].campos[4].valor
+                    nfse_auth_code = registros_exporta[1].campos[5].valor
+                    nfse_status = registros_exporta[1].campos[10].valor
+                    nfse_cnpj_cpf = registros_exporta[1].campos[14].valor
 
+                    vals["authorization_date"] = datetime.strptime(
+                        nfse_date + nfse_time, "%Y%m%d%H%M%S"
+                    )
+                    vals["nfse_status"] = nfse_status
+
+                    record.write(
+                        {
+                            "verify_code": nfse_auth_code,
+                            "document_number": nfse_number,
+                            "authorization_date": vals["authorization_date"],
+                        }
+                    )
+
+                    xml_file = record._baixar_xml_nfse(nfse_auth_code, nfse_cnpj_cpf)
+
+                    if nfse_status == "A":
+                        record.authorization_event_id.set_done(
+                            status_code=vals["status_code"],
+                            response=vals["status_name"],
+                            protocol_date=vals["authorization_date"],
+                            protocol_number=protocolo,
+                            file_response_xml=xml_file,
+                        )
+                        record._change_state(SITUACAO_EDOC_AUTORIZADA)
+                        record.make_pdf()
         return vals
 
     def _eletronic_document_send(self):
@@ -451,30 +527,33 @@ class Document(models.Model):
             vals = dict()
 
             if not protocolo:
-                vals, protocolo = self._get_protocolo(record, processador, vals)
+                vals, protocolo = record._get_protocolo(record, processador, vals)
 
             else:
                 vals["status_code"] = 0
 
             if vals.get("status_code") == -1:
-                vals["status_name"] = _("Processing")
+                vals["status_name"] = _("Batch not yet processed")
+                record._change_state(SITUACAO_EDOC_ENVIADA)
 
             elif vals.get("status_code") == -2:
-                vals["status_name"] = _("Waiting for Processing")
+                vals["status_name"] = _("Batch not yet processed")
+                record._change_state(SITUACAO_EDOC_ENVIADA)
 
             elif vals.get("status_code") == 0:
                 vals["status_name"] = _("Validated")
-                vals["authorization_protocol"] = protocolo
 
             elif vals.get("status_code") == 1:
-                vals["status_name"] = _("Imported")
+                vals["status_name"] = _("Successfully Processed")
+                vals["authorization_protocol"] = protocolo
 
             elif vals.get("status_code") == 2:
                 vals["status_name"] = _("Processed with Error")
 
-            if vals.get("status_code") in (0, 2):
-                vals = self._set_response(record, processador, protocolo, vals)
-                vals.pop("return_filename")
+            if vals.get("status_code") in (1, 2):
+                vals = record._set_response(record, processador, protocolo, vals)
 
+            if vals.get("return_filename"):
+                vals.pop("return_filename")
             record.write(vals)
         return
