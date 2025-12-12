@@ -553,7 +553,7 @@ class Document(models.Model):
             if vals.get("status_code") in (1, 2):
                 vals = record._set_response(record, processador, protocolo, vals)
 
-            if vals.get("return_filename"):
+            if "return_filename" in vals:
                 vals.pop("return_filename")
             record.write(vals)
         return
