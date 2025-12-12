@@ -516,7 +516,7 @@ class Document(models.Model):
                             "verify_code": nfse_auth_code,
                             "document_number": nfse_number,
                             "authorization_date": vals["authorization_date"],
-                            "status_name": nfse_status,
+                            "status_name": vals["status_name"],
                             "status_code": vals["status_code"],
                         }
                     )
