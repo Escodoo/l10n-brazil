@@ -46,6 +46,7 @@
         "data/l10n_br_fiscal.tax.ipi.guideline.class.csv",
         "data/l10n_br_fiscal.tax.pis.cofins.base.csv",
         "data/l10n_br_fiscal.tax.pis.cofins.credit.csv",
+        "data/l10n_br_fiscal.tax.classification.csv",
         "data/l10n_br_fiscal.service.type.csv",
         "data/simplified_tax_data.xml",
         "data/operation_data.xml",
