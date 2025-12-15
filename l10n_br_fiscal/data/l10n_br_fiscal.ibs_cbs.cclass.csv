@@ -1,0 +1,133 @@
+id,code,name,cst_id/id
+ibs_cbs_cclass_0_1,000001,Tributação integral,ibs_cbs_cst_0
+ibs_cbs_cclass_0_2,000002,Tributação integral,ibs_cbs_cst_0
+ibs_cbs_cclass_0_3,000003,Tributação integral,ibs_cbs_cst_0
+ibs_cbs_cclass_0_4,000004,Tributação integral,ibs_cbs_cst_0
+ibs_cbs_cclass_10_10001,010001,Tributação com alíquotas uniformes - operações do FGTS,ibs_cbs_cst_10
+ibs_cbs_cclass_10_10002,010002,Tributação com alíquotas uniformes - operações setor financeiro,ibs_cbs_cst_10
+ibs_cbs_cclass_11_11001,011001,Tributação com alíquotas uniformes reduzidas em 60%,ibs_cbs_cst_11
+ibs_cbs_cclass_11_11002,011002,Tributação com alíquotas uniformes reduzidas em 60%,ibs_cbs_cst_11
+ibs_cbs_cclass_11_11003,011003,Tributação com alíquotas uniformes reduzidas em 60%,ibs_cbs_cst_11
+ibs_cbs_cclass_11_11004,011004,Tributação com alíquotas uniformes,ibs_cbs_cst_11
+ibs_cbs_cclass_11_11005,011005,Tributação com alíquotas uniformes reduzidas em 30%,ibs_cbs_cst_11
+ibs_cbs_cclass_200_200001,200001,Alíquota zero,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200002,200002,Alíquota zero,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200003,200003,Alíquota zero,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200004,200004,Alíquota zero,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200005,200005,Alíquota zero,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200006,200006,Alíquota zero,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200007,200007,Alíquota zero,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200008,200008,Alíquota zero,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200009,200009,Alíquota zero,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200010,200010,Alíquota zero,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200011,200011,Alíquota zero,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200012,200012,Alíquota zero,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200013,200013,Alíquota zero,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200014,200014,Alíquota zero,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200015,200015,Alíquota zero,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200016,200016,Alíquota zero,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200017,200017,Alíquota zero,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200018,200018,Alíquota zero,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200019,200019,Alíquota zero,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200020,200020,Alíquota zero,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200021,200021,Alíquota zero,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200022,200022,Alíquota zero,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200023,200023,Alíquota zero,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200024,200024,Alíquota zero,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200025,200025,Alíquota zero apenas CBS e reduzida em 60% para IBS,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200026,200026,Alíquota reduzida em 80%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200027,200027,Alíquota reduzida em 70%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200028,200028,Alíquota reduzida em 60%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200029,200029,Alíquota reduzida em 60%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200030,200030,Alíquota reduzida em 60%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200031,200031,Alíquota reduzida em 60%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200032,200032,Alíquota reduzida em 60%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200033,200033,Alíquota reduzida em 60%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200034,200034,Alíquota reduzida em 60%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200035,200035,Alíquota reduzida em 60%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200036,200036,Alíquota reduzida em 60%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200037,200037,Alíquota reduzida em 60%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200038,200038,Alíquota reduzida em 60%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200039,200039,Alíquota reduzida em 60%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200040,200040,Alíquota reduzida em 60%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200041,200041,Alíquota reduzida em 60%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200042,200042,Alíquota reduzida em 60%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200043,200043,Alíquota reduzida em 60%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200044,200044,Alíquota reduzida em 60%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200045,200045,Alíquota reduzida em 60%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200046,200046,Alíquota reduzida em 50%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200047,200047,Alíquota reduzida em 40%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200048,200048,Alíquota reduzida em 40%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200049,200049,Alíquota reduzida em 40%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200450,200450,Alíquota reduzida em 40%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200051,200051,Alíquota reduzida em 40%,ibs_cbs_cst_200
+ibs_cbs_cclass_200_200052,200052,Alíquota reduzida em 30%,ibs_cbs_cst_200
+ibs_cbs_cclass_210_210001,210001,Alíquota reduzida em 50% com redutor de base de cálculo,ibs_cbs_cst_210
+ibs_cbs_cclass_210_210002,210002,Alíquota reduzida em 50% com redutor de base de cálculo,ibs_cbs_cst_210
+ibs_cbs_cclass_210_210003,210003,Alíquota reduzida em 70% com redutor de base de cálculo,ibs_cbs_cst_210
+ibs_cbs_cclass_220_220001,220001,Alíquota fixa,ibs_cbs_cst_220
+ibs_cbs_cclass_220_220002,220002,Alíquota fixa,ibs_cbs_cst_220
+ibs_cbs_cclass_220_220003,220003,Alíquota fixa,ibs_cbs_cst_220
+ibs_cbs_cclass_221_221001,221001,Alíquota fixa proporcional,ibs_cbs_cst_221
+ibs_cbs_cclass_222_222001,222001,Redução de Base de Cálculo,ibs_cbs_cst_222
+ibs_cbs_cclass_400_400001,400001,Isenção,ibs_cbs_cst_400
+ibs_cbs_cclass_410_410001,410001,Imunidade e não incidência,ibs_cbs_cst_410
+ibs_cbs_cclass_410_410002,410002,Imunidade e não incidência,ibs_cbs_cst_410
+ibs_cbs_cclass_410_410003,410003,Imunidade e não incidência,ibs_cbs_cst_410
+ibs_cbs_cclass_410_410004,410004,Imunidade e não incidência,ibs_cbs_cst_410
+ibs_cbs_cclass_410_410005,410005,Imunidade e não incidência,ibs_cbs_cst_410
+ibs_cbs_cclass_410_410006,410006,Imunidade e não incidência,ibs_cbs_cst_410
+ibs_cbs_cclass_410_410007,410007,Imunidade e não incidência,ibs_cbs_cst_410
+ibs_cbs_cclass_410_410008,410008,Imunidade e não incidência,ibs_cbs_cst_410
+ibs_cbs_cclass_410_410009,410009,Imunidade e não incidência,ibs_cbs_cst_410
+ibs_cbs_cclass_410_410010,410010,Imunidade e não incidência,ibs_cbs_cst_410
+ibs_cbs_cclass_410_410011,410011,Imunidade e não incidência,ibs_cbs_cst_410
+ibs_cbs_cclass_410_410012,410012,Imunidade e não incidência,ibs_cbs_cst_410
+ibs_cbs_cclass_410_410013,410013,Imunidade e não incidência,ibs_cbs_cst_410
+ibs_cbs_cclass_410_410014,410014,Imunidade e não incidência,ibs_cbs_cst_410
+ibs_cbs_cclass_410_410015,410015,Imunidade e não incidência,ibs_cbs_cst_410
+ibs_cbs_cclass_410_410016,410016,Imunidade e não incidência,ibs_cbs_cst_410
+ibs_cbs_cclass_410_410017,410017,Imunidade e não incidência,ibs_cbs_cst_410
+ibs_cbs_cclass_410_410018,410018,Imunidade e não incidência,ibs_cbs_cst_410
+ibs_cbs_cclass_410_410019,410019,Imunidade e não incidência,ibs_cbs_cst_410
+ibs_cbs_cclass_410_410020,410020,Imunidade e não incidência,ibs_cbs_cst_410
+ibs_cbs_cclass_410_410021,410021,Imunidade e não incidência,ibs_cbs_cst_410
+ibs_cbs_cclass_410_410999,410999,Imunidade e não incidência,ibs_cbs_cst_410
+ibs_cbs_cclass_510_510001,510001,Diferimento,ibs_cbs_cst_510
+ibs_cbs_cclass_510_510002,510002,Diferimento,ibs_cbs_cst_510
+ibs_cbs_cclass_550_550001,550001,Suspensão,ibs_cbs_cst_550
+ibs_cbs_cclass_550_550002,550002,Suspensão,ibs_cbs_cst_550
+ibs_cbs_cclass_550_550003,550003,Suspensão,ibs_cbs_cst_550
+ibs_cbs_cclass_550_550004,550004,Suspensão,ibs_cbs_cst_550
+ibs_cbs_cclass_550_550005,550005,Suspensão,ibs_cbs_cst_550
+ibs_cbs_cclass_550_550006,550006,Suspensão,ibs_cbs_cst_550
+ibs_cbs_cclass_550_550007,550007,Suspensão,ibs_cbs_cst_550
+ibs_cbs_cclass_550_550008,550008,Suspensão,ibs_cbs_cst_550
+ibs_cbs_cclass_550_550009,550009,Suspensão,ibs_cbs_cst_550
+ibs_cbs_cclass_550_550010,550010,Suspensão,ibs_cbs_cst_550
+ibs_cbs_cclass_550_550011,550011,Suspensão,ibs_cbs_cst_550
+ibs_cbs_cclass_550_550012,550012,Suspensão,ibs_cbs_cst_550
+ibs_cbs_cclass_550_550013,550013,Suspensão,ibs_cbs_cst_550
+ibs_cbs_cclass_550_550014,550014,Suspensão,ibs_cbs_cst_550
+ibs_cbs_cclass_550_550015,550015,Suspensão,ibs_cbs_cst_550
+ibs_cbs_cclass_550_550016,550016,Suspensão,ibs_cbs_cst_550
+ibs_cbs_cclass_550_550017,550017,Suspensão,ibs_cbs_cst_550
+ibs_cbs_cclass_550_550018,550018,Suspensão,ibs_cbs_cst_550
+ibs_cbs_cclass_550_550019,550019,Suspensão,ibs_cbs_cst_550
+ibs_cbs_cclass_550_550020,550020,Suspensão,ibs_cbs_cst_550
+ibs_cbs_cclass_620_620001,620001,Tributação monofásica,ibs_cbs_cst_620
+ibs_cbs_cclass_620_620002,620002,Tributação monofásica,ibs_cbs_cst_620
+ibs_cbs_cclass_620_620003,620003,Tributação monofásica,ibs_cbs_cst_620
+ibs_cbs_cclass_620_620004,620004,Tributação monofásica,ibs_cbs_cst_620
+ibs_cbs_cclass_620_620005,620005,Tributação monofásica,ibs_cbs_cst_620
+ibs_cbs_cclass_620_620006,620006,Tributação monofásica,ibs_cbs_cst_620
+ibs_cbs_cclass_800_800001,800001,Transferência de crédito,ibs_cbs_cst_800
+ibs_cbs_cclass_800_800002,800002,Transferência de crédito,ibs_cbs_cst_800
+ibs_cbs_cclass_810_810001,810001,Ajustes,ibs_cbs_cst_810
+ibs_cbs_cclass_820_820001,820001,Tributação em declaração de regime específico,ibs_cbs_cst_820
+ibs_cbs_cclass_820_820002,820002,Tributação em declaração de regime específico,ibs_cbs_cst_820
+ibs_cbs_cclass_820_820003,820003,Tributação em declaração de regime específico,ibs_cbs_cst_820
+ibs_cbs_cclass_820_820004,820004,Tributação em declaração de regime específico,ibs_cbs_cst_820
+ibs_cbs_cclass_820_820005,820005,Tributação em declaração de regime específico,ibs_cbs_cst_820
+ibs_cbs_cclass_820_820006,820006,Tributação em declaração de regime específico,ibs_cbs_cst_820
+ibs_cbs_cclass_830_830001,830001,Exclusão de base de cálculo,ibs_cbs_cst_830

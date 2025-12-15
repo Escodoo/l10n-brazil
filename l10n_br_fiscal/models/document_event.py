@@ -185,6 +185,13 @@ class Event(models.Model):
 
     protocol_number = fields.Char()
 
+    lot_receipt_number = fields.Char(
+        help=(
+            "In asynchronous processing, a lot receipt number is generated, "
+            "which is used for later consultation."
+        ),
+    )
+
     state = fields.Selection(
         selection=[
             ("draft", _("Draft")),

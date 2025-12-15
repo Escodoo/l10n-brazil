@@ -4,6 +4,7 @@
 from datetime import datetime
 
 import requests
+import unicodedata
 from nfselib.barueri.NFeLoteEnviarArquivo import NFeLoteEnviarArquivo
 from nfselib.barueri.nfse import (
     NFSeRegistroTipo1,
@@ -89,6 +90,11 @@ class Document(models.Model):
         dados = self._prepare_dados_tomador()
         return dados
 
+    def _sem_acento(self, value):
+        return unicodedata.normalize(
+            "NFKD", value or ""
+        ).encode("ASCII", "ignore").decode("ASCII")
+
     def _serialize_barueri_lote_rps(self):
         dados = self._prepare_lote_rps()
         dados_servico = self._serialize_barueri_dados_servico()
@@ -101,9 +107,8 @@ class Document(models.Model):
         # Identificação da Remessa: AAAAMMDDxxx (11 dígitos numéricos)
         # Formato: ano(4) + mês(2) + dia(2) + sequencial(3)
         data_emissao = dados["data_emissao"].split("T")[0]
-        ano_mes_dia = data_emissao.replace("-", "")  # AAAAMMDD
-        # Usar número do RPS ou timestamp como sequencial único
-        sequencial = str(self.rps_number or "1").zfill(3)[:3]
+        ano_mes_dia = data_emissao.replace("-", "")
+        sequencial = datetime.now().strftime("%f")[-3:]
         registro_tipo1.IdentificacaoRemessaContribuinte = f"{ano_mes_dia}{sequencial}"
 
         # Registro tipo 2 - Dados do RPS
@@ -166,12 +171,17 @@ class Document(models.Model):
         registro_tipo2.ValorTotalRetencoes = str(valor_retencoes_centavos).zfill(15)
         registro_tipo2.TomadorEstrangeiro = "2"  # String: 1=Estrangeiro, 2=Brasileiro
         registro_tipo2.ServicoExportacao = "2"  # String: 1=Exportado, 2=Não exportado
-        registro_tipo2.IndicadorCPFCNPJTomador = "2"  # String: 1=CPF, 2=CNPJ
-        # Verificar se é CPF ou CNPJ
         cnpj_cpf = dados_tomador.get("cnpj") or dados_tomador.get("cpf", "")
-        registro_tipo2.CPFCNPJTomador = "".join(
-            [char for char in str(cnpj_cpf) if char.isdigit()]
-        ).zfill(14)
+        if cnpj_cpf:
+            if len(cnpj_cpf) == 14 and cnpj_cpf.isdigit():
+                registro_tipo2.IndicadorCPFCNPJTomador = "2"
+                registro_tipo2.CPFCNPJTomador = cnpj_cpf.zfill(14)
+            elif len(cnpj_cpf) == 11 and cnpj_cpf.isdigit():
+                registro_tipo2.IndicadorCPFCNPJTomador = "1"
+                registro_tipo2.CPFCNPJTomador = cnpj_cpf.zfill(14)
+        else:
+            registro_tipo2.IndicadorCPFCNPJTomador = "1"
+            registro_tipo2.CPFCNPJTomador = "0" * 14
         registro_tipo2.RazaoSocialNomeTomador = dados_tomador.get("razao_social", "")
         registro_tipo2.EnderecoLogradouroTomador = (
             dados_tomador.get("logradouro", "") or "R Pedra Sabao"
@@ -182,14 +192,13 @@ class Document(models.Model):
         registro_tipo2.ComplementoLogradouroTomador = str(
             dados_tomador.get("complemento", "") or "N/A"
         )
-        registro_tipo2.BairroLogradouroTomador = dados_tomador.get(
-            "bairro", "Bairro N/A"
+        registro_tipo2.BairroLogradouroTomador = self._sem_acento(
+            dados_tomador.get("bairro", "Bairro N/A")
         )
-        # registro_tipo2.CidadeLogradouroTomador = dados_tomador.get(
-        #     "descricao_municipio", "Cidade N/A"
-        # )
 
-        registro_tipo2.CidadeLogradouroTomador = "Aluminio"
+        registro_tipo2.CidadeLogradouroTomador = self._sem_acento(
+            dados_tomador.get("municipio")
+        )
 
         registro_tipo2.UFLogradouroTomador = dados_tomador.get("uf", "")
         # CEP: remover formatação e completar com zeros à esquerda
@@ -202,9 +211,9 @@ class Document(models.Model):
         registro_tipo2.CEPLogradouroTomador = cep.zfill(8) if cep else ""
         registro_tipo2.EmailTomador = dados_tomador.get("email", "tomador@email.com")
         # registro_tipo2.ValorFatura = "000000000000100"
-        registro_tipo2.DiscriminacaoServico = (
-            "testeasdasdasdasdasdasdasdadasdasdasdasdddddddddddddddddddddddddddddddddd"
-        )  # self.discrimina()
+        registro_tipo2.DiscriminacaoServico = self._sem_acento(
+            dados_servico.get("discriminacao", "")
+        )
         # Registro tipo 3 - Valores do serviço (retenções)
         # Só criar registro tipo 3 se houver retenções
         registro_tipo3 = None
@@ -236,10 +245,15 @@ class Document(models.Model):
         registro_tipo4.CodigoCidadeTomador = str(
             self.partner_id.city_id.ibge_code or ""
         ).zfill(7)
-        registro_tipo4.CodigoNBS = "114012100"
+        registro_tipo4.CodigoNBS = "".join(c for c in str(dados_servico.get("nbs", "")) if c.isdigit())
         registro_tipo4.CodigoIndicadorOperacaoFornecimento = "100301"
-        registro_tipo4.CodigoClassificacaoTributariaIBSCBS = "000001"
-        registro_tipo4.CodigoSituacaoTributariaIBSCBS = "000"
+        registro_tipo4.CodigoClassificacaoTributariaIBSCBS = (
+            dados_servico.get("cclass_trib", "").zfill(6)
+        )
+
+        registro_tipo4.CodigoSituacaoTributariaIBSCBS = (
+            dados_servico.get("cst_trib", "").zfill(3)
+        )
         registro_tipo4.OperacaoUsoConsumoPessoal = "0"
         registro_tipo4.IndicadorDestinatarioServico = "0"
 

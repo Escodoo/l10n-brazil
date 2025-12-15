@@ -38,6 +38,8 @@
         "data/l10n_br_fiscal_server_action.xml",
         "data/ir_cron.xml",
         "data/l10n_br_fiscal_comment_data.xml",
+        "data/l10n_br_fiscal.ibs_cbs.cst.csv",
+        "data/l10n_br_fiscal.ibs_cbs.cclass.csv",
         # Views
         "views/cnae_view.xml",
         "views/cfop_view.xml",
@@ -83,6 +85,7 @@
         "views/uom_uom.xml",
         "views/invalidate_number_view.xml",
         "views/city_taxation_code.xml",
+        "views/city_taxation_ibscbs.xml",
         "views/operation_dashboard_view.xml",
         "views/document_event_view.xml",
         # Reports

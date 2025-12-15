@@ -198,6 +198,22 @@ class Document(models.Model):
                 "valor_desconto_incondicionado"
             )
 
+        cclass_trib = ""
+        cst_trib = ""
+
+        mapping = self.fiscal_line_ids[0].city_taxation_code_id.ibs_cbs_mapping_ids
+        if mapping:
+            map_line = mapping.filtered(
+                lambda m: m.company_id == self.company_id
+            )[:1] or mapping[:1]
+
+            if map_line:
+                cclass_trib = map_line.cclass_id.code or ""
+                cst_trib = map_line.cst_id.code or ""
+        nbs_code = misc.punctuation_rm(
+            self.fiscal_line_ids[0].nbs_id.code
+        ) if self.fiscal_line_ids[0].nbs_id else ""
+
         result = {
             "valor_servicos": valor_servicos,
             "valor_deducoes": valor_deducoes,
@@ -225,6 +241,10 @@ class Document(models.Model):
                 0
             ].city_taxation_code_id.code
             or "",
+            "nbs": self.fiscal_line_ids[
+                0
+            ].nbs_id.code
+            or "",
             "municipio_prestacao_servico": self.fiscal_line_ids[
                 0
             ].issqn_fg_city_id.ibge_code
@@ -233,6 +253,9 @@ class Document(models.Model):
             "codigo_cnae": misc.punctuation_rm(self.fiscal_line_ids[0].cnae_id.code)
             or None,
             "valor_desconto_incondicionado": valor_desconto_incondicionado,
+            "cclass_trib": cclass_trib,
+            "cst_trib": cst_trib,
+            "nbs": nbs_code,
         }
 
         result.update(self.company_id.prepare_company_servico())
