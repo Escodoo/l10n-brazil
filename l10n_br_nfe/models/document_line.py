@@ -365,18 +365,20 @@ class NFeLine(spec_models.StackedModel):
             xsd_fields.remove("nfe40_IPI")
 
         # Handle IBSCBS field
-        if not self.ibs_cst_code or not self.tax_classification_id:
-            # Remove IBSCBS if not filled (check fiscal model fields)
-            if "nfe40_IBSCBS" in xsd_fields:
-                xsd_fields.remove("nfe40_IBSCBS")
-        elif "nfe40_IBSCBS" in xsd_fields:
+        if "nfe40_IBSCBS" in xsd_fields:
+            # Always export IBSCBS; when fiscal fields are missing, use defaults.
+            cst_code = self.ibs_cst_code or "000"
+            tax_classification_code = (
+                self.tax_classification_id.code
+                if self.tax_classification_id
+                else "000000"
+            )
+
             # Build IBSCBS XML string manually
             # For Char fields with xsd_type, we need to provide XML string
             xml_parts = []
-            xml_parts.append(f"<CST>{self.ibs_cst_code}</CST>")
-            xml_parts.append(
-                f"<cClassTrib>{self.tax_classification_id.code}</cClassTrib>"
-            )
+            xml_parts.append(f"<CST>{cst_code}</CST>")
+            xml_parts.append(f"<cClassTrib>{tax_classification_code}</cClassTrib>")
 
             # Build gIBSCBS if we have base calculation
             if self.ibs_base:

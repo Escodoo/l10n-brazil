@@ -426,6 +426,13 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         """
         Compute base, percent, value... tax fields for ICMS, IPI, PIS, COFINS... taxes.
         """
+        default_tax_classification = self.env.ref(
+            "l10n_br_fiscal.tax_classification_000000", raise_if_not_found=False
+        )
+        default_ibs_cst = self.env.ref(
+            "l10n_br_fiscal.cst_ibs_000", raise_if_not_found=False
+        )
+
         null_mask = None
         for line in self.filtered(lambda line: not line._is_imported()):
             if null_mask is None:
@@ -479,6 +486,19 @@ class FiscalDocumentLineMixin(models.AbstractModel):
                 to_update.update(line._prepare_tax_fields(compute_result))
             else:
                 compute_result = {}
+
+            # Ensure defaults when values are missing (do not overwrite computed ones).
+            if not to_update.get("ibs_cst_id"):
+                to_update["ibs_cst_id"] = line.ibs_cst_id.id or (
+                    default_ibs_cst.id if default_ibs_cst else False
+                )
+            if not to_update.get("tax_classification_id"):
+                to_update["tax_classification_id"] = line.tax_classification_id.id or (
+                    default_tax_classification.id
+                    if default_tax_classification
+                    else False
+                )
+
             to_update.update(
                 {
                     "amount_tax_included": compute_result.get("amount_included", 0.0),
