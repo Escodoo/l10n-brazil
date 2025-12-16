@@ -135,6 +135,10 @@
                                     <field name="tax_inss_id" />
                                     <field name="tax_inss_wh_id" />
                                 </group>
+                                <group name="cbs_ibs_taxes" string="CBS/IBS">
+                                    <field name="tax_cbs_id" />
+                                    <field name="tax_ibs_id" />
+                                </group>
                             </group>
                             <group name="advanced_taxes" string="Advanced Taxes">
                                 <field

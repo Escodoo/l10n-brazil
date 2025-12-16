@@ -14,10 +14,12 @@ from ..constants.fiscal import (
     PROCESSADOR_NENHUM,
     PROFIT_CALCULATION,
     PROFIT_CALCULATION_PRESUMED,
+    TAX_DOMAIN_CBS,
     TAX_DOMAIN_COFINS,
     TAX_DOMAIN_COFINS_WH,
     TAX_DOMAIN_CSLL,
     TAX_DOMAIN_CSLL_WH,
+    TAX_DOMAIN_IBS,
     TAX_DOMAIN_ICMS,
     TAX_DOMAIN_ICMS_SN,
     TAX_DOMAIN_INSS,
@@ -297,6 +299,18 @@ class ResCompany(models.Model):
         domain=[("tax_domain", "=", TAX_DOMAIN_INSS_WH)],
     )
 
+    tax_cbs_id = fields.Many2one(
+        comodel_name="l10n_br_fiscal.tax",
+        string="Default CBS",
+        domain=[("tax_domain", "=", TAX_DOMAIN_CBS)],
+    )
+
+    tax_ibs_id = fields.Many2one(
+        comodel_name="l10n_br_fiscal.tax",
+        string="Default IBS",
+        domain=[("tax_domain", "=", TAX_DOMAIN_IBS)],
+    )
+
     tax_definition_ids = fields.One2many(
         comodel_name="l10n_br_fiscal.tax.definition",
         inverse_name="company_id",
@@ -391,6 +405,8 @@ class ResCompany(models.Model):
         self._onchange_tax_csll_wh_id()
         self._onchange_tax_irpj_wh_id()
         self._onchange_tax_inss_wh_id()
+        self._onchange_tax_cbs_id()
+        self._onchange_tax_ibs_id()
 
     @api.onchange("is_industry")
     def _onchange_is_industry(self):
@@ -502,3 +518,17 @@ class ResCompany(models.Model):
             self._set_tax_definition(self.tax_inss_wh_id)
         else:
             self._del_tax_definition(TAX_DOMAIN_INSS_WH)
+
+    @api.onchange("tax_cbs_id")
+    def _onchange_tax_cbs_id(self):
+        if self.tax_cbs_id:
+            self._set_tax_definition(self.tax_cbs_id)
+        else:
+            self._del_tax_definition(TAX_DOMAIN_CBS)
+
+    @api.onchange("tax_ibs_id")
+    def _onchange_tax_ibs_id(self):
+        if self.tax_ibs_id:
+            self._set_tax_definition(self.tax_ibs_id)
+        else:
+            self._del_tax_definition(TAX_DOMAIN_IBS)
