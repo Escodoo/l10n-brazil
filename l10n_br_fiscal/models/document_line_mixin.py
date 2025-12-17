@@ -1934,7 +1934,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     tax_classification_id = fields.Many2one(
         comodel_name="l10n_br_fiscal.tax.classification",
         string="Tax Classification",
-        compute="_compute_tax_fields",
+        compute="_compute_fiscal_tax_ids",
         store=True,
         precompute=True,
         readonly=False,
