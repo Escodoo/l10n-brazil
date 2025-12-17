@@ -690,6 +690,12 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         if self.icms_tax_benefit_id:
             self.icms_tax_id = self.icms_tax_benefit_id.tax_id
 
+    @api.onchange("tax_classification_id")
+    def _onchange_tax_classification_id(self):
+        if self.tax_classification_id:
+            self.ibs_tax_id = self.tax_classification_id.tax_ibs_id
+            self.cbs_tax_id = self.tax_classification_id.tax_cbs_id
+
     def _prepare_fields_icmssn(self, tax_dict):
         self.ensure_one()
         cst_id = tax_dict.get("cst_id").id if tax_dict.get("cst_id") else False

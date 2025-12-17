@@ -1,9 +1,14 @@
 # Copyright 2025 Marcel Savegnago <https://escodoo.com.br>
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 
-from odoo import fields, models
+from odoo import api, fields, models
 
-from ..constants.fiscal import TAX_RATE_TYPE, TAX_RATE_TYPE_DEFAULT
+from ..constants.fiscal import (
+    TAX_DOMAIN_CBS,
+    TAX_DOMAIN_IBS,
+    TAX_RATE_TYPE,
+    TAX_RATE_TYPE_DEFAULT,
+)
 
 
 class TaxClassification(models.Model):
@@ -16,16 +21,38 @@ class TaxClassification(models.Model):
 
     description = fields.Text()
 
-    ibs_reduction_percent = fields.Float(
-        string="IBS Reduction (%)",
-        digits=(16, 2),
-        default=0.0,
+    cst_code_prefix_like = fields.Char(
+        compute="_compute_cst_code_prefix_like",
+        help="Helper field to filter taxes by CST code prefix (3 chars) using LIKE.",
     )
 
-    cbs_reduction_percent = fields.Float(
-        string="CBS Reduction (%)",
-        digits=(16, 2),
-        default=0.0,
+    @api.depends("code")
+    def _compute_cst_code_prefix_like(self):
+        for rec in self:
+            prefix = (rec.code or "")[:3]
+            # Avoid matching all records when the prefix is not available yet.
+            rec.cst_code_prefix_like = (
+                f"{prefix}%" if len(prefix) == 3 else "__no_match__%"
+            )
+
+    tax_ibs_id = fields.Many2one(
+        comodel_name="l10n_br_fiscal.tax",
+        string="Tax IBS",
+        domain=(
+            f"[('tax_domain', '=', '{TAX_DOMAIN_IBS}'), '|', "
+            "('cst_in_id.code', 'like', cst_code_prefix_like), "
+            "('cst_out_id.code', 'like', cst_code_prefix_like)]"
+        ),
+    )
+
+    tax_cbs_id = fields.Many2one(
+        comodel_name="l10n_br_fiscal.tax",
+        string="Tax CBS",
+        domain=(
+            f"[('tax_domain', '=', '{TAX_DOMAIN_CBS}'), '|', "
+            "('cst_in_id.code', 'like', cst_code_prefix_like), "
+            "('cst_out_id.code', 'like', cst_code_prefix_like)]"
+        ),
     )
 
     regular_taxation = fields.Boolean(

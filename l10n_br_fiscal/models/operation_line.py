@@ -11,8 +11,6 @@ from ..constants.fiscal import (
     OPERATION_STATE,
     OPERATION_STATE_DEFAULT,
     PRODUCT_FISCAL_TYPE,
-    TAX_DOMAIN_CBS,
-    TAX_DOMAIN_IBS,
     TAX_DOMAIN_ICMS,
     TAX_DOMAIN_IPI,
     TAX_DOMAIN_ISSQN,
@@ -38,6 +36,11 @@ class OperationLine(models.Model):
     name = fields.Char(required=True)
 
     document_type_id = fields.Many2one(comodel_name="l10n_br_fiscal.document.type")
+
+    tax_classification_id = fields.Many2one(
+        comodel_name="l10n_br_fiscal.tax.classification",
+        string="Tax Classification",
+    )
 
     cfop_internal_id = fields.Many2one(
         comodel_name="l10n_br_fiscal.cfop",
@@ -169,17 +172,17 @@ class OperationLine(models.Model):
             cfop = self.cfop_export_id
         return cfop
 
+    def _get_tax_classification(self, company):
+        tax_classification = self.env["l10n_br_fiscal.tax.classification"]
+        if self.tax_classification_id:
+            tax_classification = self.tax_classification_id
+        elif company.tax_classification_id:
+            tax_classification = company.tax_classification_id
+        return tax_classification
+
     def _build_mapping_result_ipi(self, mapping_result, tax_definition):
         if tax_definition and tax_definition.ipi_guideline_id:
             mapping_result["ipi_guideline"] = tax_definition.ipi_guideline_id
-
-    def _build_mapping_result_cbs(self, mapping_result, tax_definition):
-        if tax_definition and tax_definition.tax_classification_id:
-            mapping_result["tax_classification"] = tax_definition.tax_classification_id
-
-    def _build_mapping_result_ibs(self, mapping_result, tax_definition):
-        if tax_definition and tax_definition.tax_classification_id:
-            mapping_result["tax_classification"] = tax_definition.tax_classification_id
 
     def _build_mapping_result_icms(self, mapping_result, tax_definition):
         if tax_definition and tax_definition.is_benefit:
@@ -194,14 +197,6 @@ class OperationLine(models.Model):
         self._build_mapping_result_ipi(
             mapping_result,
             tax_definition.filtered(lambda t: t.tax_domain == TAX_DOMAIN_IPI),
-        )
-        self._build_mapping_result_cbs(
-            mapping_result,
-            tax_definition.filtered(lambda t: t.tax_domain == TAX_DOMAIN_CBS),
-        )
-        self._build_mapping_result_ibs(
-            mapping_result,
-            tax_definition.filtered(lambda t: t.tax_domain == TAX_DOMAIN_IBS),
         )
 
     def map_fiscal_taxes(
@@ -280,6 +275,9 @@ class OperationLine(models.Model):
         # Define CFOP
         mapping_result["cfop"] = self._get_cfop(company, partner)
 
+        # Define Tax Classification
+        mapping_result["tax_classification"] = self._get_tax_classification(company)
+
         # 1 Get Tax Defs from Company
         for tax_definition in company.tax_definition_ids.map_tax_definition(
             company,
@@ -293,6 +291,13 @@ class OperationLine(models.Model):
             service_type=service_type,
         ):
             self._build_mapping_result(mapping_result, tax_definition)
+
+        # 1_5 From Tax Classification
+        if mapping_result["tax_classification"]:
+            tax_cbs = mapping_result["tax_classification"].tax_cbs_id
+            tax_ibs = mapping_result["tax_classification"].tax_ibs_id
+            mapping_result["taxes"][tax_cbs.tax_domain] = tax_cbs
+            mapping_result["taxes"][tax_ibs.tax_domain] = tax_ibs
 
         # 2 From NCM
         if not ncm and product:

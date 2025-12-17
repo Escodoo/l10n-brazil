@@ -299,16 +299,9 @@ class ResCompany(models.Model):
         domain=[("tax_domain", "=", TAX_DOMAIN_INSS_WH)],
     )
 
-    tax_cbs_id = fields.Many2one(
-        comodel_name="l10n_br_fiscal.tax",
-        string="Default CBS",
-        domain=[("tax_domain", "=", TAX_DOMAIN_CBS)],
-    )
-
-    tax_ibs_id = fields.Many2one(
-        comodel_name="l10n_br_fiscal.tax",
-        string="Default IBS",
-        domain=[("tax_domain", "=", TAX_DOMAIN_IBS)],
+    tax_classification_id = fields.Many2one(
+        comodel_name="l10n_br_fiscal.tax.classification",
+        string="Default Tax Classification",
     )
 
     tax_definition_ids = fields.One2many(
@@ -391,6 +384,7 @@ class ResCompany(models.Model):
             self.tax_icms_id = False
 
         self._onchange_piscofins_id()
+        self._onchange_tax_classification_id()
         self._onchange_ripi()
         self._onchange_tax_ipi_id()
         self._onchange_tax_icms_id()
@@ -405,8 +399,6 @@ class ResCompany(models.Model):
         self._onchange_tax_csll_wh_id()
         self._onchange_tax_irpj_wh_id()
         self._onchange_tax_inss_wh_id()
-        self._onchange_tax_cbs_id()
-        self._onchange_tax_ibs_id()
 
     @api.onchange("is_industry")
     def _onchange_is_industry(self):
@@ -519,16 +511,11 @@ class ResCompany(models.Model):
         else:
             self._del_tax_definition(TAX_DOMAIN_INSS_WH)
 
-    @api.onchange("tax_cbs_id")
-    def _onchange_tax_cbs_id(self):
-        if self.tax_cbs_id:
-            self._set_tax_definition(self.tax_cbs_id)
+    @api.onchange("tax_classification_id")
+    def _onchange_tax_classification_id(self):
+        if self.tax_classification_id:
+            self._set_tax_definition(self.tax_classification_id.tax_cbs_id)
+            self._set_tax_definition(self.tax_classification_id.tax_ibs_id)
         else:
             self._del_tax_definition(TAX_DOMAIN_CBS)
-
-    @api.onchange("tax_ibs_id")
-    def _onchange_tax_ibs_id(self):
-        if self.tax_ibs_id:
-            self._set_tax_definition(self.tax_ibs_id)
-        else:
             self._del_tax_definition(TAX_DOMAIN_IBS)
