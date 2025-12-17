@@ -216,23 +216,26 @@ class Document(models.Model):
         )
         # Registro tipo 3 - Valores do serviço (retenções)
         # Só criar registro tipo 3 se houver retenções
-        registro_tipo3 = None
-        valor_total_retencoes_registro3 = 0
-        # Verificar se há retenções para criar registro tipo 3
-        if dados_servico.get("valor_ir_retido", 0):
-            registro_tipo3 = RegistroTipo3()
-            registro_tipo3.TipoRegistro = 3
-            registro_tipo3.CodigoOutrosValores = "01"  # IRRF
-            valor_ir = int(float(dados_servico.get("valor_ir_retido", 0)) * 100)
-            registro_tipo3.Valor = str(valor_ir).zfill(15)
-            valor_total_retencoes_registro3 += valor_ir
-        # Se não houver retenções, criar registro vazio (conforme exemplo original)
-        # if not registro_tipo3:
-        #     registro_tipo3 = RegistroTipo3()
-        #     registro_tipo3.TipoRegistro = 3
-        #     registro_tipo3.CodigoOutrosValores = "01"
-        #     registro_tipo3.Valor = "000000000000000"
-        # Registro tipo 4 - Dados complementares
+        registros_tipo3 = []
+
+        retencoes = [
+            ("01", "valor_ir_retido"),
+            ("02", "valor_pis_retido"),
+            ("03", "valor_cofins_retido"),
+            ("04", "valor_csll_retido"),
+        ]
+
+        for codigo, campo in retencoes:
+            valor = dados_servico.get(campo, 0) or 0
+            if valor:
+                reg = RegistroTipo3()
+
+                reg.TipoRegistro = 3
+                reg.CodigoOutrosValores = codigo
+                reg.Valor = str(int(round(float(valor) * 100))).zfill(15)
+
+                registros_tipo3.append(reg)
+
         registro_tipo4 = RegistroTipo4()
         registro_tipo4.TipoRegistro = 4
         registro_tipo4.OptanteSimplesNacional = (
@@ -246,7 +249,7 @@ class Document(models.Model):
             self.partner_id.city_id.ibge_code or ""
         ).zfill(7)
         registro_tipo4.CodigoNBS = "".join(c for c in str(dados_servico.get("nbs", "")) if c.isdigit())
-        registro_tipo4.CodigoIndicadorOperacaoFornecimento = "100301"
+        registro_tipo4.CodigoIndicadorOperacaoFornecimento = dados_servico.get("indop", "").zfill(6)
         registro_tipo4.CodigoClassificacaoTributariaIBSCBS = (
             dados_servico.get("cclass_trib", "").zfill(6)
         )
@@ -297,8 +300,8 @@ class Document(models.Model):
         # Número total de linhas: conta apenas registros 1,2,3,4,5 (não inclui o 9)
         # Contar quantos registros de dados existem
         registros_dados = [registro_tipo1, registro_tipo2]
-        if registro_tipo3:
-            registros_dados.append(registro_tipo3)
+        if registros_tipo3:
+            registros_dados.extend(registros_tipo3)
         registros_dados.append(registro_tipo4)
 
         # Sempre incluir tipo 5 (obrigatório conforme layout v4)
@@ -312,7 +315,9 @@ class Document(models.Model):
         valor_total_servicos_centavos = quantidade_total * valor_unitario_centavos
 
         # Valor total do registro 3 (retenções)
-        valor_total_registro3 = int(registro_tipo3.Valor) if registro_tipo3 else 0
+        valor_total_registro3 = sum(
+            int(r.Valor) for r in registros_tipo3
+        )
 
         registro_tipo9 = RegistroTipo9()
         registro_tipo9.TipoRegistro = 9

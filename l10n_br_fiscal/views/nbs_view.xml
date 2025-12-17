@@ -92,6 +92,7 @@
                     <group>
                         <field name="code" />
                         <field name="name" />
+                        <field name="indop" string="INDOP" />
                     </group>
                     <notebook>
                         <page string="Related Produts" name="tax_product_tmpl">

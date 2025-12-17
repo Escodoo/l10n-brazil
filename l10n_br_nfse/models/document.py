@@ -256,6 +256,7 @@ class Document(models.Model):
             "cclass_trib": cclass_trib,
             "cst_trib": cst_trib,
             "nbs": nbs_code,
+            "indop": self.fiscal_line_ids[:1].nbs_id.indop or "",
         }
 
         result.update(self.company_id.prepare_company_servico())

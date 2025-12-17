@@ -23,6 +23,8 @@ class Nbs(models.Model):
 
     product_tmpl_ids = fields.One2many(inverse_name="nbs_id")
 
+    indop = fields.Char(help="Código Indicador da operação de fornecimento", size=6)
+
     _sql_constraints = [
         (
             "fiscal_nbs_code_uniq",
