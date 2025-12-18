@@ -37,6 +37,11 @@ class OperationLine(models.Model):
 
     document_type_id = fields.Many2one(comodel_name="l10n_br_fiscal.document.type")
 
+    tax_classification_id = fields.Many2one(
+        comodel_name="l10n_br_fiscal.tax.classification",
+        string="Tax Classification",
+    )
+
     cfop_internal_id = fields.Many2one(
         comodel_name="l10n_br_fiscal.cfop",
         string="CFOP Internal",
@@ -172,6 +177,14 @@ class OperationLine(models.Model):
             cfop = self.cfop_export_id
         return cfop
 
+    def _get_tax_classification(self, company):
+        tax_classification = self.env["l10n_br_fiscal.tax.classification"]
+        if self.tax_classification_id:
+            tax_classification = self.tax_classification_id
+        elif company.tax_classification_id:
+            tax_classification = company.tax_classification_id
+        return tax_classification
+
     def _build_mapping_result_ipi(self, mapping_result, tax_definition):
         if tax_definition and tax_definition.ipi_guideline_id:
             mapping_result["ipi_guideline"] = tax_definition.ipi_guideline_id
@@ -211,12 +224,16 @@ class OperationLine(models.Model):
             "cfop": False,
             "ipi_guideline": self.env.ref("l10n_br_fiscal.tax_guideline_999"),
             "icms_tax_benefit_id": False,
+            "tax_classification": False,
         }
 
         self.ensure_one()
 
         # Define CFOP
         mapping_result["cfop"] = self._get_cfop(company, partner)
+
+        # Define Tax Classification
+        mapping_result["tax_classification"] = self._get_tax_classification(company)
 
         # 1 Get Tax Defs from Company
         for tax_definition in company.tax_definition_ids.map_tax_definition(
@@ -231,6 +248,13 @@ class OperationLine(models.Model):
             service_type=service_type,
         ):
             self._build_mapping_result(mapping_result, tax_definition)
+
+        # 1_5 From Tax Classification
+        if mapping_result["tax_classification"]:
+            tax_cbs = mapping_result["tax_classification"].tax_cbs_id
+            tax_ibs = mapping_result["tax_classification"].tax_ibs_id
+            mapping_result["taxes"][tax_cbs.tax_domain] = tax_cbs
+            mapping_result["taxes"][tax_ibs.tax_domain] = tax_ibs
 
         # 2 From NCM
         if not ncm and product:
