@@ -1,4 +1,5 @@
 # Copyright 2023 - KMEE INFORMATICA LTDA
+# Copyright 2025 - TODAY, Cristiano Mafra Junior <cristiano.mafra@escodoo.com.br>
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
 from datetime import datetime
@@ -23,7 +24,7 @@ from nfselib.barueri.rps import (
     RegistroTipo9,
 )
 
-from odoo import _, models
+from odoo import _, models, fields
 
 from odoo.addons.l10n_br_fiscal.constants.fiscal import (
     MODELO_FISCAL_NFSE,
@@ -74,6 +75,63 @@ def parse_linha_exporta(line: str):
 
 class Document(models.Model):
     _inherit = "l10n_br_fiscal.document"
+
+    url_nfse_barueri = fields.Char(
+        string="URL of NFSe Barueri",
+        compute="_compute_url_nfse_barueri",
+        help="URL to access the Nota Fiscal de Serviços Eletrônicos (NFSe)"
+        "from the São Paulo City (Barueri).",
+    )
+    is_nfse_barueri = fields.Boolean(
+        string="Is NFSe Barueri?",
+        compute="_compute_is_nfse_barueri",
+        help="Technical field to identify if the document is a NFSe Barueri.",
+    )
+
+    def _compute_url_nfse_barueri(self):
+        for doc in self:
+            if not doc.is_nfse_barueri:
+                doc.url_nfse_barueri = ""
+                continue
+
+            autenticidade = (doc.verify_code or "").strip()
+            cnpj_tomador = "".join(
+                ch for ch in (doc.partner_id.cnpj_cpf or "") if ch.isdigit()
+            )
+            if not (autenticidade and cnpj_tomador):
+                doc.url_nfse_barueri = ""
+                continue
+            if doc.nfse_environment == "1":
+                base_url = "https://www.barueri.sp.gov.br/nfe/wfimagemNota.aspx"
+            else:
+                base_url = (
+                    "https://testeeiss.barueri.sp.gov.br/nfe/wfimagemNota.aspx"
+                )
+
+            doc.url_nfse_barueri = (
+                f"{base_url}"
+                f"?CODIGOAUTENTICIDADE={autenticidade}"
+                f"&NUMDOC={cnpj_tomador}"
+            )
+
+    def action_open_nfse_barueri(self):
+        return {
+            "type": "ir.actions.act_url",
+            "url": self.url_nfse_barueri,
+            "target": "new",
+        }
+
+    def _compute_is_nfse_barueri(self):
+        for doc in self:
+            is_nfse = doc.document_type == "SE"
+            is_barueri = doc.company_id.city_id == self.env.ref(
+                "l10n_br_base.city_3505708"
+            )
+
+            if is_nfse and is_barueri:
+                doc.is_nfse_barueri = True
+            else:
+                doc.is_nfse_barueri = False
 
     def _serialize(self, edocs):
         edocs = super()._serialize(edocs)
