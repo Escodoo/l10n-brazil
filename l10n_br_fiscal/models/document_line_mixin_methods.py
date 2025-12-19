@@ -44,6 +44,8 @@ FISCAL_CST_ID_FIELDS = [
     "pisst_cst_id",
     "cofins_cst_id",
     "cofinsst_cst_id",
+    "ibs_cst_id",
+    "cbs_cst_id",
 ]
 
 
