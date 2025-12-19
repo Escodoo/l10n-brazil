@@ -758,6 +758,8 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
         "cofins_tax_id",
         "cofins_wh_tax_id",
         "cofinsst_tax_id",
+        "ibs_tax_id",
+        "cbs_tax_id",
         "fiscal_price",
         "fiscal_quantity",
         "discount_value",
