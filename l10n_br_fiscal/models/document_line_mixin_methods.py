@@ -282,6 +282,8 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
                 self._prepare_fields_csll_wh,
                 self._prepare_fields_irpj_wh,
                 self._prepare_fields_inss_wh,
+                self._prepare_fields_ibs,
+                self._prepare_fields_cbs,
             ]
             for method in tax_methods:
                 prepared_fields = method(TAX_DICT_VALUES)

@@ -60,6 +60,8 @@
                                         />
                             <field
                                             name="cbs_cst_id"
+                                            force_save="1"
+                                            attrs="{'readonly': [('cbs_tax_id', '!=', False)]}"
                                             options="{'no_create': True, 'no_create_edit': True}"
                                         />
                             <field name="cbs_cst_code" readonly="1" invisible="1" />
@@ -100,6 +102,8 @@
                                         />
                             <field
                                             name="ibs_cst_id"
+                                            force_save="1"
+                                            attrs="{'readonly': [('ibs_tax_id', '!=', False)]}"
                                             options="{'no_create': True, 'no_create_edit': True}"
                                         />
                             <field name="ibs_cst_code" readonly="1" invisible="1" />
