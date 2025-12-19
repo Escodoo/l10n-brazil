@@ -526,11 +526,6 @@ class AccountMoveLine(models.Model):
             line.update(line._get_price_total_and_subtotal())
             line.update(line._get_amount_credit_debit())
 
-    @api.onchange("tax_classification_id")
-    def _onchange_tax_classification_id(self):
-        if self.fiscal_document_line_id:
-            self.fiscal_document_line_id._onchange_tax_classification_id()
-
     def _get_amount_credit_debit(
         self,
         move_id=None,
