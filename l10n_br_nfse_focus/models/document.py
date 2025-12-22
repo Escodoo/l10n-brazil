@@ -220,6 +220,13 @@ class FocusnfeNfse(models.AbstractModel):
             "valor_servicos": round(service.get("valor_servicos", 0), 2),
             "valor_liquido": round(service.get("valor_liquido_nfse", 0), 2),
             "codigo_tributario_municipio": service.get("codigo_tributacao_municipio"),
+            "codigo_nbs": service.get("codigo_nbs"),
+            "codigo_indicador_operacao": service.get("codigo_indicador_operacao"),
+            "codigo_classificacao_tributaria": service.get(
+                "codigo_classificacao_tributaria"
+            ),
+            "codigo_situacao_tributaria": service.get("codigo_situacao_tributaria"),
+            "ibs_cbs_base_calculo": service.get("ibs_cbs_base_calculo"),
         }
 
     def _prepare_recipient_data(self, recipient, identification):
