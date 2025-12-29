@@ -4,6 +4,7 @@ brazilfiscalreport
 email-validator
 erpbrasil.assinatura
 erpbrasil.base
+erpbrasil.base>=2.3.0
 erpbrasil.edoc
 erpbrasil.edoc.pdf
 erpbrasil.transmissao
