@@ -1,8 +1,8 @@
 id,code,name,cst_id/id
-ibs_cbs_cclass_0_1,1,Tributação integral,ibs_cbs_cst_0
-ibs_cbs_cclass_0_2,2,Tributação integral,ibs_cbs_cst_0
-ibs_cbs_cclass_0_3,3,Tributação integral,ibs_cbs_cst_0
-ibs_cbs_cclass_0_4,4,Tributação integral,ibs_cbs_cst_0
+ibs_cbs_cclass_0_1,000001,Tributação integral,ibs_cbs_cst_0
+ibs_cbs_cclass_0_2,000002,Tributação integral,ibs_cbs_cst_0
+ibs_cbs_cclass_0_3,000003,Tributação integral,ibs_cbs_cst_0
+ibs_cbs_cclass_0_4,000004,Tributação integral,ibs_cbs_cst_0
 ibs_cbs_cclass_10_10001,10001,Tributação com alíquotas uniformes - operações do FGTS,ibs_cbs_cst_10
 ibs_cbs_cclass_10_10002,10002,Tributação com alíquotas uniformes - operações setor financeiro,ibs_cbs_cst_10
 ibs_cbs_cclass_11_11001,11001,Tributação com alíquotas uniformes reduzidas em 60%,ibs_cbs_cst_11

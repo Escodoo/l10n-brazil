@@ -19,6 +19,7 @@
             <tree>
                 <field name="code" />
                 <field name="name" />
+                <field name="indop" string="INDOP" />
             </tree>
         </field>
     </record>
@@ -92,6 +93,7 @@
                     <group>
                         <field name="code" readonly="1" />
                         <field name="name" readonly="1" />
+                        <field name="indop" string="INDOP" />
                     </group>
                     <notebook>
                         <page string="Related Produts" name="tax_product_tmpl">

@@ -248,6 +248,7 @@ class Document(models.Model):
             "valor_desconto_incondicionado": valor_desconto_incondicionado,
             "cclass_tributacao": cclass_trib,
             "nbs": nbs_code,
+            "indop": self.fiscal_line_ids[:1].nbs_id.indop or "",
         }
 
         result.update(self.company_id.prepare_company_servico())

@@ -126,7 +126,7 @@ class Document(models.Model):
         IBSCBS = tpIBSCBS(
             finNFSe=self.convert_type_nfselib(tpIBSCBS, "finNFSe", 0), # Chumbado
             indFinal=self.convert_type_nfselib(tpIBSCBS, "indFinal", 0), # Chumbado
-            cIndOp=self.convert_type_nfselib(tpIBSCBS, "cIndOp", 100301), # Chumbado
+            cIndOp=self.convert_type_nfselib(tpIBSCBS, "cIndOp", dados_servico["indop"]),
             indDest=self.convert_type_nfselib(tpIBSCBS, "indDest", 1), # Chumbado
             tpEnteGov=self.convert_type_nfselib(tpIBSCBS, "tpEnteGov", 1), # Chumbado
             valores=valores,
