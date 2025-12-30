@@ -128,7 +128,7 @@ class Document(models.Model):
             indFinal=self.convert_type_nfselib(tpIBSCBS, "indFinal", 0), # Chumbado
             cIndOp=self.convert_type_nfselib(tpIBSCBS, "cIndOp", dados_servico["indop"]),
             indDest=self.convert_type_nfselib(tpIBSCBS, "indDest", 1), # Chumbado
-            tpEnteGov=self.convert_type_nfselib(tpIBSCBS, "tpEnteGov", 1), # Chumbado
+            # tpEnteGov=self.convert_type_nfselib(tpIBSCBS, "tpEnteGov", 1), # Chumbado
             valores=valores,
         )
         return tpRPS(
