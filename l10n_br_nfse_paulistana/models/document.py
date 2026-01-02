@@ -161,8 +161,8 @@ class Document(models.Model):
             ValorServicos=self.convert_type_nfselib(
                 tpRPS, "ValorServicos", dados_servico["valor_servicos"]
             ),
-            ValorInicialCobrado=self.convert_type_nfselib(
-                tpRPS, "ValorInicialCobrado", dados_servico["valor_servicos"]
+            ValorFinalCobrado=self.convert_type_nfselib(
+                tpRPS, "ValorFinalCobrado", dados_servico["valor_servicos"]
             ),
             ValorDeducoes=self.convert_type_nfselib(
                 tpRPS, "ValorDeducoes", dados_servico["valor_deducoes"]
@@ -204,7 +204,7 @@ class Document(models.Model):
             AliquotaServicos=self.convert_type_nfselib(
                 tpRPS, "AliquotaServicos", dados_servico["aliquota"]
             ),
-            ISSRetido="true" if dados_servico["iss_retido"] == "1" else "false",
+            ISSRetido="true" if float(dados_servico.get("valor_iss_retido") or 0) > 0 else "false",
             # FIXME: Hardcoded
             CPFCNPJTomador=self.convert_type_nfselib(
                 tpRPS,
@@ -330,7 +330,7 @@ class Document(models.Model):
         assinatura += "S" if dados_servico.get("iss_retido") == "1" else "N"
 
         valor_inicial_cobrado = dados_servico.get("valor_inicial_cobrado")
-        valor_final_cobrado = dados_servico.get("valor_final_cobrado")
+        valor_final_cobrado = dados_servico.get("valor_servicos")
         valor_base_assinatura = (
             valor_inicial_cobrado
             if valor_inicial_cobrado is not None
