@@ -1819,25 +1819,25 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     cbs_tax_id = fields.Many2one(
         comodel_name="l10n_br_fiscal.tax",
         string="Tax CBS",
-        domain=(
-            f"[('tax_domain', '=', '{TAX_DOMAIN_CBS}'), '|', "
-            "('cst_in_id.code', 'like', cst_code_prefix_like), "
-            "('cst_out_id.code', 'like', cst_code_prefix_like)]"
-        ),
-        compute="_compute_tax_fields",
-        store=True,
-        precompute=True,
-        readonly=False,
+        # domain=(
+        #     f"[('tax_domain', '=', '{TAX_DOMAIN_CBS}'), '|', "
+        #     "('cst_in_id.code', 'like', cst_code_prefix_like), "
+        #     "('cst_out_id.code', 'like', cst_code_prefix_like)]"
+        # ),
+        # compute="_compute_tax_fields",
+        # store=True,
+        # precompute=True,
+        # readonly=False,
     )
 
     cbs_cst_id = fields.Many2one(
         comodel_name="l10n_br_fiscal.cst",
         string="CST CBS",
-        domain="[('cst_type', '=', fiscal_operation_type),('tax_domain', '=', 'cbs')]",
-        compute="_compute_tax_fields",
-        store=True,
-        precompute=True,
-        readonly=False,
+        # domain="[('cst_type', '=', fiscal_operation_type),('tax_domain', '=', 'cbs')]",
+        # compute="_compute_tax_fields",
+        # store=True,
+        # precompute=True,
+        # readonly=False,
     )
 
     cbs_cst_code = fields.Char(
@@ -1847,67 +1847,67 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     cbs_base_type = fields.Selection(
         selection=TAX_BASE_TYPE,
         string="CBS Base Type",
-        compute="_compute_tax_fields",
-        store=True,
-        precompute=True,
-        readonly=False,
+        # compute="_compute_tax_fields",
+        # store=True,
+        # precompute=True,
+        # readonly=False,
     )
 
     cbs_base = fields.Monetary(
         string="CBS Base",
-        compute="_compute_tax_fields",
-        store=True,
-        precompute=True,
-        readonly=False,
+        # compute="_compute_tax_fields",
+        # store=True,
+        # precompute=True,
+        # readonly=False,
     )
 
     cbs_percent = fields.Float(
         string="CBS %",
-        compute="_compute_tax_fields",
-        store=True,
-        precompute=True,
-        readonly=False,
+        # compute="_compute_tax_fields",
+        # store=True,
+        # precompute=True,
+        # readonly=False,
     )
 
     cbs_reduction = fields.Float(
         string="CBS % Reduction",
-        compute="_compute_tax_fields",
-        store=True,
-        precompute=True,
-        readonly=False,
+        # compute="_compute_tax_fields",
+        # store=True,
+        # precompute=True,
+        # readonly=False,
     )
 
     cbs_value = fields.Monetary(
         string="CBS Value",
-        compute="_compute_tax_fields",
-        store=True,
-        precompute=True,
-        readonly=False,
+        # compute="_compute_tax_fields",
+        # store=True,
+        # precompute=True,
+        # readonly=False,
     )
 
     # IBS Fields
     ibs_tax_id = fields.Many2one(
         comodel_name="l10n_br_fiscal.tax",
         string="Tax IBS",
-        domain=(
-            f"[('tax_domain', '=', '{TAX_DOMAIN_IBS}'), '|', "
-            "('cst_in_id.code', 'like', cst_code_prefix_like), "
-            "('cst_out_id.code', 'like', cst_code_prefix_like)]"
-        ),
-        compute="_compute_tax_fields",
-        store=True,
-        precompute=True,
-        readonly=False,
+        # domain=(
+        #     f"[('tax_domain', '=', '{TAX_DOMAIN_IBS}'), '|', "
+        #     "('cst_in_id.code', 'like', cst_code_prefix_like), "
+        #     "('cst_out_id.code', 'like', cst_code_prefix_like)]"
+        # ),
+        # compute="_compute_tax_fields",
+        # store=True,
+        # precompute=True,
+        # readonly=False,
     )
 
     ibs_cst_id = fields.Many2one(
         comodel_name="l10n_br_fiscal.cst",
         string="CST IBS",
-        domain="[('cst_type', '=', fiscal_operation_type),('tax_domain', '=', 'ibs')]",
-        compute="_compute_tax_fields",
-        store=True,
-        precompute=True,
-        readonly=False,
+        # domain="[('cst_type', '=', fiscal_operation_type),('tax_domain', '=', 'ibs')]",
+        # compute="_compute_tax_fields",
+        # store=True,
+        # precompute=True,
+        # readonly=False,
     )
 
     ibs_cst_code = fields.Char(
@@ -1917,52 +1917,52 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     ibs_base_type = fields.Selection(
         selection=TAX_BASE_TYPE,
         string="IBS Base Type",
-        compute="_compute_tax_fields",
-        store=True,
-        precompute=True,
-        readonly=False,
+        # compute="_compute_tax_fields",
+        # store=True,
+        # precompute=True,
+        # readonly=False,
     )
 
     ibs_base = fields.Monetary(
         string="IBS Base",
-        compute="_compute_tax_fields",
-        store=True,
-        precompute=True,
-        readonly=False,
+        # compute="_compute_tax_fields",
+        # store=True,
+        # precompute=True,
+        # readonly=False,
     )
 
     ibs_percent = fields.Float(
         string="IBS %",
-        compute="_compute_tax_fields",
-        store=True,
-        precompute=True,
-        readonly=False,
+        # compute="_compute_tax_fields",
+        # store=True,
+        # precompute=True,
+        # readonly=False,
     )
 
     ibs_reduction = fields.Float(
         string="IBS % Reduction",
-        compute="_compute_tax_fields",
-        store=True,
-        precompute=True,
-        readonly=False,
+        # compute="_compute_tax_fields",
+        # store=True,
+        # precompute=True,
+        # readonly=False,
     )
 
     ibs_value = fields.Monetary(
         string="IBS Value",
-        compute="_compute_tax_fields",
-        store=True,
-        precompute=True,
-        readonly=False,
+        # compute="_compute_tax_fields",
+        # store=True,
+        # precompute=True,
+        # readonly=False,
     )
 
     # CBS/IBS Tax Classification
     tax_classification_id = fields.Many2one(
         comodel_name="l10n_br_fiscal.tax.classification",
         string="Tax Classification",
-        compute="_compute_fiscal_tax_ids",
-        store=True,
-        precompute=True,
-        readonly=False,
+        # compute="_compute_fiscal_tax_ids",
+        # store=True,
+        # precompute=True,
+        # readonly=False,
     )
 
     cst_code_prefix_like = fields.Char(
