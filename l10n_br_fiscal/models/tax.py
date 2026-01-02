@@ -366,6 +366,13 @@ class Tax(models.Model):
         fiscal_price = kwargs.get("fiscal_price")
         fiscal_quantity = kwargs.get("fiscal_quantity")
         currency = kwargs.get("currency", company.currency_id)
+
+        if not currency:
+            currency = company.currency_id or self.env.company.currency_id
+        if not currency:
+            # Último fallback: não derruba o registry
+            return 0.0
+
         ncm = kwargs.get("ncm") or product.ncm_id
         nbs = kwargs.get("nbs") or product.nbs_id
         icms_origin = kwargs.get("icms_origin") or product.icms_origin
