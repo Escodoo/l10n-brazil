@@ -24,7 +24,7 @@ from nfselib.barueri.rps import (
     RegistroTipo9,
 )
 
-from odoo import _, models, fields
+from odoo import _, models, fields, api
 
 from odoo.addons.l10n_br_fiscal.constants.fiscal import (
     EVENT_ENV_HML,
@@ -796,7 +796,7 @@ class Document(models.Model):
         """
         records = (
             self.search([("state", "in", ["enviada"])], limit=25)
-            .filtered(filter_processador_edoc_nfse)
+            .filtered(filter_oca_nfse)
             .filtered(filter_barueri)
         )
         if records:
