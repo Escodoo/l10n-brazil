@@ -783,3 +783,21 @@ class Document(models.Model):
         return self.filtered(filter_oca_nfse).filtered(
             filter_barueri
         )._cancel_document_barueri()
+
+    @api.model
+    def _cron_document_status_barueri(self):
+        """Scheduled method to check the status of sent NFSe documents.
+
+        Parameters:
+            None.
+
+        Returns:
+            None. Updates the status of each document based on the NFSe provider's response.
+        """
+        records = (
+            self.search([("state", "in", ["enviada"])], limit=25)
+            .filtered(filter_processador_edoc_nfse)
+            .filtered(filter_barueri)
+        )
+        if records:
+            records._document_status()
