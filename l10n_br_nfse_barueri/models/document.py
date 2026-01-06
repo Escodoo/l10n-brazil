@@ -271,13 +271,13 @@ class Document(models.Model):
             registro_tipo2.IndicadorCPFCNPJTomador = "1"
             registro_tipo2.CPFCNPJTomador = "0" * 14
         registro_tipo2.RazaoSocialNomeTomador = dados_tomador.get("razao_social", "")
-        registro_tipo2.EnderecoLogradouroTomador = (
-            dados_tomador.get("logradouro", "") or "R Pedra Sabao"
+        registro_tipo2.EnderecoLogradouroTomador = self._sem_acento(
+            dados_tomador.get("endereco", "") or ""
         )
         registro_tipo2.NumeroLogradouroTomador = str(
             dados_tomador.get("numero", "") or "10"
         )
-        registro_tipo2.ComplementoLogradouroTomador = str(
+        registro_tipo2.ComplementoLogradouroTomador = self._sem_acento(
             dados_tomador.get("complemento", "") or "N/A"
         )
         registro_tipo2.BairroLogradouroTomador = self._sem_acento(
@@ -453,6 +453,7 @@ class Document(models.Model):
         return lote_rps
 
     def _document_status(self):
+        mensagem = ""
         status = super()._document_status()
         for record in self.filtered(filter_oca_nfse).filtered(filter_barueri):
             processador = record._processador_erpbrasil_nfse()
