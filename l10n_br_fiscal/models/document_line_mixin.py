@@ -585,6 +585,14 @@ class FiscalDocumentLineMixin(models.AbstractModel):
             else:
                 line.city_taxation_code_id = False
 
+    @api.depends("product_id")
+    def _compute_national_taxation_code_id(self):
+        for line in self:
+            if not line.product_id:
+                line.national_taxation_code_id = False
+                continue
+            line.national_taxation_code_id = line.product_id.national_taxation_code_id
+
     @api.depends("city_taxation_code_id")
     def _compute_issqn_fg_city_id(self):
         for line in self:
@@ -1208,6 +1216,14 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     city_taxation_code_id = fields.Many2one(
         comodel_name="l10n_br_fiscal.city.taxation.code",
         compute="_compute_city_taxation_code_id",
+        store=True,
+        readonly=False,
+        precompute=True,
+    )
+
+    national_taxation_code_id = fields.Many2one(
+        comodel_name="l10n_br_fiscal.national.taxation.code",
+        compute="_compute_national_taxation_code_id",
         store=True,
         readonly=False,
         precompute=True,
