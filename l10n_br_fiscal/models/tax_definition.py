@@ -232,6 +232,12 @@ class TaxDefinition(models.Model):
         string="City Taxation Codes",
     )
 
+    national_taxation_code_ids = fields.Many2many(
+        comodel_name="l10n_br_fiscal.national.taxation.code",
+        relation="tax_definition_national_taxation_code_rel",
+        string="National Taxation Codes",
+    )
+
     service_type_ids = fields.Many2many(
         comodel_name="l10n_br_fiscal.service.type",
         string="Fiscal Service Types",
