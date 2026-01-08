@@ -3,6 +3,7 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
 from datetime import datetime
+from odoo.addons.l10n_br_fiscal.models.document import Document as FiscalDocument
 
 import requests
 import unicodedata
@@ -452,10 +453,9 @@ class Document(models.Model):
         )
         return lote_rps
 
-    def _document_status(self):
+    def _document_status_barueri(self):
         mensagem = ""
-        status = super()._document_status()
-        for record in self.filtered(filter_oca_nfse).filtered(filter_barueri):
+        for record in self:
             processador = record._processador_erpbrasil_nfse()
             protocolo = record.authorization_event_id.lot_receipt_number
             processo = processador.consulta_nfse_rps(
@@ -466,22 +466,24 @@ class Document(models.Model):
             )
 
             status, mensagem = processador.analisa_retorno_consulta(processo)
-            vals = dict()
-            if status == 1 and int(record.status_code) in [-1, -2]:
-                vals[
-                    "return_filename"
-                ] = processo.resposta.ListaNfeArquivosRPS.NomeArqRetorno
-                vals["status_name"] = _("Successfully Processed")
-                vals["status_code"] = 1
-                vals = record._set_response(record, processador, protocolo, vals)
-
-            if status == 2 and int(record.status_code) in [-1, -2]:
-                vals[
-                    "return_filename"
-                ] = processo.resposta.ListaNfeArquivosRPS.NomeArqRetorno
-                vals["status_name"] = _("Processed with Error")
-                vals["status_code"] = 2
-                vals = record._set_response(record, processador, protocolo, vals)
+            vals = {}
+            if status in (1, 2) and int(record.status_code) in (-1, -2):
+                vals.update(
+                    {
+                        "return_filename": getattr(
+                            processo.resposta.ListaNfeArquivosRPS,
+                            "NomeArqRetorno",
+                            False,
+                        ),
+                        "status_code": status,
+                        "status_name": (
+                            _("Successfully Processed")
+                            if status == 1
+                            else _("Processed with Error")
+                        ),
+                    }
+                )
+                record._set_response(record, processador, protocolo, vals)
 
         return mensagem
 
@@ -729,7 +731,7 @@ class Document(models.Model):
             status, _mensagem = processador.analisa_retorno_consulta(processo_consulta)
             if status == 0:
                 return False
-            if status in (-1, -2):
+            if status in (-1, -2, 2):
                 record._change_state(SITUACAO_EDOC_ENVIADA)
                 record.status_code = -2
                 record.status_name = _("Cancel batch not yet processed")

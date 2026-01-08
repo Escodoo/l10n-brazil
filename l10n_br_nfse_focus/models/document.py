@@ -345,7 +345,7 @@ class Document(models.Model):
             record.authorization_event_id = event_id
         return result
 
-    def _document_status(self):
+    def _document_status_focus(self):
         """Check and update the status of the NFSe document.
 
         Parameters:
@@ -354,10 +354,8 @@ class Document(models.Model):
         Returns:
             A string indicating the current status of the document.
         """
-        result = super(FiscalDocument, self)._document_status()
-        for record in self.filtered(filter_processador_edoc_nfse).filtered(
-            filter_focusnfe
-        ):
+        result = ""
+        for record in self.filtered(filter_processador_edoc_nfse):
             ref = "rps" + record.rps_number
             response = self.env["focusnfe.nfse"].query_focus_nfse_by_rps(
                 ref, 0, record.company_id, record.nfse_environment

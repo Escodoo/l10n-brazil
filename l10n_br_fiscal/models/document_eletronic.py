@@ -219,9 +219,16 @@ class DocumentEletronic(models.AbstractModel):
         return self._target_new_tab(self.file_report_id)
 
     def _document_status(self):
-        """Retorna o status do documento em texto e se necessário,
-        atualiza o status do documento"""
-        return
+        """Chama o status do documento conforme o provedor NFSe."""
+        result = ""
+
+        for record in self:
+            if record.company_id.provedor_nfse == "focusnfe":
+                result = record._document_status_focus()
+            elif record.company_id.provedor_nfse == "barueri":
+                result = record._document_status_barueri()
+
+        return result
 
     @api.constrains("issuer")
     def _check_issuer(self):
