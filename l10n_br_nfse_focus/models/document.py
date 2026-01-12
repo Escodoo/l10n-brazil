@@ -560,12 +560,7 @@ class Document(models.Model):
             code = json_data.get("codigo", "")
             status = json_data.get("status", "")
 
-            # Barueri hack - temporary
-            if (
-                apply_barueri_hack
-                and not code
-                and record.company_id.city_id.ibge_code == "3505708"
-            ):
+            if not code:
                 code = json_data.get("erros", [{}])[0].get("codigo", "")
                 if code == "OK200":
                     code = CODE_NFE_CANCELADA
@@ -582,7 +577,7 @@ class Document(models.Model):
             raise UserError(
                 _(
                     "%(code)s - %(status)s",
-                    code=response.status_code,
+                    code=code or response.status_code,
                     status=status,
                 )
             )
