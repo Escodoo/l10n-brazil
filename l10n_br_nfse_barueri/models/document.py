@@ -494,7 +494,7 @@ class Document(models.Model):
 
             status, mensagem = processador.analisa_retorno_consulta(processo)
             vals = {}
-            if status in (1, 2) and int(record.status_code) in (-1, -2):
+            if status in (1, 2) and int(record.status_code) in (0, -1, -2):
                 vals.update(
                     {
                         "return_filename": getattr(
