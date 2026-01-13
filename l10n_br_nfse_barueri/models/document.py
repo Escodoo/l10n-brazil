@@ -159,16 +159,33 @@ class Document(models.Model):
             "NFKD", value or ""
         ).encode("ASCII", "ignore").decode("ASCII")
 
-    def normalizar_discriminacao_nfse(self, texto, max_chars=100, max_linhas=13):
-        texto = self._sem_acento(texto)
-        texto = texto.replace("\n", " ").strip()
-
-        partes = [
-            texto[i:i + max_chars]
-            for i in range(0, len(texto), max_chars)
-        ][:max_linhas]
-
-        return "|".join(partes)
+    def preparar_discriminacao_nfse(self, texto, max_chars=100, max_linhas=13):
+        texto = self._sem_acento(texto or "")
+        for sep in (" /// ", "///"):
+            if sep in texto:
+                texto = texto.replace(sep, "\n")
+        linhas = []
+        for linha_original in texto.replace("\r\n", "\n").split("\n"):
+            if linha_original.strip() == "":
+                linhas.append("")
+                continue
+            bloco = " ".join(linha_original.split())
+            while len(bloco) > max_chars and len(linhas) < max_linhas:
+                corte = bloco.rfind(" ", 0, max_chars + 1)
+                if corte <= 0:
+                    linhas.append(bloco[:max_chars])
+                    bloco = bloco[max_chars:]
+                else:
+                    linhas.append(bloco[:corte])
+                    bloco = bloco[corte + 1 :].lstrip()
+            if len(linhas) >= max_linhas:
+                break
+            if bloco:
+                linhas.append(bloco)
+                if len(linhas) >= max_linhas:
+                    break
+        linhas = linhas[:max_linhas]
+        return "|".join(linhas)
 
     def _serialize_barueri_lote_rps(self, cancel=False):
         dados = self._prepare_lote_rps()
@@ -310,8 +327,7 @@ class Document(models.Model):
         )
         registro_tipo2.CEPLogradouroTomador = cep.zfill(8) if cep else ""
         registro_tipo2.EmailTomador = dados_tomador.get("email", "tomador@email.com")
-        # registro_tipo2.ValorFatura = "000000000000100"
-        registro_tipo2.DiscriminacaoServico = self.normalizar_discriminacao_nfse(
+        registro_tipo2.DiscriminacaoServico = self.preparar_discriminacao_nfse(
             dados_servico.get("discriminacao", "")
         )
         # Registro tipo 3 - Valores do serviço (retenções)
