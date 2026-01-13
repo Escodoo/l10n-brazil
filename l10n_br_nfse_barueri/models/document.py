@@ -159,6 +159,17 @@ class Document(models.Model):
             "NFKD", value or ""
         ).encode("ASCII", "ignore").decode("ASCII")
 
+    def normalizar_discriminacao_nfse(self, texto, max_chars=100, max_linhas=13):
+        texto = self._sem_acento(texto)
+        texto = texto.replace("\n", " ").strip()
+
+        partes = [
+            texto[i:i + max_chars]
+            for i in range(0, len(texto), max_chars)
+        ][:max_linhas]
+
+        return "|".join(partes)
+
     def _serialize_barueri_lote_rps(self, cancel=False):
         dados = self._prepare_lote_rps()
         dados_servico = self._serialize_barueri_dados_servico()
@@ -300,7 +311,7 @@ class Document(models.Model):
         registro_tipo2.CEPLogradouroTomador = cep.zfill(8) if cep else ""
         registro_tipo2.EmailTomador = dados_tomador.get("email", "tomador@email.com")
         # registro_tipo2.ValorFatura = "000000000000100"
-        registro_tipo2.DiscriminacaoServico = self._sem_acento(
+        registro_tipo2.DiscriminacaoServico = self.normalizar_discriminacao_nfse(
             dados_servico.get("discriminacao", "")
         )
         # Registro tipo 3 - Valores do serviço (retenções)
