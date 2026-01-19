@@ -91,23 +91,23 @@ class Document(models.Model):
 
     def serialize_nfse_barueri(self):
         lote_rps = NFeLoteEnviarArquivo(
-            InscricaoMunicipal=self.convert_type_nfselib(
-                NFeLoteEnviarArquivo, "InscricaoMunicipal", self.company_inscr_mun
+            InscricaoMunicipal=self._convert_binding_value_to_odoo(
+                NFeLoteEnviarArquivo, "InscricaoMunicipal", self.company_id.inscr_mun
             ),
-            CPFCNPJContrib=self.convert_type_nfselib(
+            CPFCNPJContrib=self._convert_binding_value_to_odoo(
                 NFeLoteEnviarArquivo,
                 "CPFCNPJContrib",
-                "".join([char for char in self.company_cnpj_cpf if char.isdigit()]),
+                "".join([char for char in self.company_id.cnpj_cpf if char.isdigit()]),
             ),
-            NomeArquivoRPS=self.convert_type_nfselib(
+            NomeArquivoRPS=self._convert_binding_value_to_odoo(
                 NFeLoteEnviarArquivo,
                 "NomeArquivoRPS",
                 "{}{}".format(self.display_name, ".txt"),
             ),
-            ApenasValidaArq=self.convert_type_nfselib(
+            ApenasValidaArq=self._convert_binding_value_to_odoo(
                 NFeLoteEnviarArquivo, "ApenasValidaArq", False
             ),
-            ArquivoRPSBase64=self.convert_type_nfselib(
+            ArquivoRPSBase64=self._convert_binding_value_to_odoo(
                 NFeLoteEnviarArquivo,
                 "ArquivoRPSBase64",
                 self._serialize_barueri_lote_rps(),
@@ -161,9 +161,10 @@ class Document(models.Model):
                                     + "\n"
                                 )
                         vals["edoc_error_message"] = mensagem_completa
+                        vals["status_code"] = 3
                         record._change_state(SITUACAO_EDOC_REJEITADA)
                         record.write(vals)
-                        return
+                        return vals, None
                     protocolo = processo.resposta.Protocolo
 
             if processo.webservice in CONSULTAR_SITUACAO_LOTE_RPS:
