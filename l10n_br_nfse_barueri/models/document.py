@@ -146,7 +146,7 @@ class Document(models.Model):
         return edocs
 
     def _serialize_barueri_dados_servico(self):
-        self.fiscal_line_ids.ensure_one()
+        # self.fiscal_line_ids.ensure_one()
         dados = self._prepare_dados_servico()
         return dados
 
