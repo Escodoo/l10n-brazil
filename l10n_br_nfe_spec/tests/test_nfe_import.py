@@ -34,10 +34,12 @@ def build_attrs_fake(self, node, create_m2o=False):
     fields = self.fields_get()
     vals = self.default_get(fields.keys())
     for fname, fspec in node.__dataclass_fields__.items():
+        if fname == "any_element":  # FIXME in spec_driven_model
+            continue
         value = getattr(node, fname)
         if value is None:
             continue
-        key = f"nfe40_{fspec.metadata.get('name', fname)}"
+        key = f"{self._field_prefix}{fname}"
         if (
             fspec.type is str or not any(["." in str(i) for i in fspec.type.__args__])
         ) and not str(fspec.type).startswith("typing.List"):
@@ -61,10 +63,18 @@ def build_attrs_fake(self, node, create_m2o=False):
             if fields.get(key) and fields[key].get("related"):
                 key = fields[key]["related"][0]
                 comodel_name = fields[key]["relation"]
+                comodel = self.env.get(comodel_name)
+            elif fields.get(key) and fields[key].get("relation"):
+                comodel_name = fields[key]["relation"]
+                comodel = self.env.get(comodel_name)
             else:
-                clean_type = binding_type.lower()
-                comodel_name = f"nfe.40.{clean_type.split('.')[-1]}"
-            comodel = self.env.get(comodel_name)
+                comodel = None
+                for name in self.env.keys():
+                    if (
+                        hasattr(self.env[name], "_binding_type")
+                        and self.env[name]._binding_type == binding_type
+                    ):
+                        comodel = self.env[name]
             if comodel is None:  # example skip ICMS100 class
                 continue
 
