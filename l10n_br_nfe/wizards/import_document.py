@@ -226,7 +226,77 @@ class NfeImport(models.TransientModel):
         if self.fiscal_operation_type == "in":
             self.imported_products_ids._find_or_create_product_supplierinfo()
 
+        self._create_account_move_from_imported_edoc(edoc)
+
         return binding, edoc
+
+    def _create_account_move_from_imported_edoc(self, edoc):
+        """Create an account.move linked to the imported fiscal document.
+
+        This allows the user to confirm the fiscal document and have the
+        accounting move already populated with fiscal data from the XML.
+        Only works when l10n_br_account is installed.
+        """
+        # Check if l10n_br_account is installed by testing for its field
+        if "fiscal_document_id" not in self.env["account.move"]._fields:
+            return
+
+        move_type_map = {
+            "in": "in_invoice",
+            "out": "out_invoice",
+        }
+        move_type = move_type_map.get(self.fiscal_operation_type)
+        if not move_type:
+            return
+
+        journal_type = "purchase" if move_type == "in_invoice" else "sale"
+        journal = self.env["account.journal"].search(
+            [
+                ("type", "=", journal_type),
+                ("company_id", "=", edoc.company_id.id),
+            ],
+            limit=1,
+        )
+        if not journal:
+            return
+
+        user_type = "purchase" if move_type == "in_invoice" else "sale"
+        invoice_lines = []
+        for fl in edoc.fiscal_line_ids:
+            account_taxes = fl.fiscal_tax_ids.account_taxes(
+                user_type=user_type,
+                fiscal_operation=fl.fiscal_operation_id,
+            )
+            invoice_lines.append(
+                (
+                    0,
+                    0,
+                    {
+                        "fiscal_document_line_id": fl.id,
+                        "product_id": fl.product_id.id,
+                        "tax_ids": [(6, 0, account_taxes.ids)],
+                        "price_unit": fl.price_unit,
+                        "quantity": fl.quantity,
+                    },
+                )
+            )
+
+        move_vals = {
+            "move_type": move_type,
+            "partner_id": edoc.partner_id.id,
+            "journal_id": journal.id,
+            "invoice_date": fields.Date.to_date(edoc.document_date)
+            if edoc.document_date
+            else fields.Date.today(),
+            "invoice_line_ids": invoice_lines,
+        }
+
+        move = self.env["account.move"].create(move_vals)
+        # Link to fiscal document after auto-completion
+        # to avoid _move_autocomplete_invoice_lines_create
+        # clearing fiscal_document_id.
+        move.write({"fiscal_document_id": edoc.id})
+        return move
 
     def _set_fiscal_operation_type(self):
         document_key = self._document_key_from_binding(self._parse_file())
