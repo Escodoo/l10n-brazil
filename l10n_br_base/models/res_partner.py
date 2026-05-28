@@ -57,7 +57,7 @@ class Partner(models.Model):
             allow_cnpj_multi_ie = (
                 record.env["ir.config_parameter"]
                 .sudo()
-                .get_param("l10n_br_base.allow_cnpj_multi_ie", default=True)
+                .get_param("l10n_br_base.allow_cnpj_multi_ie", default="True")
             )
 
             if record.parent_id:

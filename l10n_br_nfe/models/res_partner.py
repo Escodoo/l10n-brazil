@@ -1,12 +1,16 @@
 # Copyright 2019 Akretion (Raphaël Valyi <raphael.valyi@akretion.com>)
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
 
+import logging
+
 from erpbrasil.base.fiscal import cnpj_cpf
 from erpbrasil.base.misc import format_zipcode, punctuation_rm
 
 from odoo import api, fields
 
 from odoo.addons.spec_driven_model.models import spec_models
+
+_logger = logging.getLogger(__name__)
 
 
 class ResPartner(spec_models.SpecModel):
@@ -35,8 +39,13 @@ class ResPartner(spec_models.SpecModel):
         values = super()._prepare_import_dict(
             values, model, parent_dict, defaults_model
         )
-        if not values.get("name") and values.get("legal_name"):
-            values["name"] = values["legal_name"]
+        if not values.get("name"):
+            if values.get("legal_name"):
+                values["name"] = values["legal_name"]
+            elif values.get("nfe40_CPF"):
+                values["name"] = "contato CPF {}".format(values["nfe40_CPF"])
+            elif values.get("nfe40_CNPJ"):
+                values["name"] = "contato CNPJ {}".format(values["nfe40_CNPJ"])
         return values
 
     # nfe.40.tlocal / nfe.40.enderEmit / 'nfe.40.enderDest
@@ -306,9 +315,16 @@ class ResPartner(spec_models.SpecModel):
                 ("cnpj_cpf", "=", rec_dict["cnpj_cpf"]),
                 ("cnpj_cpf", "=", cnpj_cpf.formata(rec_dict["cnpj_cpf"])),
             ]
-            match = self.search(domain_cnpj, limit=1)
+            match = self.with_context(active_test=False).search(domain_cnpj, limit=1)
             if match:
                 return match.id
+            _logger.warning(
+                "match_or_create_m2o: CNPJ %s (formatted: %s) NOT found "
+                "in %s. Will create new partner.",
+                rec_dict["cnpj_cpf"],
+                cnpj_cpf.formata(rec_dict["cnpj_cpf"]),
+                self._name,
+            )
 
         vals = self._prepare_import_dict(
             rec_dict, model=model, parent_dict=parent_dict, defaults_model=model

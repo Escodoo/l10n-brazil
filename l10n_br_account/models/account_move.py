@@ -347,6 +347,14 @@ class AccountMove(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         self._inject_shadowed_fields(vals_list)
+        for vals in vals_list:
+            # Prevent Odoo's tax_totals widget from obliterating our
+            # exact XML tax calculations
+            if "tax_totals" in vals and (
+                vals.get("imported_document")
+                or self.env.context.get("force_fiscal_amount_recompute")
+            ):
+                vals.pop("tax_totals")
         invoice = super(AccountMove, self.with_context(create_from_move=True)).create(
             vals_list
         )
@@ -354,6 +362,12 @@ class AccountMove(models.Model):
 
     def write(self, values):
         self._inject_shadowed_fields([values])
+        # Pop tax_totals to prevent Odoo from overriding our tax lines on save
+        if "tax_totals" in values and (
+            any(self.mapped("imported_document"))
+            or self.env.context.get("force_fiscal_amount_recompute")
+        ):
+            values.pop("tax_totals")
         result = super().write(values)
         return result
 
@@ -732,31 +746,26 @@ class AccountMove(models.Model):
         move_id=None,
         move_type="in_invoice",
     ):
-        """
-        Import the data from an existing fiscal document into a new
-        invoice or into an existing invoice.
-        First it transfers the "shadowed" fields and fill the other
-        mandatory invoice fields.
-        The account.move onchanges of these fields are properly
-        triggered as if the invoice was filled manually.
-        Then it creates each account.move.line and fill them using
-        their fiscal_document_id onchange.
-        """
         if move_id:
             move = self.env["account.move"].browse(move_id)
         else:
             move = self.env["account.move"]
+
         move_form = Form(
             move.with_context(
                 default_move_type=move_type,
                 account_predictive_bills_disable_prediction=True,
+                force_fiscal_amount_recompute=True,
+                check_move_validity=False,
             )
         )
+
         if not move_id or not move.fiscal_document_id:
+            move_form.partner_id = fiscal_document.partner_id
             move_form.invoice_date = fiscal_document.document_date
             move_form.date = fiscal_document.document_date
             for field in self._shadowed_fields():
-                if field in ("company_id", "user_id"):  # (readonly fields)
+                if field in ("company_id", "user_id"):
                     continue
                 if not move_form._view["fields"].get(field):
                     continue
@@ -764,13 +773,89 @@ class AccountMove(models.Model):
             move_form.document_type_id = fiscal_document.document_type_id
             move_form.fiscal_document_id = fiscal_document
             move_form.fiscal_operation_id = fiscal_document.fiscal_operation_id
+            move_form.document_serie = fiscal_document.document_serie
 
+        unit_and_prices = []
         for line in fiscal_document.fiscal_line_ids:
             with move_form.invoice_line_ids.new() as line_form:
-                line_form.cfop_id = (
-                    line.cfop_id
-                )  # required if we disable some fiscal tax updates
-                line_form.fiscal_operation_id = self.fiscal_operation_id
+                line_form.cfop_id = line.cfop_id
+                line_form.fiscal_operation_id = (
+                    line.fiscal_operation_id or fiscal_document.fiscal_operation_id
+                )
+                line_form.product_id = line.product_id
+                line_form.quantity = line.quantity
                 line_form.fiscal_document_line_id = line
+
+                amt_inc = (
+                    (line.icms_value or 0.0)
+                    + (line.pis_value or 0.0)
+                    + (line.cofins_value or 0.0)
+                    + (line.issqn_value or 0.0)
+                    + (line.icmsfcp_value or 0.0)
+                )
+                amt_not_inc = (
+                    (line.icmsst_value or 0.0)
+                    + (line.ipi_value or 0.0)
+                    + (line.ii_value or 0.0)
+                    + (line.icmsfcpst_value or 0.0)
+                    + (line.ibs_value or 0.0)
+                    + (line.cbs_value or 0.0)
+                )
+
+                unit_and_prices.append(
+                    {
+                        "uot_id": line.uot_id.id if line.uot_id else False,
+                        "price_unit": line.price_unit,
+                        "fiscal_line_id": line.id,
+                        "amt_inc": amt_inc,
+                        "amt_not_inc": amt_not_inc,
+                    }
+                )
+
         move_form.save()
+        move = self.env["account.move"].browse(move_form.id)
+
+        invoice_line_write_vals = []
+        dummy_lines_to_unlink = self.env["l10n_br_fiscal.document.line"]
+
+        for index, item in enumerate(unit_and_prices):
+            if index < len(move.invoice_line_ids):
+                aml = move.invoice_line_ids[index]
+                dummy_fiscal_line = aml.fiscal_document_line_id
+
+                if dummy_fiscal_line and dummy_fiscal_line.id != item["fiscal_line_id"]:
+                    dummy_lines_to_unlink |= dummy_fiscal_line
+
+                self.env["l10n_br_fiscal.document.line"].browse(
+                    item["fiscal_line_id"]
+                ).write(
+                    {
+                        "amount_tax_included": item["amt_inc"],
+                        "amount_tax_not_included": item["amt_not_inc"],
+                    }
+                )
+
+                invoice_line_write_vals.append(
+                    (
+                        1,
+                        aml.id,
+                        {
+                            "product_uom_id": item["uot_id"],
+                            "price_unit": item["price_unit"],
+                            "fiscal_document_line_id": item["fiscal_line_id"],
+                            "amount_tax_included": item["amt_inc"],
+                            "amount_tax_not_included": item["amt_not_inc"],
+                        },
+                    )
+                )
+
+        move.with_context(check_move_validity=False).write(
+            {"invoice_line_ids": invoice_line_write_vals}
+        )
+
+        if dummy_lines_to_unlink:
+            dummy_lines_to_unlink.unlink()
+
+        move.with_context(check_move_validity=True)._compute_amount()
+
         return move_form

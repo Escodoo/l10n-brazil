@@ -949,6 +949,16 @@ class NFe(spec_models.StackedModel):
                 .search([("code", "=", value)], limit=1)
                 .id
             )
+            # nfe40_mod is related="document_type_id.code" - auto-computes.
+            # Return early to prevent super()._build_attr from setting
+            # vals["nfe40_mod"], which would trigger _prepare_import_dict
+            # reverse-mapping (match_or_create_m2o searches by name, not code)
+            # and create a duplicate empty document type, overwriting our ID.
+            return
+
+        if key == "nfe40_IBSCBSTot":
+            # IBSCBSTot fields are computed from lines, skip importing
+            return
 
         return super()._build_attr(node, fields, vals, path, attr)
 
@@ -1561,14 +1571,16 @@ class NFe(spec_models.StackedModel):
         self.file_report_id = self.env["ir.attachment"].create(attachment_data)
 
     def import_binding_nfe(self, binding, edoc_type="out"):
+        if hasattr(binding, "NFe"):
+            binding = binding.NFe
         document = (
             self.env["nfe.40.infnfe"]
             .with_context(tracking_disable=True, edoc_type=edoc_type, dry_run=False)
-            .build_from_binding("nfe", "40", binding.NFe.infNFe)
+            .build_from_binding("nfe", "40", binding.infNFe)
         )
 
         if edoc_type == "in" and document.company_id.cnpj_cpf != cnpj_cpf.formata(
-            binding.NFe.infNFe.emit.CNPJ
+            binding.infNFe.emit.CNPJ
         ):
             document.fiscal_operation_type = "in"
             document.issuer = "partner"

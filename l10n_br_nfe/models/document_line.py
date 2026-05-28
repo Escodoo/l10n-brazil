@@ -1325,6 +1325,9 @@ class NFeLine(spec_models.StackedModel):
         if key in ["nfe40_CST", "nfe40_modBC", "nfe40_CSOSN"]:
             return  # (dealt with in _build_many2one)
 
+        if key == "nfe40_IBSCBS":
+            return  # (dealt with in _build_many2one)
+
         if key.startswith("nfe40_ICMS") and key not in [
             "nfe40_ICMS",
             "nfe40_ICMSTot",
@@ -1422,6 +1425,13 @@ class NFeLine(spec_models.StackedModel):
 
         elif key == "nfe40_COFINSST":
             self._import_tax_attrs(
+                key,
+                value,
+                new_value,
+            )
+
+        elif key == "nfe40_IBSCBS":
+            self._import_ibscbs_attrs(
                 key,
                 value,
                 new_value,
@@ -1615,6 +1625,22 @@ class NFeLine(spec_models.StackedModel):
         # elif kind == "cofins":  # (will also apply to cofinsst)
         #     pass
         #     # TODO  qBCProd, vAliqProd
+
+    def _import_ibscbs_attrs(self, key, value, odoo_attrs):
+        """Import IBS/CBS tax attributes from NFe binding."""
+        if not isinstance(value, Tcibs):
+            return
+
+        fields = self._fields
+        for attr_name in ["vBCUf", "vBC", "pIBSCBS", "vIBSCBS"]:
+            binding_attr = f"nfe40_{attr_name}"
+            if binding_attr not in fields:
+                continue
+            odoo_attrs[binding_attr] = getattr(
+                value, attr_name, fields[binding_attr].default
+            )
+            if odoo_attrs[binding_attr] is None:
+                odoo_attrs[binding_attr] = fields[binding_attr].default
 
     def _verify_related_many2ones(self, related_many2ones):
         if (

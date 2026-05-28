@@ -211,7 +211,12 @@ class NfeImport(models.TransientModel):
         )
         edoc.fiscal_operation_id = self.fiscal_operation_id
         for line in edoc.fiscal_line_ids:
+            # Preserve the XML price_unit because setting
+            # fiscal_operation_id triggers _compute_price_unit_fiscal
+            # which would overwrite it with the product's list/cost price.
+            price_unit = line.price_unit
             line.fiscal_operation_id = self.fiscal_operation_id
+            line.price_unit = price_unit
 
         if not self.partner_id:
             self.partner_id = edoc.partner_id
