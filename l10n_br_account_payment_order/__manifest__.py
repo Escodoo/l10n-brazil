@@ -67,7 +67,7 @@
     "installable": True,
     "external_dependencies": {
         "python": [
-            "erpbrasil.base>=2.3.0",
+            "erpbrasil.base",
         ]
     },
 }
