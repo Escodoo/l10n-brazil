@@ -176,7 +176,8 @@ class MDe(models.Model):
 
     def _send_event(self, method, valid_codes):
         processor = self._get_processor()
-        cnpj_partner = re.sub("[^0-9]", "", self.company_id.cnpj_cpf)
+        # FIX: NT 2025.001 — remove só pontuação (. / -); depende de a SEFAZ liberar XML alfanumérico no MDE.
+        cnpj_partner = (self.company_id.cnpj_cpf or "").replace(".", "").replace("/", "").replace("-", "").upper()
 
         if hasattr(processor, method):
             result = getattr(processor, method)(self.key, cnpj_partner)

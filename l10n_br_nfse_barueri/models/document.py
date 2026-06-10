@@ -101,9 +101,8 @@ class Document(models.Model):
                 continue
 
             autenticidade = (doc.verify_code or "").strip()
-            cnpj_tomador = "".join(
-                ch for ch in (doc.partner_id.cnpj_cpf or "") if ch.isdigit()
-            )
+            # FIX: NT 2025.001 — remove só pontuação; depende de o sistema municipal Barueri aceitar CNPJ alfanumérico na URL.
+            cnpj_tomador = (doc.partner_id.cnpj_cpf or "").replace(".", "").replace("/", "").replace("-", "").upper()
             if not (autenticidade and cnpj_tomador):
                 doc.url_nfse_barueri = ""
                 continue
@@ -290,7 +289,8 @@ class Document(models.Model):
         registro_tipo2.ServicoExportacao = "2"  # String: 1=Exportado, 2=Não exportado
         cnpj_cpf = dados_tomador.get("cnpj") or dados_tomador.get("cpf", "")
         if cnpj_cpf:
-            if len(cnpj_cpf) == 14 and cnpj_cpf.isdigit():
+            # FIX: NT 2025.001 — CNPJ alfanumérico tem 14 chars mas não passa em isdigit(); usa isalnum() para CNPJ.
+            if len(cnpj_cpf) == 14 and cnpj_cpf.isalnum():
                 registro_tipo2.IndicadorCPFCNPJTomador = "2"
                 registro_tipo2.CPFCNPJTomador = cnpj_cpf.zfill(14)
             elif len(cnpj_cpf) == 11 and cnpj_cpf.isdigit():
@@ -462,7 +462,8 @@ class Document(models.Model):
             CPFCNPJContrib=self.convert_type_nfselib(
                 NFeLoteEnviarArquivo,
                 "CPFCNPJContrib",
-                "".join([char for char in self.company_cnpj_cpf if char.isdigit()]),
+                # FIX: NT 2025.001 — remove só pontuação; depende de o sistema municipal Barueri aceitar CNPJ alfanumérico no lote RPS.
+                (self.company_cnpj_cpf or "").replace(".", "").replace("/", "").replace("-", "").upper(),
             ),
             NomeArquivoRPS=self.convert_type_nfselib(
                 NFeLoteEnviarArquivo,
