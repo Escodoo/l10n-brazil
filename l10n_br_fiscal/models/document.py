@@ -375,10 +375,10 @@ class Document(models.Model):
                 name += " - " + self.env._("Unidentified Consumer")
             elif self.partner_id.legal_name:
                 name += " - " + self.partner_id.legal_name
-                name += " - " + self.partner_id.vat
+                name += " - " + self.partner_id.vat_formatted
             else:
                 name += " - " + self.partner_id.name
-                name += " - " + self.partner_id.vat
+                name += " - " + self.partner_id.vat_formatted
         elif self._context.get("fiscal_document_no_company"):
             name += type_serie_number
         else:

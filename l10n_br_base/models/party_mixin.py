@@ -22,6 +22,11 @@ class PartyMixin(models.AbstractModel):
         index=True,
     )
 
+    vat_formatted = fields.Char(
+        string="VAT Formatted",
+        compute="_compute_vat_formatted",
+    )
+
     l10n_br_ie_code = fields.Char(
         string="State Tax Number",
         size=17,
@@ -103,6 +108,14 @@ class PartyMixin(models.AbstractModel):
                 )
             else:
                 record.cnpj_cpf_stripped = False
+
+    @api.depends("vat")
+    def _compute_vat_formatted(self):
+        for record in self:
+            if record.vat:
+                record.vat_formatted = cnpj_cpf.formata(str(record.vat))
+            else:
+                record.vat_formatted = False
 
     @api.onchange("zip")
     def _onchange_zip(self):
