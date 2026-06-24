@@ -17,6 +17,7 @@ from nfselib.paulistana.v03.PedidoEnvioLoteRPS_v02 import (
     tpGIBSCBS,
     tpRPS,
 )
+
 from unidecode import unidecode
 
 from odoo import _, models
@@ -48,12 +49,31 @@ def filter_paulistana(record):
     return False
 
 
+_RETENCAO_PIS_COFINS_CSLL = {
+    (False, False, False): "0",  # PIS/COFINS/CSLL Não Retidos.
+    (True, True, True): "3",  # PIS/COFINS/CSLL Retidos.
+    (True, True, False): "4",  # PIS/COFINS Retidos, CSLL Não Retido.
+    (True, False, False): "5",  # PIS Retido, COFINS/CSLL Não Retidos.
+    (False, True, False): "6",  # COFINS Retido, PIS/CSLL Não Retidos.
+    (False, True, True): "7",  # PIS Não Retido, COFINS/CSLL Retidos.
+    (False, False, True): "8",  # PIS/COFINS Não Retidos, CSLL Retido.
+    (True, False, True): "9",  # COFINS Não Retido, PIS/CSLL Retidos.
+}
+
+
+def _build_retencao_pis_cofins(valor_pis_retido, valor_cofins_retido, valor_csll_retido):
+    pis_retido = float(valor_pis_retido or 0) > 0
+    cofins_retido = float(valor_cofins_retido or 0) > 0
+    csll_retido = float(valor_csll_retido or 0) > 0
+    return _RETENCAO_PIS_COFINS_CSLL[(pis_retido, cofins_retido, csll_retido)]
+
+
 class Document(models.Model):
     _inherit = "l10n_br_fiscal.document"
 
     def convert_type_nfselib(self, class_object, object_filed, value):
-        if value is None:
-            return value
+        if value is None or value == "":
+            return None
 
         value_type = ""
         for field in class_object().member_data_items_:
@@ -131,6 +151,7 @@ class Document(models.Model):
             # tpEnteGov=self.convert_type_nfselib(tpIBSCBS, "tpEnteGov", 1), # Chumbado
             valores=valores,
         )
+
         return tpRPS(
             Assinatura=self.assinatura_rps(
                 dados_lote_rps, dados_servico, dados_tomador
@@ -269,6 +290,15 @@ class Document(models.Model):
                 ),
             ),
             IBSCBS=IBSCBS,
+            RetencaoPisCofins=self.convert_type_nfselib(
+                tpRPS,
+                "RetencaoPisCofins",
+                _build_retencao_pis_cofins(
+                    dados_servico["valor_pis_retido"],
+                    dados_servico["valor_cofins_retido"],
+                    dados_servico["valor_csll_retido"],
+                ),
+            ),
         )
 
     def _serialize_rps(self, dados):
