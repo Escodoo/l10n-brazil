@@ -2,8 +2,8 @@
 # Copyright 2025 - TODAY, Cristiano Mafra Junior <cristiano.mafra@escodoo.com.br>
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
+import logging
 from datetime import datetime
-from odoo.addons.l10n_br_fiscal.models.document import Document as FiscalDocument
 
 import requests
 import unicodedata
@@ -26,7 +26,8 @@ from nfselib.barueri.rps import (
 )
 
 from odoo import _, models, fields, api
-
+from odoo.exceptions import ValidationError
+from odoo.addons.l10n_br_fiscal.models.document import Document as FiscalDocument
 from odoo.addons.l10n_br_fiscal.constants.fiscal import (
     EVENT_ENV_HML,
     EVENT_ENV_PROD,
@@ -43,6 +44,8 @@ from ..constants.barueri import (
     CONSULTAR_SITUACAO_LOTE_RPS,
     ENVIO_LOTE_RPS,
 )
+
+_logger = logging.getLogger(__name__)
 
 
 def filter_oca_nfse(record):
@@ -137,6 +140,37 @@ class Document(models.Model):
                 doc.is_nfse_barueri = True
             else:
                 doc.is_nfse_barueri = False
+
+    def _get_indicador_destinatario_estrangeiro(self, partner):
+        """v4.2 — Retorna '1' (Sim) se parceiro for estrangeiro, '2' (Não) se nacional.
+
+        O campo é numérico (1 posição). Valores textuais ('Sim', 'True') são rejeitados
+        pelo layout v4.2. Este método garante que apenas '1' ou '2' sejam emitidos.
+        """
+        if partner.country_id and partner.country_id.code != "BR":
+            return "1"
+        return "2"
+
+    def _validate_ibs_cbs_consistency(self, cclass_trib, cst_trib):
+        """v4.2 — Valida que Situação IBS/CBS = 3 primeiros dígitos da Classificação.
+
+        Ex.: classificação '123456' → situação deve ser '123'. Divergência bloqueia o envio.
+        """
+        cclass = (cclass_trib or "").zfill(6)
+        cst = (cst_trib or "").zfill(3)
+        # Só valida quando há classificação configurada (ao menos um dígito não-zero)
+        if not cclass.strip("0"):
+            return
+        expected = cclass[:3]
+        if cst != expected:
+            raise ValidationError(
+                _(
+                    "Código de Situação Tributária IBS/CBS ('%s') deve ser igual "
+                    "aos 3 primeiros dígitos do Código de Classificação Tributária "
+                    "IBS/CBS ('%s'). Valor esperado: '%s'. "
+                    "Corrija o mapeamento IBS/CBS no código de tributação municipal."
+                ) % (cst, cclass, expected)
+            )
 
     def _serialize(self, edocs):
         edocs = super()._serialize(edocs)
@@ -285,7 +319,10 @@ class Document(models.Model):
         )
         valor_retencoes_centavos = int(round(float(valor_retencoes_total) * 100))
         registro_tipo2.ValorTotalRetencoes = str(valor_retencoes_centavos).zfill(15)
-        registro_tipo2.TomadorEstrangeiro = "2"  # String: 1=Estrangeiro, 2=Brasileiro
+        # v4.2: campo numérico (1=Estrangeiro, 2=Brasileiro) — derivado da nacionalidade do parceiro
+        registro_tipo2.TomadorEstrangeiro = self._get_indicador_destinatario_estrangeiro(
+            self.partner_id
+        )
         registro_tipo2.ServicoExportacao = "2"  # String: 1=Exportado, 2=Não exportado
         cnpj_cpf = dados_tomador.get("cnpj") or dados_tomador.get("cpf", "")
         if cnpj_cpf:
@@ -352,6 +389,27 @@ class Document(models.Model):
 
                 registros_tipo3.append(reg)
 
+        # NT-007: Verificar que PIS/COFINS no Registro Tipo 3 são retenções reais.
+        # Alerta quando o valor de débito e o valor retido são ambos > 0 e diferentes,
+        # o que pode indicar configuração ambígua (débito sendo confundido com retenção).
+        for nome, campo_retido, campo_debito in [
+            ("PIS", "valor_pis_retido", "valor_pis"),
+            ("COFINS", "valor_cofins_retido", "valor_cofins"),
+        ]:
+            val_retido = dados_servico.get(campo_retido, 0) or 0
+            val_debito = dados_servico.get(campo_debito, 0) or 0
+            if val_retido > 0 and val_debito > 0 and round(val_debito, 2) != round(val_retido, 2):
+                _logger.warning(
+                    "NT-007 [%s]: %s possui valor de débito (R$ %.2f) e valor retido "
+                    "(R$ %.2f) simultaneamente e com valores distintos. Verifique se o "
+                    "valor informado no Registro Tipo 3 é efetivamente uma retenção e "
+                    "não um débito fiscal.",
+                    self.name,
+                    nome,
+                    val_debito,
+                    val_retido,
+                )
+
         registro_tipo4 = RegistroTipo4()
         registro_tipo4.TipoRegistro = 4
         registro_tipo4.OptanteSimplesNacional = (
@@ -366,13 +424,14 @@ class Document(models.Model):
         ).zfill(7)
         registro_tipo4.CodigoNBS = "".join(c for c in str(dados_servico.get("nbs", "")) if c.isdigit())
         registro_tipo4.CodigoIndicadorOperacaoFornecimento = dados_servico.get("indop", "").zfill(6)
-        registro_tipo4.CodigoClassificacaoTributariaIBSCBS = (
-            dados_servico.get("cclass_trib", "").zfill(6)
-        )
+        cclass_trib = dados_servico.get("cclass_trib", "") or ""
+        cst_trib = dados_servico.get("cst_trib", "") or ""
 
-        registro_tipo4.CodigoSituacaoTributariaIBSCBS = (
-            dados_servico.get("cst_trib", "").zfill(3)
-        )
+        # v4.2: valida que Situação IBS/CBS = 3 primeiros dígitos da Classificação IBS/CBS
+        self._validate_ibs_cbs_consistency(cclass_trib, cst_trib)
+
+        registro_tipo4.CodigoClassificacaoTributariaIBSCBS = cclass_trib.zfill(6)
+        registro_tipo4.CodigoSituacaoTributariaIBSCBS = cst_trib.zfill(3)
         registro_tipo4.OperacaoUsoConsumoPessoal = "0"
         registro_tipo4.IndicadorDestinatarioServico = "0"
 
@@ -396,7 +455,10 @@ class Document(models.Model):
         registro_tipo5.DescricaoBemMovelLocacao = ""
         registro_tipo5.QuantidadeBemMovelLocacao = ""
         registro_tipo5.IndicadorOperacaoDoacao = ""
-        registro_tipo5.DestinatarioServicoEstrangeiro = "2"
+        # v4.2: campo numérico (1=Sim/estrangeiro, 2=Não/nacional) — derivado da nacionalidade
+        registro_tipo5.DestinatarioServicoEstrangeiro = (
+            self._get_indicador_destinatario_estrangeiro(self.partner_id)
+        )
         registro_tipo5.CPFCNPJDestinatarioServico = ""
         registro_tipo5.RazaoSocialNomeDestinatarioServico = ""
         registro_tipo5.EnderecoLogradouroDestinatarioServico = ""
