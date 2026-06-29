@@ -5,3 +5,4 @@ nfelib
 Setuptools<81
 signxml==3.2.2
 xmldiff
+erpbrasil.base @ git+https://github.com/akretion/erpbrasil.base.git@master-cnpj-alfanumerico
