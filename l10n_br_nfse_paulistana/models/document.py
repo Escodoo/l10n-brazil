@@ -49,25 +49,6 @@ def filter_paulistana(record):
     return False
 
 
-_RETENCAO_PIS_COFINS_CSLL = {
-    (False, False, False): "0",  # PIS/COFINS/CSLL Não Retidos.
-    (True, True, True): "3",  # PIS/COFINS/CSLL Retidos.
-    (True, True, False): "4",  # PIS/COFINS Retidos, CSLL Não Retido.
-    (True, False, False): "5",  # PIS Retido, COFINS/CSLL Não Retidos.
-    (False, True, False): "6",  # COFINS Retido, PIS/CSLL Não Retidos.
-    (False, True, True): "7",  # PIS Não Retido, COFINS/CSLL Retidos.
-    (False, False, True): "8",  # PIS/COFINS Não Retidos, CSLL Retido.
-    (True, False, True): "9",  # COFINS Não Retido, PIS/CSLL Retidos.
-}
-
-
-def _build_retencao_pis_cofins(valor_pis_retido, valor_cofins_retido, valor_csll_retido):
-    pis_retido = float(valor_pis_retido or 0) > 0
-    cofins_retido = float(valor_cofins_retido or 0) > 0
-    csll_retido = float(valor_csll_retido or 0) > 0
-    return _RETENCAO_PIS_COFINS_CSLL[(pis_retido, cofins_retido, csll_retido)]
-
-
 class Document(models.Model):
     _inherit = "l10n_br_fiscal.document"
 
@@ -293,7 +274,7 @@ class Document(models.Model):
             RetencaoPisCofins=self.convert_type_nfselib(
                 tpRPS,
                 "RetencaoPisCofins",
-                _build_retencao_pis_cofins(
+                self._map_retencao_pis_cofins(
                     dados_servico["valor_pis_retido"],
                     dados_servico["valor_cofins_retido"],
                     dados_servico["valor_csll_retido"],
@@ -417,6 +398,25 @@ class Document(models.Model):
         }
 
         return dict_type_rps[rps_type]
+
+    def _map_retencao_pis_cofins(
+        self, valor_pis_retido, valor_cofins_retido, valor_csll_retido
+    ):
+        # NT-007: indicador de retenção de PIS/COFINS/CSLL
+        dict_retencao_pis_cofins_csll = {
+            (False, False, False): "0",  # PIS/COFINS/CSLL Não Retidos.
+            (True, True, True): "3",  # PIS/COFINS/CSLL Retidos.
+            (True, True, False): "4",  # PIS/COFINS Retidos, CSLL Não Retido.
+            (True, False, False): "5",  # PIS Retido, COFINS/CSLL Não Retidos.
+            (False, True, False): "6",  # COFINS Retido, PIS/CSLL Não Retidos.
+            (False, True, True): "7",  # PIS Não Retido, COFINS/CSLL Retidos.
+            (False, False, True): "8",  # PIS/COFINS Não Retidos, CSLL Retido.
+            (True, False, True): "9",  # COFINS Não Retido, PIS/CSLL Retidos.
+        }
+        pis_retido = float(valor_pis_retido or 0) > 0
+        cofins_retido = float(valor_cofins_retido or 0) > 0
+        csll_retido = float(valor_csll_retido or 0) > 0
+        return dict_retencao_pis_cofins_csll[(pis_retido, cofins_retido, csll_retido)]
 
     def _eletronic_document_send(self):
         super()._eletronic_document_send()
