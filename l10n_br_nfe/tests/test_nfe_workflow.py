@@ -649,3 +649,30 @@ class TestNFeWorkflowSefazSynchronization(TestNFeExport):
 
         self.assertEqual(document.status_code, "101")
         self.assertEqual(document.status_name, "sincronizado pela consulta")
+
+
+class TestNFeWorkflowResendGuard(TestNFeExport):
+    """A document in 'enviada' with no batch receipt must not be retransmitted."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass(nfe_list=[{"record_ref": NFE_LC_DEMO}])
+        cls.nfe = cls.nfe_list[0]["nfe"]
+
+    def test_send_from_enviada_without_receipt_consults_instead_of_resending(self):
+        """The "Consultar Recibo" button must not retransmit the same key.
+
+        Submitting the same access key over and over is what SEFAZ answers
+        with the "Consumo Indevido" (656) rejection.
+        """
+        # A transmission aborted before the webservice answered leaves the
+        # document in 'enviada' with no batch receipt to consult.
+        self.nfe.write({"state_edoc": SITUACAO_EDOC_ENVIADA})
+        self.assertFalse(self.nfe.authorization_event_id.lot_receipt_number)
+
+        recorder = RecordingNFeMock()
+        with recorder:
+            self.nfe.action_document_send()
+
+        self.assertNotIn("nfeAutorizacaoLote", recorder.calls)
+        self.assertIn("nfeConsultaNF", recorder.calls)
