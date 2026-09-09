@@ -138,6 +138,16 @@ class AccountMove(models.Model):
         moves = self.filtered(lambda move: not move.imported_document)
         return super(AccountMove, moves)._inverse_tax_totals()
 
+    @api.onchange("company_id")
+    def _onchange_company_id_br(self):
+        if self.fiscal_document_id:
+            self.fiscal_document_id.company_id = self.company_id
+
+    @api.onchange("partner_id")
+    def _onchange_partner_id_br(self):
+        if self.fiscal_document_id:
+            self.fiscal_document_id.partner_id = self.partner_id
+
     @api.constrains("fiscal_document_id", "document_type_id")
     def _check_fiscal_document_type(self):
         for rec in self:
@@ -206,7 +216,7 @@ class AccountMove(models.Model):
     def default_get(self, fields_list):
         defaults = super().default_get(fields_list)
         move_type = self.env.context.get("default_move_type", "out_invoice")
-        if move_type != "entry":
+        if move_type and move_type != "entry":
             defaults["fiscal_operation_type"] = MOVE_TO_OPERATION[move_type]
             if defaults["fiscal_operation_type"] == FISCAL_OUT:
                 defaults["issuer"] = DOCUMENT_ISSUER_COMPANY
@@ -258,6 +268,14 @@ class AccountMove(models.Model):
         "fiscal_line_ids.fiscal_amount_tax",
     )
     def _compute_amount(self):
+        if "force_fiscal_amount_recompute" in self._context:
+            for move in self.filtered(lambda m: m.fiscal_operation_id):
+                # this is a ugly hack required for importing composite
+                # fiscal documents for instance. It should be used
+                # exceptionnaly as it breaks the dependency chain and
+                # can leave fields such as payment_state inconsistent.
+                move.fiscal_document_id._compute_fiscal_amount()
+
         result = super()._compute_amount()
         for move in self.filtered(lambda m: m.fiscal_operation_id):
             sign = -move.direction_sign
@@ -278,6 +296,44 @@ class AccountMove(models.Model):
             move.amount_total = sum(inv_line_ids.mapped("fiscal_amount_total"))
 
         return result
+
+    def _compute_l10n_latam_document_type(self):
+        """Override to map fiscal document_type_id to l10n_latam_document_type_id.
+
+        When l10n_latam_invoice_document is installed, it requires
+        l10n_latam_document_type_id for posted invoices on journals that use documents.
+        This override ensures that when a fiscal document_type_id is set
+        (from l10n_br_fiscal), the corresponding l10n_latam_document_type_id is also
+        set based on matching code.
+        """
+        # Store current values to avoid clearing them
+        current_values = {move.id: move.l10n_latam_document_type_id for move in self}
+
+        if hasattr(super(), "_compute_l10n_latam_document_type"):
+            super()._compute_l10n_latam_document_type()
+
+        # Only proceed if l10n_latam_invoice_document is installed
+        if "l10n_latam.document.type" not in self.env:
+            return
+
+        # Restore values that were set but cleared by super()
+        for move in self:
+            if current_values[move.id] and not move.l10n_latam_document_type_id:
+                move.l10n_latam_document_type_id = current_values[move.id]
+
+        # Set document type based on fiscal document_type_id.code
+        for move in self.filtered(
+            lambda m: m.document_type_id and not m.l10n_latam_document_type_id
+        ):
+            latam_doc_type = self.env["l10n_latam.document.type"].search(
+                [
+                    ("code", "=", move.document_type_id.code),
+                    ("country_id", "=", move.company_id.account_fiscal_country_id.id),
+                ],
+                limit=1,
+            )
+            if latam_doc_type:
+                move.l10n_latam_document_type_id = latam_doc_type
 
     def _compute_imported_terms(self):
         self.ensure_one()
@@ -447,6 +503,7 @@ class AccountMove(models.Model):
             unlink_moves |= move
         result = super(AccountMove, unlink_moves).unlink()
         unlink_documents.unlink()
+        self.env.registry.clear_caches()
         return result
 
     @api.depends("move_type", "fiscal_operation_id")
@@ -491,6 +548,8 @@ class AccountMove(models.Model):
         return action
 
     def button_draft(self):
+        """Set the move to draft state, handling fiscal documents."""
+        # Process fiscal documents first to sync their state
         for move in self.filtered(lambda d: d.document_type_id):
             if (
                 move.state_edoc == DOCUMENT_STATE_CANCEL
@@ -506,7 +565,7 @@ class AccountMove(models.Model):
                 )
             move.fiscal_document_ids.filtered(
                 lambda d: d.state_edoc != DOCUMENT_STATE_DRAFT
-            ).action_document_back2draft()
+            ).with_context(in_button_draft=True).action_document_back2draft()
         return super().button_draft()
 
     def action_document_send(self):
@@ -538,7 +597,10 @@ class AccountMove(models.Model):
         """Sets fiscal document to draft state and cancel and set to draft
         the related invoice for both documents remain equivalent state."""
         for move in self.filtered(lambda d: d.document_type_id):
-            move.button_cancel()
+            # Avoid recursive calls - skip button_cancel if we're already in
+            # button_cancel flow (in_button_cancel context is set)
+            if not self.env.context.get("in_button_cancel"):
+                move.with_context(in_button_cancel=True).button_cancel()
             move.button_draft()
 
     def action_view_invoice(self):
@@ -551,6 +613,76 @@ class AccountMove(models.Model):
             move.fiscal_document_ids.filtered(
                 lambda d: d.document_type_id
             ).action_document_confirm()
+
+        if "l10n_latam.document.type" in self.env:
+            for move in self.filtered(
+                lambda m: (
+                    m.l10n_latam_use_documents
+                    and not m.l10n_latam_document_type_id
+                    and m.state == "draft"
+                )
+            ):
+                # Try to find a matching document type by fiscal document type code
+                if move.document_type_id:
+                    latam_doc_type = self.env["l10n_latam.document.type"].search(
+                        [
+                            ("code", "=", move.document_type_id.code),
+                            (
+                                "country_id",
+                                "=",
+                                move.company_id.account_fiscal_country_id.id,
+                            ),
+                        ],
+                        limit=1,
+                    )
+                    if latam_doc_type:
+                        move.l10n_latam_document_type_id = latam_doc_type
+                        continue
+                # Fallback: search for available document types directly
+                # (l10n_latam_available_document_type_ids may not be computed yet)
+                internal_types = []
+                if move.move_type in ["out_refund", "in_refund"]:
+                    internal_types = ["credit_note"]
+                elif move.move_type in ["out_invoice", "in_invoice"]:
+                    internal_types = ["invoice", "debit_note"]
+                if move.debit_origin_id:
+                    internal_types = ["debit_note"]
+                internal_types += ["all"]
+                latam_doc_type = self.env["l10n_latam.document.type"].search(
+                    [
+                        ("internal_type", "in", internal_types),
+                        (
+                            "country_id",
+                            "=",
+                            move.company_id.account_fiscal_country_id.id,
+                        ),
+                    ],
+                    limit=1,
+                )
+                if latam_doc_type:
+                    move.l10n_latam_document_type_id = latam_doc_type
+                else:
+                    # Last resort: find ANY document type for the country
+                    # If company country is BR but fiscal country is different,
+                    # use BR document types
+                    country = move.company_id.account_fiscal_country_id
+                    if (
+                        move.company_id.country_id
+                        and move.company_id.country_id.code == "BR"
+                    ):
+                        country = move.company_id.country_id
+                    latam_doc_type = self.env["l10n_latam.document.type"].search(
+                        [
+                            (
+                                "country_id",
+                                "=",
+                                country.id,
+                            ),
+                        ],
+                        limit=1,
+                    )
+                    if latam_doc_type:
+                        move.l10n_latam_document_type_id = latam_doc_type
         return super()._post(soft=soft)
 
     def view_xml(self):
@@ -564,6 +696,93 @@ class AccountMove(models.Model):
     def action_send_email(self):
         self.ensure_one_doc()
         return self.fiscal_document_id.action_send_email()
+
+    @api.constrains("state")
+    def _check_l10n_latam_documents(self):
+        """Auto-assign l10n_latam document type for Brazilian companies, then
+        let upstream validation run.
+
+        When l10n_latam_invoice_document is installed, posting invoices requires
+        l10n_latam_document_type_id on journals that use documents. Instead of
+        raising an error, this override auto-assigns a document type for Brazilian
+        companies (where fiscal documents are electronic and numbering is automatic).
+
+        For non-Brazilian companies, the auto-assign is skipped and the upstream
+        constraint runs unchanged, preserving full validation (including document
+        number checks) for other Latin American localizations in multi-localization
+        databases.
+        """
+        if "l10n_latam.document.type" not in self.env:
+            return
+        for move in self.filtered(
+            lambda x: (
+                x.l10n_latam_use_documents
+                and x.state == "posted"
+                and not x.l10n_latam_document_type_id
+                and x.company_id.country_id.code == "BR"
+            )
+        ):
+            # Try to find a matching document type
+            latam_doc_type = False
+            if move.document_type_id:
+                latam_doc_type = self.env["l10n_latam.document.type"].search(
+                    [
+                        ("code", "=", move.document_type_id.code),
+                        (
+                            "country_id",
+                            "=",
+                            move.company_id.account_fiscal_country_id.id,
+                        ),
+                    ],
+                    limit=1,
+                )
+            if not latam_doc_type:
+                internal_types = []
+                if move.move_type in ["out_refund", "in_refund"]:
+                    internal_types = ["credit_note"]
+                elif move.move_type in ["out_invoice", "in_invoice"]:
+                    internal_types = ["invoice", "debit_note"]
+                if move.debit_origin_id:
+                    internal_types = ["debit_note"]
+                internal_types += ["all"]
+                latam_doc_type = self.env["l10n_latam.document.type"].search(
+                    [
+                        ("internal_type", "in", internal_types),
+                        (
+                            "country_id",
+                            "=",
+                            move.company_id.account_fiscal_country_id.id,
+                        ),
+                    ],
+                    limit=1,
+                )
+            if not latam_doc_type:
+                # Last resort: find ANY document type for Brazil
+                latam_doc_type = self.env["l10n_latam.document.type"].search(
+                    [("country_id", "=", move.company_id.country_id.id)],
+                    limit=1,
+                )
+            if latam_doc_type:
+                move.l10n_latam_document_type_id = latam_doc_type
+
+        # Let upstream validation run only for non-Brazilian companies.
+        # Brazilian companies use electronic document numbering managed by
+        # l10n_br_fiscal, so the upstream manual document number check would
+        # raise false positives on demo data and is irrelevant for Brazil.
+        # For other Latin American localizations in multi-localization databases,
+        # the original validation (document type + document number) runs unchanged.
+        non_br_moves = self.filtered(lambda m: m.company_id.country_id.code != "BR")
+        if non_br_moves:
+            super(AccountMove, non_br_moves)._check_l10n_latam_documents()
+
+    def copy_data(self, default=None):
+        res = super().copy_data(default=default)
+        for move, values in zip(self, res, strict=False):
+            if not values.get("fiscal_operation_id"):
+                values["fiscal_operation_id"] = move.fiscal_operation_id.id
+            if not values.get("document_type_id"):
+                values["document_type_id"] = move.document_type_id.id
+        return res
 
     def _reverse_moves(self, default_values_list=None, cancel=False):
         new_moves = super()._reverse_moves(
@@ -622,7 +841,8 @@ class AccountMove(models.Model):
 
     def button_cancel(self):
         for doc in self.filtered(lambda d: d.document_type_id):
-            doc.fiscal_document_id.action_document_cancel()
+            if hasattr(doc.fiscal_document_id, "action_document_cancel"):
+                doc.fiscal_document_id.action_document_cancel()
         return super().button_cancel()
 
     def button_import_fiscal_document(self):
@@ -699,6 +919,9 @@ class AccountMove(models.Model):
             move_form.fiscal_document_id = fiscal_document
             move_form.fiscal_operation_id = fiscal_document.fiscal_operation_id
             if fiscal_document.issuer == DOCUMENT_ISSUER_COMPANY:
+                # document_serie (Char) is invisible for company-issued
+                # documents; the internal document_serie_id catalog is
+                # used instead (see account_move_view.xml attrs).
                 move_form.document_serie_id = fiscal_document.document_serie_id
             else:
                 move_form.document_serie = fiscal_document.document_serie
