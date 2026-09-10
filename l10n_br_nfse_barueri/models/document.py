@@ -578,11 +578,12 @@ class Document(models.Model):
         return mensagem
 
     def _baixar_xml_nfse(self, autenticidade, cnpj):
-        url = (
-            "https://testeeiss.barueri.sp.gov.br/nfe/xmlNFe.ashx"
-            f"?codigoautenticidade={autenticidade}"
-            f"&numdoc={cnpj}"
-        )
+        if self.nfse_environment == "1":
+            base_url = "https://www.barueri.sp.gov.br/nfe/xmlNFe.ashx"
+        else:
+            base_url = "https://testeeiss.barueri.sp.gov.br/nfe/xmlNFe.ashx"
+        url = f"{base_url}?codigoautenticidade={autenticidade}&numdoc={cnpj}"
+
         resp = requests.get(url, timeout=15)
         resp.raise_for_status()
 
@@ -720,7 +721,31 @@ class Document(models.Model):
                         }
                     )
 
-                    xml_file = record._baixar_xml_nfse(nfse_auth_code, nfse_cnpj_cpf)
+                    try:
+                        xml_file = record._baixar_xml_nfse(
+                            nfse_auth_code, nfse_cnpj_cpf
+                        )
+                    except Exception as exc:
+                        _logger.warning(
+                            "NFS-e Barueri: documento %s foi autorizado pela "
+                            "prefeitura (verify_code=%s) mas falhou o "
+                            "download do XML: %s",
+                            record.name,
+                            nfse_auth_code,
+                            exc,
+                        )
+                        record.write(
+                            {
+                                "edoc_error_message": (
+                                    "NFS-e autorizada pela prefeitura mas "
+                                    f"falhou o download do XML (verify_code="
+                                    f"{nfse_auth_code}): {exc} - Correção: "
+                                    "reprocessar para recuperar o XML\n"
+                                )
+                            }
+                        )
+                        record._change_state(SITUACAO_EDOC_REJEITADA)
+                        return vals
 
                     if nfse_status == "A":
                         record.authorization_event_id.set_done(
