@@ -1,7 +1,7 @@
 # Copyright 2020 KMEE
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-from odoo import api, fields, models
+from odoo import Command, api, fields, models
 
 
 class AccountMoveLineCNABChange(models.TransientModel):
@@ -13,11 +13,11 @@ class AccountMoveLineCNABChange(models.TransientModel):
         res = super().default_get(fields_list)
         if self.env.context.get("active_model") == "account.move.line":
             active_ids = self.env.context.get("active_ids")
-            res["account_move_line_ids"] = [(6, 0, active_ids)]
+            res["account_move_line_ids"] = [Command.set(active_ids)]
             if active_ids and len(active_ids) == 1:
                 move_line_id = self.account_move_line_ids.browse(active_ids)
-                if move_line_id.date_maturity:
-                    res["date_maturity"] = move_line_id.date_maturity
+                if move_line_id.date:
+                    res["date"] = move_line_id.date
                 if move_line_id.payment_mode_id:
                     res["payment_mode_id"] = move_line_id.payment_mode_id.id
         return res
@@ -30,6 +30,7 @@ class AccountMoveLineCNABChange(models.TransientModel):
     # Muitas opções são permitidas, verificar manual do respectivo CNAB usado.
     change_type = fields.Selection(
         selection=[
+            ("change_discount_date", "Data de Desconto"),
             ("change_date_maturity", "Vencimento"),
             # TODO: É preciso mais detalhes dessa operação ao enviar fora o
             #  codigo de alteração e carteira o que mais deve ir ?
@@ -53,7 +54,7 @@ class AccountMoveLineCNABChange(models.TransientModel):
         ],
         string="Tipo Alteração",
     )
-    date_maturity = fields.Date()
+    date = fields.Date()
     payment_mode_id = fields.Many2one(comodel_name="account.payment.mode")
     reason = fields.Text(string="Justificativa")
     rebate_value = fields.Float(string="Valor de Abatimento")
@@ -63,7 +64,7 @@ class AccountMoveLineCNABChange(models.TransientModel):
         self.account_move_line_ids._identify_cnab_change(
             change_type=self.change_type,
             reason=self.reason,
-            new_date=self.date_maturity,
+            new_date=self.date,
             new_payment_mode_id=self.payment_mode_id,
             rebate_value=self.rebate_value,
             discount_value=self.discount_value,

@@ -10,12 +10,11 @@
 
 import logging
 
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 from ..constants import (
     BR_CODES_PAYMENT_ORDER,
-    CODE_MANUAL_TEST,
     FORMA_LANCAMENTO,
     INDICATIVO_FORMA_PAGAMENTO,
     TIPO_SERVICO,
@@ -74,7 +73,6 @@ class AccountPaymentOrder(models.Model):
     # os campos relacionados ao CNAB
     payment_method_code = fields.Char(
         related="payment_method_id.code",
-        readonly=True,
         store=True,
         string="Payment Method Code",
     )
@@ -89,7 +87,7 @@ class AccountPaymentOrder(models.Model):
         today = fields.Date.context_today(self)
         for order in self:
             # TODO - Por enquanto no caso do CNAB esse metodo está sendo
-            #  sobreescrito para não criar o account.payment(abaixo no fim
+            #  sobrescrito para não criar o account.payment(abaixo no fim
             #  do metodo), dessa forma será possível atualizar os modulos da
             #  localização com account_payment_order mantendo o mesmo
             #  funcionamento, e depois em outro PR especifico tratar essa
@@ -171,7 +169,7 @@ class AccountPaymentOrder(models.Model):
                         "paylines": payline,
                         "total": payline.amount_currency,
                     }
-            order.recompute()
+            order.env.flush_all()
             # Create account payments
             payment_vals = []
             for paydict in list(group_paylines.values()):
@@ -192,16 +190,14 @@ class AccountPaymentOrder(models.Model):
         self.write({"state": "open"})
         return True
 
-    def unlink(self):
+    @api.ondelete(at_uninstall=False)
+    def _unlink_except_cnab_order(self):
         for order in self:
-            # TODO: Existe o caso de se apagar uma Ordem de Pagto
-            #  no caso CNAB ? O que deveria ser feito nesse caso ?
             if (
                 order.payment_method_code in BR_CODES_PAYMENT_ORDER
                 and order.payment_mode_id.payment_method_id.payment_type == "inbound"
             ):
                 raise UserError(_("You cannot delete CNAB order."))
-        return super().unlink()
 
     def action_done_cancel(self):
         for order in self:
@@ -224,7 +220,7 @@ class AccountPaymentOrder(models.Model):
         alteração, baixa e etc."""
 
         self.ensure_one()
-        if self.payment_method_id.code == CODE_MANUAL_TEST:
+        if self.env.context.get("test_not_create_file"):
             return (False, False)
         else:
             return super().generate_payment_file()

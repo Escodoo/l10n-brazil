@@ -4,7 +4,7 @@
 import base64
 from io import StringIO
 
-from odoo import _, api, fields, models
+from odoo import Command, _, api, fields, models
 from odoo.exceptions import UserError
 
 
@@ -20,7 +20,6 @@ class CNABImportWizard(models.TransientModel):
     bank_account_cnab_id = fields.Many2one(
         comodel_name="account.account",
         related="journal_id.default_account_id",
-        readonly=True,
     )
     return_file = fields.Binary()
     filename = fields.Char()
@@ -67,19 +66,21 @@ class CNABImportWizard(models.TransientModel):
         if len(structure_ids):
             self.cnab_structure_id = structure_ids[0]
         else:
-            self.cnab_structure_id = [(5, 0, 0)]
+            self.cnab_structure_id = [Command.clear()]
 
     @api.depends("journal_id", "type")
     def _compute_payment_method_ids(self):
         for record in self:
             if record.type == "inbound":
-                record.payment_method_ids = record.journal_id.inbound_payment_method_ids
+                record.payment_method_ids = (
+                    record.journal_id.inbound_payment_method_line_ids.payment_method_id
+                )
             elif record.type == "outbound":
                 record.payment_method_ids = (
-                    record.journal_id.outbound_payment_method_ids
+                    record.journal_id.outbound_payment_method_line_ids.payment_method_id
                 )
             else:
-                record.payment_method_ids = [(5, 0, 0)]
+                record.payment_method_ids = [Command.clear()]
 
     def _get_conf_positions_240(self):
         """
@@ -220,13 +221,30 @@ class CNABImportWizard(models.TransientModel):
         return segments
 
     def _get_details(self, detail_lines, batch_template):
-        detail_list = self._get_unique_datail_list(detail_lines)
         details = []
 
-        for d in detail_list:
-            segment_lines = self._filter_lines(detail_lines, "detail", d)
-            segments = self._get_segments(segment_lines, batch_template)
-            details.append(segments)
+        if self.cnab_structure_id.unique_seq_per_segment:
+            current_group = []
+            seen_segment_codes = set()
+
+            for line in detail_lines:
+                segment_code = self._get_content(line, "segment")
+                if segment_code in seen_segment_codes:
+                    details.append(self._get_segments(current_group, batch_template))
+                    current_group = [line]
+                    seen_segment_codes = {segment_code}
+                else:
+                    current_group.append(line)
+                    seen_segment_codes.add(segment_code)
+
+            if current_group:
+                details.append(self._get_segments(current_group, batch_template))
+        else:
+            detail_list = self._get_unique_datail_list(detail_lines)
+            for detail in detail_list:
+                segment_lines = self._filter_lines(detail_lines, "detail", detail)
+                segments = self._get_segments(segment_lines, batch_template)
+                details.append(segments)
 
         return details
 
@@ -303,6 +321,9 @@ class CNABImportWizard(models.TransientModel):
 
     def _parse_value(self, value, fld):
         if fld.type == "num":
+            value = value.strip()
+            if not value:
+                value = "0"
             if fld.assumed_comma > 0:
                 value = float(value) / (10**fld.assumed_comma)
             else:
