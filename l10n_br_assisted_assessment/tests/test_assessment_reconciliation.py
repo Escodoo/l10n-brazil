@@ -424,3 +424,35 @@ class TestAssessmentReconciliation(TransactionCase):
             request_date=fields.Datetime.from_string("2026-09-22 01:01:47")
         )
         self.assertIn("2026-09-21 22:01:47", request.name)
+
+    def test_one_direction_does_not_make_the_period_ready(self):
+        """The first answer must not look like both services arrived."""
+        self._upsert_debits({self._key(1): 100.0})
+        self.assertEqual(self.period.debit_delivery, "received")
+        self.assertEqual(self.period.credit_delivery, "pending")
+        self.assertFalse(self.period.directions_ready)
+
+    def test_marking_a_direction_absent_unlocks_reconciliation(self):
+        self._upsert_debits({self._key(1): 100.0})
+        self.period.no_credits = True
+        self.assertEqual(self.period.credit_delivery, "none")
+        self.assertTrue(self.period.directions_ready)
+
+    def test_open_request_marks_the_direction_in_progress(self):
+        self._new_request(service="credits", state="notified", period_id=self.period.id)
+        self.assertEqual(self.period.credit_delivery, "requested")
+        self.assertFalse(self.period.directions_ready)
+
+    def test_done_request_reports_only_what_it_delivered(self):
+        request = self._new_request(payload="{}", period_id=self.period.id)
+        parsed = {
+            "2026-10": [
+                {"document_key": self._key(1), "value": 80.0},
+                {"document_key": self._key(2), "value": 40.0},
+            ]
+        }
+        with patch(f"{REQUEST_CLASS}._parse_payload", return_value=parsed):
+            request._apply()
+            self.assertEqual(request.delivered_line_count, 2)
+            self.assertEqual(request.delivered_amount, 120.0)
+        self.assertEqual(self.period.debit_delivery, "received")

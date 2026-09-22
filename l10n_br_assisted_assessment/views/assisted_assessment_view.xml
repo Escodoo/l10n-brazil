@@ -63,7 +63,14 @@
                         type="object"
                         string="Reconcile"
                         class="btn-primary"
-                        invisible="state not in ('received', 'reconciled', 'diverged')"
+                        invisible="state != 'received' or not directions_ready"
+                    />
+                    <button
+                        name="action_reconcile"
+                        type="object"
+                        string="Reconcile"
+                        confirm="Reconciling again clears the open divergences and builds them once more. Handled or ignored divergences stay as they are, and reopen only when the amounts changed. Continue?"
+                        invisible="state not in ('reconciled', 'diverged') or not directions_ready"
                     />
                     <button
                         name="action_confirm"
@@ -85,6 +92,7 @@
                     <field name="has_downloaded_request" invisible="1" />
                     <field name="open_divergence_count" invisible="1" />
                     <field name="local_awaiting_download" invisible="1" />
+                    <field name="directions_ready" invisible="1" />
                 </header>
                 <sheet>
                     <div class="oe_title">
@@ -92,6 +100,11 @@
                             <field name="name" readonly="1" />
                         </h1>
                     </div>
+                    <div
+                        class="alert alert-warning"
+                        role="alert"
+                        invisible="directions_ready or state not in ('requested', 'received')"
+                    >Debits and credits arrive in separate requests. Request the missing direction, or mark it as absent, before reconciling.</div>
                     <group>
                         <group name="period" string="Period">
                             <field name="per_apur" />
@@ -116,6 +129,28 @@
                             name="fisco"
                             string="Presented by the Tax Administration"
                         >
+                            <field
+                                name="debit_delivery"
+                                widget="badge"
+                                decoration-success="debit_delivery == 'received'"
+                                decoration-warning="debit_delivery == 'requested'"
+                                decoration-info="debit_delivery == 'none'"
+                            />
+                            <field
+                                name="credit_delivery"
+                                widget="badge"
+                                decoration-success="credit_delivery == 'received'"
+                                decoration-warning="credit_delivery == 'requested'"
+                                decoration-info="credit_delivery == 'none'"
+                            />
+                            <field
+                                name="no_debits"
+                                invisible="debit_delivery == 'received'"
+                            />
+                            <field
+                                name="no_credits"
+                                invisible="credit_delivery == 'received'"
+                            />
                             <field name="fisco_debit" />
                             <field name="fisco_credit" />
                             <field name="previous_balance" />

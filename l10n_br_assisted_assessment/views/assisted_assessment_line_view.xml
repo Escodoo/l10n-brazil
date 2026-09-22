@@ -8,13 +8,13 @@
         <field name="arch" type="xml">
             <list>
                 <field name="line_type" />
-                <field name="document_model_name" string="Model" />
+                <field name="document_model_name" string="Document Model" />
                 <field name="document_key" />
                 <field name="origin_name" string="Origin" />
                 <field name="date_emission" />
                 <field name="date_update" />
-                <field name="value" sum="Assessed" />
-                <field name="value_balance" sum="Remaining" />
+                <field name="value" />
+                <field name="value_balance" />
                 <field name="value_suspended" optional="hide" />
                 <field name="value_excess" optional="hide" />
                 <field name="document_id" />

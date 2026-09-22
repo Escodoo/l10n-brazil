@@ -11,7 +11,10 @@
                 <field name="period_id" optional="show" />
                 <field name="tribute" />
                 <field name="service" />
+                <field name="delivered_line_count" />
+                <field name="delivered_amount" />
                 <field name="request_date" />
+                <field name="currency_id" column_invisible="1" />
                 <field name="signed_url_expires_at" optional="hide" />
                 <field name="error_message" optional="hide" />
                 <field name="state" />
@@ -63,6 +66,9 @@
                             <field name="tribute" />
                             <field name="service" />
                             <field name="period_id" />
+                            <field name="delivered_line_count" />
+                            <field name="delivered_amount" />
+                            <field name="currency_id" invisible="1" />
                             <field name="return_url" />
                         </group>
                         <group name="tracking" string="Processing">
@@ -76,7 +82,14 @@
                     </group>
                     <notebook>
                         <page name="periods" string="Periods Delivered">
-                            <field name="period_ids" nolabel="1" readonly="1" />
+                            <field name="period_ids" nolabel="1" readonly="1">
+                                <list>
+                                    <field name="name" />
+                                    <field name="per_apur" />
+                                    <field name="tribute" />
+                                    <field name="state" />
+                                </list>
+                            </field>
                         </page>
                         <page name="payload" string="Payload">
                             <field

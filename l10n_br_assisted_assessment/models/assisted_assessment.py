@@ -37,6 +37,13 @@ from ..constants import (
 
 _logger = logging.getLogger(__name__)
 
+DIRECTION_DELIVERY = [
+    ("pending", "Not Requested"),
+    ("requested", "In Progress"),
+    ("received", "Delivered"),
+    ("none", "None in this Period"),
+]
+
 
 class AssistedAssessment(models.Model):
     _name = "l10n_br_assessment.period"
@@ -152,6 +159,27 @@ class AssistedAssessment(models.Model):
         help="Booked totals stay empty until a direction is downloaded, because "
         "debits and credits are separate services.",
     )
+    no_debits = fields.Boolean(
+        string="No Debits in this Period",
+        help="Mark when the tax administration has nothing to deliver for debits, "
+        "so the period can be reconciled without that service.",
+    )
+    no_credits = fields.Boolean(
+        string="No Credits in this Period",
+        help="Mark when the tax administration has nothing to deliver for credits, "
+        "so the period can be reconciled without that service.",
+    )
+    debit_delivery = fields.Selection(
+        selection=DIRECTION_DELIVERY,
+        string="Debits",
+        compute="_compute_direction_delivery",
+    )
+    credit_delivery = fields.Selection(
+        selection=DIRECTION_DELIVERY,
+        string="Credits",
+        compute="_compute_direction_delivery",
+    )
+    directions_ready = fields.Boolean(compute="_compute_direction_delivery")
 
     _sql_constraints = [
         (
@@ -321,6 +349,53 @@ class AssistedAssessment(models.Model):
     def _compute_local_awaiting_download(self):
         for record in self:
             record.local_awaiting_download = not bool(record._assessed_line_types())
+
+    @api.depends(
+        "line_ids.line_type",
+        "request_ids.service",
+        "request_ids.state",
+        "origin_request_ids.service",
+        "origin_request_ids.state",
+        "no_debits",
+        "no_credits",
+    )
+    def _compute_direction_delivery(self):
+        """Track each service on its own, apart from the period statusbar.
+
+        Debits and credits are separate calls. The period status moves to
+        Received on the first answer, so it cannot say whether the other
+        direction is still missing.
+        """
+        for record in self:
+            record.debit_delivery = record._direction_delivery(
+                LINE_DEBIT, SERVICE_DEBITS, record.no_debits
+            )
+            record.credit_delivery = record._direction_delivery(
+                LINE_CREDIT, SERVICE_CREDITS, record.no_credits
+            )
+            record.directions_ready = record.debit_delivery in (
+                "received",
+                "none",
+            ) and record.credit_delivery in ("received", "none")
+
+    def _direction_delivery(self, line_type, service, skipped):
+        """Return how far one direction got for this period."""
+        self.ensure_one()
+        delivered = self.request_ids.filtered(
+            lambda request: request.service == service and request.state == "done"
+        )
+        has_lines = self.line_ids.filtered(lambda line: line.line_type == line_type)
+        if delivered or has_lines:
+            return "received"
+        pending = (self.origin_request_ids | self.request_ids).filtered(
+            lambda request: request.service == service
+            and request.state in OPEN_REQUEST_STATES
+        )
+        if pending:
+            return "requested"
+        if skipped:
+            return "none"
+        return "pending"
 
     def _assessed_line_types(self):
         """Return the line types already delivered by the tax administration.
