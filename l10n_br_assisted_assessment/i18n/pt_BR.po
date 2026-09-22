@@ -180,6 +180,7 @@ msgid "Credit not granted"
 msgstr "Crédito não concedido"
 
 #. module: l10n_br_assisted_assessment
+#: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_period__credit_delivery
 #: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assessment_request__service__credits
 msgid "Credits"
 msgstr "Créditos"
@@ -206,9 +207,35 @@ msgid "Debit"
 msgstr "Débito"
 
 #. module: l10n_br_assisted_assessment
+#: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_period__debit_delivery
 #: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assessment_request__service__debits
 msgid "Debits"
 msgstr "Débitos"
+
+#. module: l10n_br_assisted_assessment
+#: model_terms:ir.ui.view,arch_db:l10n_br_assisted_assessment.view_assessment_period_form
+msgid ""
+"Debits and credits arrive in separate requests. Request the missing "
+"direction, or mark it as absent, before reconciling."
+msgstr ""
+"Débitos e créditos chegam em solicitações separadas. Solicite a direção que "
+"falta, ou marque-a como ausente, antes de conciliar."
+
+#. module: l10n_br_assisted_assessment
+#: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assessment_period__debit_delivery__received
+#: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assessment_period__credit_delivery__received
+msgid "Delivered"
+msgstr "Entregue"
+
+#. module: l10n_br_assisted_assessment
+#: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_request__delivered_amount
+msgid "Delivered Amount"
+msgstr "Valor Entregue"
+
+#. module: l10n_br_assisted_assessment
+#: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_request__delivered_line_count
+msgid "Delivered Lines"
+msgstr "Linhas Entregues"
 
 #. module: l10n_br_assisted_assessment
 #: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_period__difference
@@ -240,6 +267,11 @@ msgid "Divergences Found"
 msgstr "Divergências Encontradas"
 
 #. module: l10n_br_assisted_assessment
+#: model_terms:ir.ui.view,arch_db:l10n_br_assisted_assessment.view_assessment_line_list
+msgid "Document Model"
+msgstr "Modelo"
+
+#. module: l10n_br_assisted_assessment
 #: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assessment_divergence__divergence_type__missing_local
 msgid "Document only in the assessment"
 msgstr "Documento só na apuração"
@@ -267,6 +299,11 @@ msgid "Draft"
 msgstr "Rascunho"
 
 #. module: l10n_br_assisted_assessment
+#: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_line__date_emission
+msgid "Emission"
+msgstr "Emissão"
+
+#. module: l10n_br_assisted_assessment
 #: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_period__date_to
 msgid "End Date"
 msgstr "Data Final"
@@ -275,6 +312,11 @@ msgstr "Data Final"
 #: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assessment_request__state__error
 msgid "Error"
 msgstr "Erro"
+
+#. module: l10n_br_assisted_assessment
+#: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_request__estimated_seconds
+msgid "Estimated Seconds"
+msgstr "Segundos Estimados"
 
 #. module: l10n_br_assisted_assessment
 #: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assessment_period__state__expired
@@ -345,6 +387,12 @@ msgid "Ignored"
 msgstr "Ignorada"
 
 #. module: l10n_br_assisted_assessment
+#: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assessment_period__debit_delivery__requested
+#: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assessment_period__credit_delivery__requested
+msgid "In Progress"
+msgstr "Em Andamento"
+
+#. module: l10n_br_assisted_assessment
 #: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assessment_divergence__suggested_action__credit_note
 msgid "Issue credit note"
 msgstr "Emitir nota de crédito"
@@ -353,6 +401,11 @@ msgstr "Emitir nota de crédito"
 #: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assessment_divergence__suggested_action__debit_note
 msgid "Issue debit note"
 msgstr "Emitir nota de débito"
+
+#. module: l10n_br_assisted_assessment
+#: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_line__date_update
+msgid "Last Update"
+msgstr "Última Atualização"
 
 #. module: l10n_br_assisted_assessment
 #: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_divergence__line_id
@@ -405,6 +458,28 @@ msgid "New"
 msgstr "Novo"
 
 #. module: l10n_br_assisted_assessment
+#: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_period__no_credits
+msgid "No Credits in this Period"
+msgstr "Sem créditos neste período"
+
+#. module: l10n_br_assisted_assessment
+#: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_period__no_debits
+msgid "No Debits in this Period"
+msgstr "Sem débitos neste período"
+
+#. module: l10n_br_assisted_assessment
+#: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assessment_period__debit_delivery__none
+#: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assessment_period__credit_delivery__none
+msgid "None in this Period"
+msgstr "Nenhum neste período"
+
+#. module: l10n_br_assisted_assessment
+#: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assessment_period__debit_delivery__pending
+#: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assessment_period__credit_delivery__pending
+msgid "Not Requested"
+msgstr "Não solicitado"
+
+#. module: l10n_br_assisted_assessment
 #: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_divergence__notes
 msgid "Notes"
 msgstr "Observações"
@@ -428,6 +503,11 @@ msgid ""
 msgstr ""
 "Abrir uma solicitação consome a cota diária da administração tributária. "
 "Continuar?"
+
+#. module: l10n_br_assisted_assessment
+#: model_terms:ir.ui.view,arch_db:l10n_br_assisted_assessment.view_assessment_line_list
+msgid "Origin"
+msgstr "Origem"
 
 #. module: l10n_br_assisted_assessment
 #: model_terms:ir.ui.view,arch_db:l10n_br_assisted_assessment.view_assessment_request_form
@@ -504,6 +584,17 @@ msgid "Reconciliation Tolerance"
 msgstr "Tolerância da Conciliação"
 
 #. module: l10n_br_assisted_assessment
+#: model_terms:ir.ui.view,arch_db:l10n_br_assisted_assessment.view_assessment_period_form
+msgid ""
+"Reconciling again clears the open divergences and builds them once more. "
+"Handled or ignored divergences stay as they are, and reopen only when the "
+"amounts changed. Continue?"
+msgstr ""
+"Conciliar de novo apaga as divergências em aberto e gera-as outra vez. As "
+"tratadas ou ignoradas permanecem, e só reabrem se os valores tiverem mudado."
+" Continuar?"
+
+#. module: l10n_br_assisted_assessment
 #: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_period__previous_balance
 msgid "Recoverable Balance"
 msgstr "Saldo Recuperável"
@@ -512,6 +603,16 @@ msgstr "Saldo Recuperável"
 #: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assessment_divergence__suggested_action__register_document
 msgid "Register the missing document"
 msgstr "Registrar o documento faltante"
+
+#. module: l10n_br_assisted_assessment
+#: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_line__date_registration
+msgid "Registration"
+msgstr "Registro"
+
+#. module: l10n_br_assisted_assessment
+#: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_line__value_balance
+msgid "Remaining Balance"
+msgstr "Saldo Remanescente"
 
 #. module: l10n_br_assisted_assessment
 #: model_terms:ir.ui.view,arch_db:l10n_br_assisted_assessment.view_assessment_request_form

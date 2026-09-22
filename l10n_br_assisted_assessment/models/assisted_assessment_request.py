@@ -27,6 +27,7 @@ class AssistedAssessmentRequest(models.Model):
         required=True,
         default=lambda self: self.env.company,
     )
+    currency_id = fields.Many2one(related="company_id.currency_id")
     tribute = fields.Selection(selection=TRIBUTES, required=True, default="cbs")
     service = fields.Selection(selection=SERVICE_TYPES, required=True)
     period_id = fields.Many2one(
@@ -51,6 +52,17 @@ class AssistedAssessmentRequest(models.Model):
     return_url = fields.Char(string="Callback URL")
     estimated_seconds = fields.Integer(
         help="Processing time estimated by the tax administration.",
+    )
+    delivered_line_count = fields.Integer(
+        string="Delivered Lines",
+        compute="_compute_delivered_totals",
+        help="Lines this request delivered. Debits and credits are separate "
+        "requests, so this is not the period balance.",
+    )
+    delivered_amount = fields.Monetary(
+        compute="_compute_delivered_totals",
+        help="Sum of the assessed values this request delivered for its own "
+        "service. It is not the payable balance of the period.",
     )
     signed_url = fields.Char(
         string="Signed URL",
@@ -231,6 +243,30 @@ class AssistedAssessmentRequest(models.Model):
             )
         self.write({"payload": self._fetch_payload(), "state": "downloaded"})
         return True
+
+    @api.depends("payload", "state", "service")
+    def _compute_delivered_totals(self):
+        """Summarise the file of this request, not the period it landed on."""
+        for request in self:
+            count, amount = request._delivered_totals()
+            request.delivered_line_count = count
+            request.delivered_amount = amount
+
+    def _delivered_totals(self):
+        """Return ``(line count, assessed amount)`` carried by this request."""
+        self.ensure_one()
+        if self.state != "done" or not self.payload:
+            return 0, 0.0
+        try:
+            parsed = self._parse_payload()
+        except (NotImplementedError, UserError):
+            return 0, 0.0
+        count = 0
+        amount = 0.0
+        for vals_list in parsed.values():
+            count += len(vals_list)
+            amount += sum(vals.get("value") or 0.0 for vals in vals_list)
+        return count, amount
 
     def action_apply(self):
         for request in self:
