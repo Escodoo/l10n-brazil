@@ -7,6 +7,7 @@ from unittest.mock import patch
 from odoo import fields
 from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase
+from odoo.tools import mute_logger
 
 MODELS = "odoo.addons.l10n_br_assisted_assessment.models"
 PERIOD_CLASS = f"{MODELS}.assisted_assessment.AssistedAssessment"
@@ -323,9 +324,12 @@ class TestAssessmentReconciliation(TransactionCase):
 
     def test_unparseable_expiry_is_ignored(self):
         request = self._new_request(state="requested")
-        request.register_callback(
-            {"urlAssinada": "https://x", "urlAssinadaExpiraEm": "?"}
-        )
+        with mute_logger(
+            "odoo.addons.l10n_br_assisted_assessment.models.assisted_assessment_request"
+        ):
+            request.register_callback(
+                {"urlAssinada": "https://x", "urlAssinadaExpiraEm": "?"}
+            )
         self.assertEqual(request.state, "notified")
         self.assertFalse(request.signed_url_expires_at)
 
