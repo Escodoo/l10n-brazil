@@ -414,9 +414,11 @@ class TestAssessmentReconciliation(TransactionCase):
         self.assertIn(self.period, request.period_ids)
         self.assertTrue(origin.message_ids - messages_before)
 
-    def test_bookkeeping_awaits_download_until_a_direction_arrives(self):
+    def test_bookkeeping_awaits_download_until_both_directions_are_ready(self):
         self.assertTrue(self.period.local_awaiting_download)
         self._upsert_debits({self._key(1): 100.0})
+        self.assertTrue(self.period.local_awaiting_download)
+        self.period.no_credits = True
         self.assertFalse(self.period.local_awaiting_download)
 
     def test_request_name_uses_user_timezone(self):
@@ -488,3 +490,52 @@ class TestAssessmentReconciliation(TransactionCase):
         divergence.notes = "The extra booked amount is a rounding of another period."
         divergence.action_mark_ignored()
         self.assertEqual(divergence.state, "ignored")
+
+    def test_local_totals_include_both_directions_before_download(self):
+        booked = {
+            "debit": {self._key(1): 80.0},
+            "credit": {self._key(3): 15.0},
+        }
+        with patch(
+            f"{PERIOD_CLASS}._local_values_by_key", return_value=booked
+        ) as mocked:
+            self.period.invalidate_recordset(
+                ["local_debit", "local_credit", "local_balance"]
+            )
+            self.assertEqual(self.period.local_debit, 80.0)
+            self.assertEqual(self.period.local_credit, 15.0)
+            self.assertEqual(self.period.local_balance, 65.0)
+        args, kwargs = mocked.call_args
+        line_types = kwargs.get("line_types") or args[-1]
+        self.assertEqual(set(line_types), {"debit", "credit"})
+
+    def test_absent_direction_reports_booked_documents_as_missing_fisco(self):
+        self._upsert_debits({self._key(1): 100.0})
+        self.period.no_credits = True
+        divergences = self._reconcile_against(
+            {"debit": {self._key(1): 100.0}, "credit": {self._key(3): 15.0}}
+        )
+        missing = divergences.filtered(
+            lambda line: line.divergence_type == "missing_fisco"
+        )
+        self.assertEqual(missing.line_type, "credit")
+        self.assertEqual(missing.document_key, self._key(3))
+        self.assertEqual(missing.local_value, 15.0)
+
+    def test_bookkeeping_status_waits_until_the_direction_can_be_compared(self):
+        self.assertEqual(
+            self.period._bookkeeping_status("credit", 15.0, None, {"debit"}),
+            "awaiting",
+        )
+        self.assertEqual(
+            self.period._bookkeeping_status("credit", 15.0, None, {"credit"}),
+            "only_erp",
+        )
+        self.assertEqual(
+            self.period._bookkeeping_status("credit", 15.0, 15.0, {"credit"}),
+            "match",
+        )
+        self.assertEqual(
+            self.period._bookkeeping_status("credit", 15.0, 10.0, {"credit"}),
+            "value",
+        )

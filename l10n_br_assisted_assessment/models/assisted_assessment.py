@@ -19,6 +19,10 @@ from odoo.addons.l10n_br_fiscal.constants.fiscal import (
 from ..constants import (
     AVAILABILITY_DAY,
     AVAILABILITY_DAY_DERE,
+    BOOKKEEPING_AWAITING,
+    BOOKKEEPING_MATCH,
+    BOOKKEEPING_ONLY_ERP,
+    BOOKKEEPING_VALUE,
     DEADLINE_WARNING_DAYS,
     DIVERGENCE_CREDIT_DENIED,
     DIVERGENCE_MISSING_FISCO,
@@ -156,8 +160,15 @@ class AssistedAssessment(models.Model):
     difference = fields.Monetary(compute="_compute_difference")
     local_awaiting_download = fields.Boolean(
         compute="_compute_local_awaiting_download",
-        help="Booked totals stay empty until a direction is downloaded, because "
-        "debits and credits are separate services.",
+        help="Booked totals already include every authorized document of the "
+        "period. The comparison with the tax administration waits until each "
+        "direction is downloaded or marked as absent.",
+    )
+    bookkeeping_line_ids = fields.One2many(
+        comodel_name="l10n_br_assessment.bookkeeping.line",
+        inverse_name="period_id",
+        compute="_compute_bookkeeping_lines",
+        string="Bookkeeping",
     )
     no_debits = fields.Boolean(
         string="No Debits in this Period",
@@ -326,11 +337,13 @@ class AssistedAssessment(models.Model):
             record.fisco_credit = credit
             record.fisco_balance = debit - credit - record.previous_balance
 
-    @api.depends("line_ids.line_type", "date_from", "date_to", "previous_balance")
+    @api.depends("date_from", "date_to", "previous_balance", "tribute", "company_id")
     def _compute_local_totals(self):
         for record in self:
             debit = credit = 0.0
-            for line_type, values in record._local_values_by_key().items():
+            for line_type, values in record._local_values_by_key(
+                [LINE_DEBIT, LINE_CREDIT]
+            ).items():
                 total = sum(values.values())
                 if line_type == LINE_DEBIT:
                     debit = total
@@ -345,10 +358,30 @@ class AssistedAssessment(models.Model):
         for record in self:
             record.difference = record.fisco_balance - record.local_balance
 
-    @api.depends("line_ids.line_type")
+    @api.depends(
+        "debit_delivery",
+        "credit_delivery",
+        "no_debits",
+        "no_credits",
+        "directions_ready",
+    )
     def _compute_local_awaiting_download(self):
         for record in self:
-            record.local_awaiting_download = not bool(record._assessed_line_types())
+            record.local_awaiting_download = not record.directions_ready
+
+    def _compared_line_types(self):
+        """Directions that may produce missing-in-the-assessment divergences.
+
+        A direction that has not been downloaded yet must not be reported as
+        missing at the tax administration. Marking it as absent is enough.
+        """
+        self.ensure_one()
+        types = set(self.line_ids.mapped("line_type"))
+        if self.no_debits:
+            types.add(LINE_DEBIT)
+        if self.no_credits:
+            types.add(LINE_CREDIT)
+        return types
 
     @api.depends(
         "line_ids.line_type",
@@ -475,6 +508,74 @@ class AssistedAssessment(models.Model):
                 line[value_field] or 0.0
             )
         return result
+
+    @api.depends(
+        "date_from",
+        "date_to",
+        "tribute",
+        "company_id",
+        "line_ids.line_type",
+        "line_ids.document_key",
+        "line_ids.value",
+        "no_debits",
+        "no_credits",
+    )
+    def _compute_bookkeeping_lines(self):
+        line_model = self.env["l10n_br_assessment.bookkeeping.line"]
+        for record in self:
+            if not record.id:
+                record.bookkeeping_line_ids = line_model
+                continue
+            record.bookkeeping_line_ids = line_model.create(
+                record._prepare_bookkeeping_vals()
+            )
+
+    def _prepare_bookkeeping_vals(self):
+        """Return one row per authorized document of the period."""
+        self.ensure_one()
+        assessed = self._assessed_values_by_key()
+        compared = self._compared_line_types()
+        value_field = f"{self.tribute}_value"
+        grouped = {}
+        for line in self._local_document_lines([LINE_DEBIT, LINE_CREDIT]):
+            document = line.document_id
+            line_type = (
+                LINE_DEBIT
+                if document.fiscal_operation_type == FISCAL_OUT
+                else LINE_CREDIT
+            )
+            entry = grouped.setdefault(document, {"line_type": line_type, "value": 0.0})
+            entry["value"] += line[value_field] or 0.0
+        vals_list = []
+        for document, entry in grouped.items():
+            fisco_entry = assessed.get((entry["line_type"], document.document_key))
+            fisco_value = fisco_entry["value"] if fisco_entry else None
+            status = self._bookkeeping_status(
+                entry["line_type"], entry["value"], fisco_value, compared
+            )
+            vals_list.append(
+                {
+                    "period_id": self.id,
+                    "document_id": document.id,
+                    "line_type": entry["line_type"],
+                    "expected_value": entry["value"],
+                    "fisco_value": fisco_value or 0.0,
+                    "status": status,
+                }
+            )
+        return vals_list
+
+    def _bookkeeping_status(self, line_type, expected_value, fisco_value, compared):
+        """Return the row status of an ERP document against the assessment."""
+        self.ensure_one()
+        if line_type not in compared:
+            return BOOKKEEPING_AWAITING
+        if fisco_value is None:
+            return BOOKKEEPING_ONLY_ERP
+        tolerance = self.company_id.assessment_tolerance or 0.01
+        if abs(expected_value - fisco_value) <= tolerance:
+            return BOOKKEEPING_MATCH
+        return BOOKKEEPING_VALUE
 
     def _upsert_lines(self, vals_list, service):
         """Merge the increment sent by the fisco into the stored lines.
@@ -655,7 +756,7 @@ class AssistedAssessment(models.Model):
         self.divergence_ids.filtered(lambda line: line.state == "open").unlink()
         stored = {line._natural_key(): line for line in self.divergence_ids}
         tolerance = self.company_id.assessment_tolerance or 0.01
-        line_types = self._assessed_line_types()
+        line_types = self._compared_line_types()
         local_values = self._local_values_by_key(line_types)
         assessed = self._assessed_values_by_key()
         divergence_model = self.env["l10n_br_assessment.divergence"]

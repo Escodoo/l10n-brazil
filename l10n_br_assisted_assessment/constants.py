@@ -79,6 +79,17 @@ SUGGESTED_ACTIONS = [
     (ACTION_REVIEW_CREDIT, "Review the credit eligibility"),
 ]
 
+BOOKKEEPING_AWAITING = "awaiting"
+BOOKKEEPING_MATCH = "match"
+BOOKKEEPING_ONLY_ERP = "only_erp"
+BOOKKEEPING_VALUE = "value"
+BOOKKEEPING_STATUSES = [
+    (BOOKKEEPING_AWAITING, "Awaiting Download"),
+    (BOOKKEEPING_MATCH, "Matches"),
+    (BOOKKEEPING_ONLY_ERP, "Only in the Bookkeeping"),
+    (BOOKKEEPING_VALUE, "Different value"),
+]
+
 PER_APUR_RE = r"^20\d{2}-(?:0[1-9]|1[0-2])$"
 
 # Electronic document models reported in the assessment.

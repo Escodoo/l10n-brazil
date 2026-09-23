@@ -106,29 +106,37 @@ msgid "Assisted Assessments"
 msgstr "Apurações Assistidas"
 
 #. module: l10n_br_assisted_assessment
+#: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assessment_bookkeeping_line__status__awaiting
+msgid "Awaiting Download"
+msgstr "Aguardando Download"
+
+#. module: l10n_br_assisted_assessment
 #: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_divergence__local_value
 msgid "Booked Value"
 msgstr "Valor Escriturado"
 
 #. module: l10n_br_assisted_assessment
-#: model_terms:ir.ui.view,arch_db:l10n_br_assisted_assessment.view_assessment_period_form
-msgid ""
-"Booked totals only include directions already downloaded from the tax "
-"administration."
-msgstr ""
-"Os totais escriturados só incluem as direções já baixadas da administração "
-"tributária."
-
-#. module: l10n_br_assisted_assessment
 #: model:ir.model.fields,help:l10n_br_assisted_assessment.field_l10n_br_assessment_period__local_awaiting_download
 msgid ""
-"Booked totals stay empty until a direction is downloaded, because debits and"
-" credits are separate services."
+"Booked totals already include every authorized document of the period. The "
+"comparison with the tax administration waits until each direction is "
+"downloaded or marked as absent."
 msgstr ""
-"Os totais escriturados ficam vazios até o download de uma direção, porque "
-"débitos e créditos são serviços separados."
+"Os totais escriturados já incluem todos os documentos autorizados do "
+"período. A comparação com a administração tributária espera até cada direção"
+" ser baixada ou marcada como ausente."
 
 #. module: l10n_br_assisted_assessment
+#: model_terms:ir.ui.view,arch_db:l10n_br_assisted_assessment.view_assessment_period_form
+msgid ""
+"Booked totals include every authorized document. Comparison waits until each"
+" direction is downloaded or marked as absent."
+msgstr ""
+"Os totais escriturados incluem todos os documentos autorizados. A comparação"
+" espera até cada direção ser baixada ou marcada como ausente."
+
+#. module: l10n_br_assisted_assessment
+#: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_period__bookkeeping_line_ids
 #: model_terms:ir.ui.view,arch_db:l10n_br_assisted_assessment.view_assessment_period_form
 msgid "Bookkeeping"
 msgstr "Escrituração"
@@ -137,6 +145,11 @@ msgstr "Escrituração"
 #: model:ir.module.module,shortdesc:l10n_br_assisted_assessment.module_l10n_br_assisted_assessment
 msgid "Brazilian IBS/CBS Assisted Assessment"
 msgstr "Apuração Assistida de IBS/CBS"
+
+#. module: l10n_br_assisted_assessment
+#: model:ir.model.fields,help:l10n_br_assisted_assessment.field_l10n_br_assessment_bookkeeping_line__expected_value
+msgid "CBS or IBS booked on the authorized fiscal document."
+msgstr "CBS ou IBS escriturado no documento fiscal autorizado."
 
 #. module: l10n_br_assisted_assessment
 #: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_request__return_url
@@ -299,6 +312,11 @@ msgid "Draft"
 msgstr "Rascunho"
 
 #. module: l10n_br_assisted_assessment
+#: model:ir.model,name:l10n_br_assisted_assessment.model_l10n_br_assessment_bookkeeping_line
+msgid "ERP document expected in the assisted assessment"
+msgstr "Documento do ERP esperado na apuração assistida"
+
+#. module: l10n_br_assisted_assessment
 #: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_line__date_emission
 msgid "Emission"
 msgstr "Emissão"
@@ -317,6 +335,11 @@ msgstr "Erro"
 #: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_request__estimated_seconds
 msgid "Estimated Seconds"
 msgstr "Segundos Estimados"
+
+#. module: l10n_br_assisted_assessment
+#: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_bookkeeping_line__expected_value
+msgid "Expected Value"
+msgstr "Valor Esperado"
 
 #. module: l10n_br_assisted_assessment
 #: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assessment_period__state__expired
@@ -465,6 +488,11 @@ msgid "Mark as handled"
 msgstr "Marcar como tratada"
 
 #. module: l10n_br_assisted_assessment
+#: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assessment_bookkeeping_line__status__match
+msgid "Matches"
+msgstr "Confere"
+
+#. module: l10n_br_assisted_assessment
 #: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_period__name
 #: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_request__name
 msgid "Name"
@@ -503,6 +531,11 @@ msgstr "Não solicitado"
 #: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_divergence__notes
 msgid "Notes"
 msgstr "Observações"
+
+#. module: l10n_br_assisted_assessment
+#: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assessment_bookkeeping_line__status__only_erp
+msgid "Only in the Bookkeeping"
+msgstr "Só no ERP"
 
 #. module: l10n_br_assisted_assessment
 #: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assessment_divergence__state__open

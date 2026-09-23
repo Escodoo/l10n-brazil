@@ -162,7 +162,7 @@
                                 colspan="2"
                                 role="alert"
                                 invisible="not local_awaiting_download"
-                            >Booked totals only include directions already downloaded from the tax administration.</div>
+                            >Booked totals include every authorized document. Comparison waits until each direction is downloaded or marked as absent.</div>
                             <field name="local_debit" />
                             <field name="local_credit" />
                             <field name="local_balance" />
@@ -175,6 +175,13 @@
                                 name="divergence_ids"
                                 nolabel="1"
                                 context="{'default_period_id': id}"
+                            />
+                        </page>
+                        <page name="bookkeeping" string="Bookkeeping">
+                            <field
+                                name="bookkeeping_line_ids"
+                                nolabel="1"
+                                readonly="1"
                             />
                         </page>
                         <page name="lines" string="Assessment Lines">
