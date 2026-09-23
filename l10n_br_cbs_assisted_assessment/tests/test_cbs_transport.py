@@ -7,14 +7,25 @@ from unittest.mock import patch
 from odoo import fields
 from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase
+from odoo.tools import mute_logger
 
 from .common import CLIENT_CLASS, CREDITS_FILE, DEBITS_FILE
+
+CBS_REQUEST_LOG = (
+    "odoo.addons.l10n_br_cbs_assisted_assessment.models.assisted_assessment_request"
+)
 
 
 class TestCbsTransport(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        # The gateway requires HTTPS; tests run on http://localhost and also
+        # exercise refusals, invalid periods and a failed poll. Mute the
+        # transport logger so checklog-odoo does not treat those as failures.
+        mute = mute_logger(CBS_REQUEST_LOG)
+        mute.__enter__()
+        cls.addClassCleanup(lambda: mute.__exit__(None, None, None))
         cls.company = cls.env.company
         cls.company.write(
             {

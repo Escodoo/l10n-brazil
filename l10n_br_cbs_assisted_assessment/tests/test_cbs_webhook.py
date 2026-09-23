@@ -5,8 +5,11 @@ import json
 
 from odoo.tests import tagged
 from odoo.tests.common import HttpCase
+from odoo.tools import mute_logger
 
 from ..constants import WEBHOOK_ROUTE
+
+WEBHOOK_LOG = "odoo.addons.l10n_br_cbs_assisted_assessment.controllers.webhook"
 
 
 @tagged("post_install", "-at_install")
@@ -46,6 +49,7 @@ class TestCbsWebhook(HttpCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["status"], "ready")
 
+    @mute_logger(WEBHOOK_LOG)
     def test_unknown_token_is_rejected(self):
         response = self.url_open(self._url("not-a-token"))
         self.assertEqual(response.status_code, 404)
@@ -75,6 +79,7 @@ class TestCbsWebhook(HttpCase):
         self.request_record.invalidate_recordset()
         self.assertEqual(self.request_record.state, "error")
 
+    @mute_logger(WEBHOOK_LOG)
     def test_unknown_ticket_is_rejected(self):
         response = self._post({"tiqueteSolicitacao": "other"})
         self.assertEqual(response.status_code, 404)
