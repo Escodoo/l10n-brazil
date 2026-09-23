@@ -325,6 +325,16 @@ msgid "Expired"
 msgstr "Expirado"
 
 #. module: l10n_br_assisted_assessment
+#. odoo-python
+#: code:addons/l10n_br_assisted_assessment/models/assisted_assessment_divergence.py:0
+msgid ""
+"Explain why this divergence is ignored before confirming the assessment "
+"without fixing it."
+msgstr ""
+"Explique por que esta divergência é ignorada antes de confirmar a apuração "
+"sem corrigi-la."
+
+#. module: l10n_br_assisted_assessment
 #: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_line__document_id
 #: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_divergence__document_id
 msgid "Fiscal Document"
@@ -417,6 +427,16 @@ msgstr "Linha"
 #: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_divergence__line_type
 msgid "Line Type"
 msgstr "Tipo de Linha"
+
+#. module: l10n_br_assisted_assessment
+#. odoo-python
+#: code:addons/l10n_br_assisted_assessment/models/assisted_assessment_divergence.py:0
+msgid ""
+"Link the fiscal document that registers this access key before marking the "
+"divergence as handled."
+msgstr ""
+"Vincule o documento fiscal que registra esta chave de acesso antes de marcar"
+" a divergência como tratada."
 
 #. module: l10n_br_assisted_assessment
 #: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assessment_period__local_awaiting_download
@@ -675,6 +695,15 @@ msgid "Requests"
 msgstr "Solicitações"
 
 #. module: l10n_br_assisted_assessment
+#: model:ir.model.fields,help:l10n_br_assisted_assessment.field_l10n_br_assessment_divergence__notes
+msgid ""
+"Required when the divergence is ignored, so the reason for accepting the tax"
+" administration figure stays on the record."
+msgstr ""
+"Obrigatório quando a divergência é ignorada, para que o motivo de aceitar o "
+"valor da administração tributária fique no registro."
+
+#. module: l10n_br_assisted_assessment
 #: model_terms:ir.ui.view,arch_db:l10n_br_assisted_assessment.view_assessment_request_form
 msgid "Response"
 msgstr "Resposta"
@@ -723,6 +752,13 @@ msgstr "Sujeito ao DeRE"
 #: model_terms:ir.ui.view,arch_db:l10n_br_assisted_assessment.view_assessment_divergence_search
 msgid "Suggested Action"
 msgstr "Ação Sugerida"
+
+#. module: l10n_br_assisted_assessment
+#. odoo-python
+#: code:addons/l10n_br_assisted_assessment/models/assisted_assessment_divergence.py:0
+msgid "The fiscal document access key does not match the assessment line."
+msgstr ""
+"A chave de acesso do documento fiscal não confere com a linha da apuração."
 
 #. module: l10n_br_assisted_assessment
 #. odoo-python
