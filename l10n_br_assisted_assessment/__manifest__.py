@@ -20,6 +20,7 @@
         "security/assisted_assessment_security.xml",
         "security/ir.model.access.csv",
         "data/ir_cron.xml",
+        "views/assisted_assessment_bookkeeping_view.xml",
         "views/assisted_assessment_line_view.xml",
         "views/assisted_assessment_divergence_view.xml",
         "views/assisted_assessment_request_view.xml",
