@@ -367,6 +367,7 @@ class TestAssessmentReconciliation(TransactionCase):
     def test_handled_divergences_then_reconcile_sets_reconciled(self):
         self._upsert_debits({self._key(1): 100.0})
         divergence = self._reconcile_against({"debit": {}})
+        divergence.notes = "Accepted the assessed value without a local document."
         divergence.action_mark_ignored()
         self._reconcile_against({"debit": {}})
         self.assertEqual(self.period.state, "reconciled")
@@ -456,3 +457,34 @@ class TestAssessmentReconciliation(TransactionCase):
             self.assertEqual(request.delivered_line_count, 2)
             self.assertEqual(request.delivered_amount, 120.0)
         self.assertEqual(self.period.debit_delivery, "received")
+
+    def test_missing_local_cannot_be_handled_without_a_document(self):
+        self._upsert_debits({self._key(1): 100.0})
+        divergence = self._reconcile_against({"debit": {}})
+        with self.assertRaises(UserError):
+            divergence.action_mark_handled()
+        self.assertEqual(divergence.state, "open")
+
+    def test_missing_local_is_handled_when_the_document_is_linked(self):
+        key = "35200159594315000157550010000000022062777169"
+        self._upsert_debits({key: 100.0})
+        divergence = self._reconcile_against({"debit": {}})
+        document = self.env["l10n_br_fiscal.document"].create(
+            {
+                "company_id": self.company.id,
+                "document_type_id": self.env.ref("l10n_br_fiscal.document_55").id,
+                "document_key": key,
+            }
+        )
+        divergence.document_id = document
+        divergence.action_mark_handled()
+        self.assertEqual(divergence.state, "handled")
+
+    def test_ignore_requires_a_note(self):
+        self._upsert_debits({self._key(1): 100.0})
+        divergence = self._reconcile_against({"debit": {self._key(1): 130.0}})
+        with self.assertRaises(UserError):
+            divergence.action_mark_ignored()
+        divergence.notes = "The extra booked amount is a rounding of another period."
+        divergence.action_mark_ignored()
+        self.assertEqual(divergence.state, "ignored")

@@ -2,6 +2,7 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 
 from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 
 from ..constants import (
     ACTION_DEBIT_NOTE,
@@ -51,7 +52,10 @@ class AssistedAssessmentDivergence(models.Model):
     local_value = fields.Monetary(string="Booked Value")
     difference = fields.Monetary(compute="_compute_difference", store=True)
     suggested_action = fields.Selection(selection=SUGGESTED_ACTIONS)
-    notes = fields.Text()
+    notes = fields.Text(
+        help="Required when the divergence is ignored, so the reason for "
+        "accepting the tax administration figure stays on the record.",
+    )
     state = fields.Selection(
         selection=[
             ("open", "Open"),
@@ -160,8 +164,51 @@ class AssistedAssessmentDivergence(models.Model):
                 return True
         return False
 
+    def write(self, vals):
+        result = super().write(vals)
+        if vals.get("state") == "handled":
+            self._check_handled()
+        if vals.get("state") == "ignored":
+            self._check_ignored()
+        return result
+
     def action_mark_handled(self):
         return self.write({"state": "handled"})
 
     def action_mark_ignored(self):
         return self.write({"state": "ignored"})
+
+    def _check_handled(self):
+        """A missing local document is handled by registering that document."""
+        for record in self:
+            if record.divergence_type != DIVERGENCE_MISSING_LOCAL:
+                continue
+            if not record.document_id:
+                raise UserError(
+                    _(
+                        "Link the fiscal document that registers this access "
+                        "key before marking the divergence as handled."
+                    )
+                )
+            if (
+                record.document_key
+                and record.document_id.document_key
+                and record.document_key != record.document_id.document_key
+            ):
+                raise UserError(
+                    _(
+                        "The fiscal document access key does not match the "
+                        "assessment line."
+                    )
+                )
+
+    def _check_ignored(self):
+        for record in self:
+            if (record.notes or "").strip():
+                continue
+            raise UserError(
+                _(
+                    "Explain why this divergence is ignored before confirming "
+                    "the assessment without fixing it."
+                )
+            )
