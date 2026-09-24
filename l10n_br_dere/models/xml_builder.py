@@ -339,6 +339,14 @@ RETURN_DETBC_PATHS = {
     "vSaldoFinalBCNCBS": ("infoBCN", "gBCNCBS", "vSaldoFinal"),
 }
 RETURN_TAX_TOTALS = ("vIS", "vIBSMun", "vIBSUF", "vIBSTot", "vCBS")
+RETURN_VALIDITY_FIELDS = (
+    "nrRecibo",
+    "iniValid",
+    "fimValid",
+    "fimValidEfetiva",
+    "indAjusteAuto",
+)
+RETURN_GAP_FIELDS = ("iniLacuna", "fimLacuna")
 
 
 def _localname(element):
@@ -438,6 +446,27 @@ def _return_receipts(node):
     }
 
 
+def _return_extract(node):
+    """Return the D-9001 validity photo, or {} when the group is absent.
+
+    An empty ``extratoEventos`` still yields empty lists, because it means
+    the RFB has no validity in force for that table.
+    """
+    extract = _child(node, "extratoEventos")
+    if extract is None:
+        return {}
+    return {
+        "validity": [
+            {name: _path_text(det, name) for name in RETURN_VALIDITY_FIELDS}
+            for det in _children(extract, "detEvento")
+        ],
+        "gaps": [
+            {name: _path_text(det, name) for name in RETURN_GAP_FIELDS}
+            for det in _children(extract, "detLacuna")
+        ],
+    }
+
+
 def _return_node(root):
     if _localname(root).startswith("evtRetorno"):
         return root
@@ -488,6 +517,7 @@ def _parse_event_return(root):
         "totals": [],
         "taxes": {"lines": [], "total": {}},
         "receipts": {},
+        "extract": {},
         "ocorrencias": [],
     }
     node = _return_node(root)
@@ -503,6 +533,7 @@ def _parse_event_return(root):
                 "totals": _return_totals(node),
                 "taxes": _return_taxes(node),
                 "receipts": _return_receipts(node),
+                "extract": _return_extract(node),
             }
         )
         _read_return_header(node, data)

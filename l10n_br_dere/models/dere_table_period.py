@@ -7,6 +7,7 @@ import re
 
 import requests
 from lxml import etree
+from markupsafe import Markup
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
@@ -48,6 +49,29 @@ class DereTablePeriod(models.Model):
     )
     ini_valid = fields.Date(string="Validity start", required=True, tracking=True)
     fim_valid = fields.Date(string="Validity end", tracking=True)
+    fim_valid_efetiva = fields.Date(
+        string="Effective validity end",
+        compute="_compute_fim_valid_efetiva",
+        store=True,
+        tracking=True,
+        help="End date applied by the RFB (D-9001) when a later validity of "
+        "the same table cut this period.",
+    )
+    rfb_validity_ids = fields.One2many(
+        comodel_name="l10n_br_dere.table.validity",
+        inverse_name="table_period_id",
+        string="RFB validity of this period",
+    )
+    rfb_extract_validity_ids = fields.Many2many(
+        comodel_name="l10n_br_dere.table.validity",
+        compute="_compute_rfb_extract",
+        string="RFB validity extract",
+    )
+    rfb_gap_ids = fields.Many2many(
+        comodel_name="l10n_br_dere.table.gap",
+        compute="_compute_rfb_extract",
+        string="RFB gaps",
+    )
     state = fields.Selection(
         [
             ("draft", "Draft"),
@@ -105,6 +129,27 @@ class DereTablePeriod(models.Model):
                     _("Table validity end must be on or after the start date.")
                 )
 
+    @api.depends(
+        "rfb_validity_ids.dere12_fimValidEfetiva",
+        "rfb_validity_ids.dere12_indAjusteAuto",
+    )
+    def _compute_fim_valid_efetiva(self):
+        for rec in self:
+            cuts = [
+                line.dere12_fimValidEfetiva
+                for line in rec.rfb_validity_ids
+                if line.dere12_indAjusteAuto == "1" and line.dere12_fimValidEfetiva
+            ]
+            rec.fim_valid_efetiva = min(cuts) if cuts else False
+
+    def _compute_rfb_extract(self):
+        validity_model = self.env["l10n_br_dere.table.validity"]
+        gap_model = self.env["l10n_br_dere.table.gap"]
+        for rec in self:
+            domain = [("company_id", "=", rec.company_id.id)]
+            rec.rfb_extract_validity_ids = validity_model.search(domain)
+            rec.rfb_gap_ids = gap_model.search(domain)
+
     def _latest_event(self, event_type):
         self.ensure_one()
         events = self._event_records(event_type)
@@ -147,6 +192,10 @@ class DereTablePeriod(models.Model):
             [
                 ("company_id", "=", company.id),
                 ("ini_valid", "<=", day),
+                "|",
+                ("fim_valid_efetiva", ">=", day),
+                "&",
+                ("fim_valid_efetiva", "=", False),
                 "|",
                 ("fim_valid", "=", False),
                 ("fim_valid", ">=", day),
@@ -641,6 +690,108 @@ class DereTablePeriod(models.Model):
             )
         event._return_parent()._apply_return_content(event, payload)
         return True
+
+    def _apply_return_content(self, event, payload):
+        res = super()._apply_return_content(event, payload)
+        extract = (payload or {}).get("extract")
+        if extract:
+            self._store_rfb_extract(event, extract)
+        return res
+
+    def _periods_by_receipt(self, event_type, receipts):
+        self.ensure_one()
+        events = self.env["l10n_br_dere.event"].search(
+            [
+                ("company_id", "=", self.company_id.id),
+                ("event_type", "=", event_type),
+                ("table_period_id", "!=", False),
+                ("nr_recibo", "in", [receipt for receipt in receipts if receipt]),
+            ]
+        )
+        return {event.nr_recibo: event.table_period_id.id for event in events}
+
+    def _store_rfb_extract(self, event, extract):
+        """Replace the company photo of ``event``'s table with the D-9001 one.
+
+        The extract lists every validity in force at the RFB for that table,
+        so older photos of the same table are dropped.
+        """
+        self.ensure_one()
+        common = {
+            "company_id": self.company_id.id,
+            "event_type": event.event_type,
+            "event_id": event.id,
+        }
+        domain = [
+            ("company_id", "=", self.company_id.id),
+            ("event_type", "=", event.event_type),
+        ]
+        validity_model = self.env["l10n_br_dere.table.validity"].sudo()
+        gap_model = self.env["l10n_br_dere.table.gap"].sudo()
+        validity_model.search(domain).unlink()
+        gap_model.search(domain).unlink()
+        lines = extract.get("validity") or []
+        periods = self._periods_by_receipt(
+            event.event_type, [line.get("nrRecibo") for line in lines]
+        )
+        validity = validity_model.create(
+            [
+                {
+                    **common,
+                    **{f"dere12_{key}": value for key, value in line.items()},
+                    "table_period_id": periods.get(line.get("nrRecibo"), False),
+                }
+                for line in lines
+            ]
+        )
+        gaps = gap_model.create(
+            [
+                {**common, **{f"dere12_{key}": value for key, value in gap.items()}}
+                for gap in extract.get("gaps") or []
+            ]
+        )
+        self.invalidate_model(["rfb_extract_validity_ids", "rfb_gap_ids"])
+        issues = self._rfb_extract_issues(validity, gaps)
+        if issues:
+            self.message_post(
+                body=Markup("%s<br/>%s")
+                % (
+                    _("The RFB validity extract needs attention:"),
+                    Markup("<br/>").join(issues),
+                )
+            )
+        return validity
+
+    def _rfb_extract_issues(self, validity, gaps):
+        issues = []
+        for line in validity:
+            if not line.table_period_id:
+                issues.append(
+                    _(
+                        "%(event)s receipt %(receipt)s is in force at the RFB "
+                        "but belongs to no local table period."
+                    )
+                    % {"event": line.event_type, "receipt": line.dere12_nrRecibo}
+                )
+            elif line.dere12_indAjusteAuto == "1":
+                issues.append(
+                    _("%(event)s validity %(period)s was cut by the RFB on %(end)s.")
+                    % {
+                        "event": line.event_type,
+                        "period": line.table_period_id.display_name,
+                        "end": line.dere12_fimValidEfetiva or "-",
+                    }
+                )
+        for gap in gaps:
+            issues.append(
+                _("%(event)s has no validity at the RFB from %(start)s to %(end)s.")
+                % {
+                    "event": gap.event_type,
+                    "start": gap.dere12_iniLacuna,
+                    "end": gap.dere12_fimLacuna or _("an open end"),
+                }
+            )
+        return issues
 
     def _apply_nova_validade(self, event):
         if not event.xml_content:

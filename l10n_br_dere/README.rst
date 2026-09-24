@@ -206,6 +206,16 @@ events in force. The amounts are recorded for reference only; no journal
 entry is created. After D-1198 reopens the period, the previous
 assessment stays visible and is replaced by the next D-9199.
 
+D-9001 carries the RFB validity extract of the table (D-1001 or D-1011):
+every validity in force and every month without coverage. The latest
+extract of each table replaces the previous one and is shown on the
+**RFB Validity Extract** tab of the table periods. Each validity is
+linked to the local table period by its receipt. When the RFB cut a
+period because a later validity starts after it (``indAjusteAuto`` = 1),
+the period gets an **Effective validity end** and stops covering later
+months. A banner shows the cut and the gaps, and the chatter lists
+receipts that belong to no local table period.
+
 Homologation checklist
 ----------------------
 

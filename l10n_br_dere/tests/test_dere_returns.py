@@ -1,7 +1,7 @@
 # Copyright 2026 - TODAY, Marcel Savegnago <marcel.savegnago@escodoo.com.br>
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 
-from datetime import datetime
+from datetime import date, datetime
 
 from odoo import Command
 from odoo.tests import tagged
@@ -158,6 +158,35 @@ class TestDereReturns(DereCommon):
         self._consult(
             declaration,
             (event, self._event_return("evtRetornoMensal", event, receipt, info)),
+        )
+        return event
+
+    def _extract(self, validity=(), gaps=()):
+        details = "".join(
+            f"<detEvento><nrRecibo>{receipt}</nrRecibo><iniValid>{start}</iniValid>"
+            + (
+                f"<fimValidEfetiva>{cut}</fimValidEfetiva>"
+                "<indAjusteAuto>1</indAjusteAuto>"
+                if cut
+                else "<indAjusteAuto>0</indAjusteAuto>"
+            )
+            + "</detEvento>"
+            for receipt, start, cut in validity
+        )
+        lacunas = "".join(
+            f"<detLacuna><iniLacuna>{start}</iniLacuna>"
+            + (f"<fimLacuna>{end}</fimLacuna>" if end else "")
+            + "</detLacuna>"
+            for start, end in gaps
+        )
+        return f"<extratoEventos>{details}{lacunas}</extratoEventos>"
+
+    def _table_return(self, declaration, event_type, extract):
+        event = self._event(declaration, event_type)
+        receipt = self._event_receipt(event_type, declaration.per_apur)
+        self._consult(
+            self._table_period(declaration),
+            (event, self._event_return("evtRetornoTabela", event, receipt, extract)),
         )
         return event
 
@@ -327,6 +356,80 @@ class TestDereReturns(DereCommon):
         declaration.write({"state": "reopened"})
         self.assertFalse(declaration.rfb_mismatch)
         self.assertTrue(declaration.tax_assessment_line_ids)
+
+    def test_d9001_extract_cuts_the_period_and_reports_gaps(self):
+        declaration = self._create_declaration()
+        declaration.action_generate_tables()
+        period = self._table_period(declaration)
+        table = self.env["l10n_br_dere.table.period"]
+        self.assertEqual(table._find_covering(self.company, date(2026, 10, 20)), period)
+        receipt = self._event_receipt("D-1001", declaration.per_apur)
+        foreign = self._event_receipt("D-1001", "2026-01")
+        event = self._table_return(
+            declaration,
+            "D-1001",
+            self._extract(
+                validity=[
+                    (receipt, "2026-10-01", "2026-10-15"),
+                    (foreign, "2026-10-16", None),
+                ],
+                gaps=[("2026-01-01", "2026-09-30")],
+            ),
+        )
+        self.assertEqual(event.state, "accepted")
+        self.assertEqual(event.return_type, "D-9001")
+        self.assertFalse(self._schema_messages(event))
+        self.assertEqual(period.rfb_validity_ids.dere12_nrRecibo, receipt)
+        self.assertEqual(period.fim_valid_efetiva, date(2026, 10, 15))
+        self.assertEqual(len(period.rfb_extract_validity_ids), 2)
+        self.assertEqual(period.rfb_gap_ids.dere12_iniLacuna, date(2026, 1, 1))
+        self.assertEqual(table._find_covering(self.company, date(2026, 10, 10)), period)
+        self.assertNotEqual(
+            table._find_covering(self.company, date(2026, 10, 20)), period
+        )
+        notes = " ".join(period.message_ids.mapped("body"))
+        self.assertIn(foreign, notes)
+        self.assertIn("2026-01-01", notes)
+
+    def test_d9001_extract_replaces_only_the_photo_of_its_table(self):
+        declaration = self._create_declaration()
+        declaration.action_generate_tables()
+        period = self._table_period(declaration)
+        d1001 = self._event_receipt("D-1001", declaration.per_apur)
+        d1011 = self._event_receipt("D-1011", declaration.per_apur)
+        event = self._table_return(
+            declaration,
+            "D-1001",
+            self._extract(
+                validity=[(d1001, "2026-10-01", "2026-10-15")],
+                gaps=[("2026-01-01", "2026-09-30")],
+            ),
+        )
+        self._table_return(
+            declaration, "D-1011", self._extract(validity=[(d1011, "2026-10-01", None)])
+        )
+        self.assertEqual(period.fim_valid_efetiva, date(2026, 10, 15))
+        period._apply_return_content(
+            event,
+            {
+                "extract": {
+                    "validity": [{"nrRecibo": d1001, "iniValid": "2026-10-01"}],
+                    "gaps": [],
+                }
+            },
+        )
+        self.assertFalse(period.fim_valid_efetiva)
+        validity = self.env["l10n_br_dere.table.validity"].search(
+            [("company_id", "=", self.company.id)]
+        )
+        self.assertEqual(
+            sorted(validity.mapped("dere12_nrRecibo")), sorted([d1001, d1011])
+        )
+        self.assertFalse(
+            self.env["l10n_br_dere.table.gap"].search(
+                [("company_id", "=", self.company.id)]
+            )
+        )
 
     def test_return_types_are_not_event_types(self):
         selection = dict(self.env["l10n_br_dere.event"]._fields["event_type"].selection)

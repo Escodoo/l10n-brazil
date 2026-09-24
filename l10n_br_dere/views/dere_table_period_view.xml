@@ -10,6 +10,7 @@
                 <field name="name" />
                 <field name="ini_valid" />
                 <field name="fim_valid" />
+                <field name="fim_valid_efetiva" optional="hide" />
                 <field name="company_id" groups="base.group_multi_company" />
                 <field name="state" />
             </list>
@@ -62,6 +63,24 @@
                     <field name="state" widget="statusbar" />
                 </header>
                 <sheet>
+                    <div
+                        class="alert alert-warning"
+                        role="alert"
+                        invisible="not fim_valid_efetiva"
+                    >
+                        The RFB ended this validity on
+                        <field name="fim_valid_efetiva" class="oe_inline" />
+                        because a later validity of the same table starts
+                        after it.
+                    </div>
+                    <div
+                        class="alert alert-warning"
+                        role="alert"
+                        invisible="not rfb_gap_ids"
+                    >
+                        The RFB reports months without table validity for this
+                        company. Check the RFB Validity Extract tab.
+                    </div>
                     <group>
                         <group>
                             <field
@@ -124,6 +143,34 @@
                                         icon="fa-refresh"
                                         invisible="state != 'sent' or not protocol"
                                     />
+                                </list>
+                            </field>
+                        </page>
+                        <page
+                            string="RFB Validity Extract"
+                            name="rfb_extract"
+                            invisible="not rfb_extract_validity_ids and not rfb_gap_ids"
+                        >
+                            <field name="rfb_extract_validity_ids" readonly="1">
+                                <list create="0" delete="0">
+                                    <field name="event_type" />
+                                    <field name="dere12_nrRecibo" />
+                                    <field name="dere12_iniValid" />
+                                    <field name="dere12_fimValid" />
+                                    <field name="dere12_fimValidEfetiva" />
+                                    <field name="dere12_indAjusteAuto" />
+                                    <field name="table_period_id" />
+                                </list>
+                            </field>
+                            <field
+                                name="rfb_gap_ids"
+                                readonly="1"
+                                invisible="not rfb_gap_ids"
+                            >
+                                <list create="0" delete="0">
+                                    <field name="event_type" />
+                                    <field name="dere12_iniLacuna" />
+                                    <field name="dere12_fimLacuna" />
                                 </list>
                             </field>
                         </page>
