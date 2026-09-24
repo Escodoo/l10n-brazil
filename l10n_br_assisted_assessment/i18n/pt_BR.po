@@ -257,6 +257,7 @@ msgid "Difference"
 msgstr "Diferença"
 
 #. module: l10n_br_assisted_assessment
+#: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assessment_bookkeeping_line__status__value
 #: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assessment_divergence__divergence_type__value
 msgid "Different value"
 msgstr "Valor diferente"
