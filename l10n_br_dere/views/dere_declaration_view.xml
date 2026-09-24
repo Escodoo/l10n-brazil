@@ -220,6 +220,15 @@
                     <field name="state" widget="statusbar" />
                 </header>
                 <sheet>
+                    <div
+                        class="alert alert-warning"
+                        role="alert"
+                        invisible="not rfb_mismatch"
+                    >
+                        The RFB return differs from the local data or used
+                        receipts that are no longer in force. Check the RFB
+                        Assessment tab and the chatter.
+                    </div>
                     <group>
                         <group>
                             <field
@@ -351,6 +360,39 @@
                                     <field name="dere12_vOper" sum="Operation" />
                                     <field name="dere12_vDedTotal" />
                                     <field name="dere12_vDed" sum="Deducted" />
+                                </list>
+                            </field>
+                        </page>
+                        <page
+                            string="RFB Assessment"
+                            name="rfb_assessment"
+                            invisible="not rfb_total_ids and not rfb_mismatch"
+                        >
+                            <field name="rfb_mismatch" invisible="1" />
+                            <field name="rfb_total_ids" readonly="1">
+                                <list create="0" delete="0">
+                                    <field name="event_type" />
+                                    <field name="dere12_codTrib" />
+                                    <field name="dere12_indTribISS" />
+                                    <field
+                                        name="brl_currency_id"
+                                        column_invisible="1"
+                                    />
+                                    <field name="dere12_vApurTot" />
+                                    <field name="local_v_apur" />
+                                    <field
+                                        name="difference"
+                                        decoration-danger="has_difference"
+                                    />
+                                    <field name="has_difference" column_invisible="1" />
+                                    <field
+                                        name="dere12_vTotSaldoInic"
+                                        optional="hide"
+                                    />
+                                    <field
+                                        name="dere12_vTotSaldoFinal"
+                                        optional="hide"
+                                    />
                                 </list>
                             </field>
                         </page>

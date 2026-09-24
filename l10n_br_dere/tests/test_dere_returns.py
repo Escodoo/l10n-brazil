@@ -82,15 +82,40 @@ class TestDereReturns(DereCommon):
     def _pgcc_receipt(self, declaration):
         return self._event(declaration, "D-1011").nr_recibo
 
-    def _balan_info(self, declaration, totals=""):
+    def _balan_info(self, declaration, totals="", pgcc_receipt=None):
         return (
             "<infoEvento>"
             f"<idePeriodo><perApur>{declaration.per_apur}</perApur></idePeriodo>"
-            f"<infoAdic><nrReciboPGCC>{self._pgcc_receipt(declaration)}"
+            "<infoAdic><nrReciboPGCC>"
+            f"{pgcc_receipt or self._pgcc_receipt(declaration)}"
             "</nrReciboPGCC></infoAdic>"
             f"{totals}"
             "</infoEvento>"
         )
+
+    def _balan_totals(self, *groups):
+        body = "".join(
+            f"<gTotalCodTrib><codTrib>{code}</codTrib>"
+            f"<indTribISS>{ind_trib_iss}</indTribISS>"
+            f"<vApurTot>{amount:.2f}</vApurTot></gTotalCodTrib>"
+            for code, ind_trib_iss, amount in groups
+        )
+        return f"<infoTotBalan>{body}</infoTotBalan>"
+
+    def _fee_line(self, declaration):
+        return declaration.trial_line_ids.filtered(
+            lambda line: line.pgcc_account_id.account_id == self.fee_account
+        )
+
+    def _accept_d1101(self, declaration, totals="", pgcc_receipt=None):
+        event = self._event(declaration, "D-1101")
+        info = self._balan_info(declaration, totals, pgcc_receipt)
+        receipt = self._event_receipt("D-1101", declaration.per_apur)
+        self._consult(
+            declaration,
+            (event, self._event_return("evtRetornoBalan", event, receipt, info)),
+        )
+        return event
 
     def _schema_messages(self, event):
         return event.message_ids.filtered(
@@ -152,6 +177,70 @@ class TestDereReturns(DereCommon):
         self.assertEqual(event.state, "accepted")
         self.assertTrue(event.return_xml)
         self.assertTrue(self._schema_messages(event))
+
+    def test_d9101_totals_match_the_trial_balance(self):
+        declaration = self._prepare_trial()
+        fee = self._fee_line(declaration)
+        self.assertTrue(fee.dere12_vApur)
+        code = self.tax_admin_fee.code
+        event = self._accept_d1101(
+            declaration, self._balan_totals((code, "0", fee.dere12_vApur))
+        )
+        self.assertEqual(len(event.total_ids), 1)
+        self.assertEqual(event.total_ids.dere12_codTrib, code)
+        self.assertAlmostEqual(event.total_ids.dere12_vApurTot, fee.dere12_vApur)
+        self.assertAlmostEqual(event.total_ids.local_v_apur, fee.dere12_vApur)
+        self.assertFalse(event.total_ids.has_difference)
+        self.assertEqual(declaration.rfb_total_ids, event.total_ids)
+        self.assertFalse(declaration.rfb_mismatch)
+
+    def test_d9101_flags_differences_and_foreign_pgcc_receipt(self):
+        declaration = self._prepare_trial()
+        fee = self._fee_line(declaration)
+        foreign = self._event_receipt("D-1011", "2026-01")
+        event = self._accept_d1101(
+            declaration,
+            self._balan_totals(
+                (self.tax_admin_fee.code, "0", fee.dere12_vApur - 10),
+                ("120110007", "0", 3.0),
+            ),
+            pgcc_receipt=foreign,
+        )
+        self.assertEqual(event.state, "accepted")
+        self.assertEqual(event.nr_recibo_pgcc, foreign)
+        by_code = {total.dere12_codTrib: total for total in event.total_ids}
+        self.assertAlmostEqual(by_code[self.tax_admin_fee.code].difference, -10.0)
+        self.assertAlmostEqual(by_code["120110007"].local_v_apur, 0.0)
+        self.assertTrue(declaration.rfb_mismatch)
+        self.assertTrue(
+            declaration.message_ids.filtered(
+                lambda message: foreign in (message.body or "")
+            )
+        )
+
+    def test_d9106_total_compares_reserve_lines(self):
+        self.company.dere_subject_d1106 = True
+        declaration = self._prepare_d1106_trial()
+        declaration.action_generate_d1106()
+        event = self._event(declaration, "D-1106")
+        info = (
+            "<infoEvento>"
+            f"<idePeriodo><perApur>{declaration.per_apur}</perApur></idePeriodo>"
+            f"<infoAdic><nrReciboPGCC>{self._pgcc_receipt(declaration)}"
+            "</nrReciboPGCC></infoAdic>"
+            "<infoTotAplicFin><vApurTot>5.00</vApurTot></infoTotAplicFin>"
+            "</infoEvento>"
+        )
+        receipt = self._event_receipt("D-1106", declaration.per_apur)
+        self._consult(
+            declaration,
+            (event, self._event_return("evtRetornoAplicFin", event, receipt, info)),
+        )
+        self.assertEqual(event.return_type, "D-9106")
+        self.assertFalse(self._schema_messages(event))
+        self.assertAlmostEqual(event.total_ids.dere12_vApurTot, 5.0)
+        self.assertAlmostEqual(event.total_ids.local_v_apur, 0.0)
+        self.assertTrue(declaration.rfb_mismatch)
 
     def test_return_types_are_not_event_types(self):
         selection = dict(self.env["l10n_br_dere.event"]._fields["event_type"].selection)

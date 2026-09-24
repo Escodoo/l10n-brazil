@@ -639,6 +639,7 @@ class DereTablePeriod(models.Model):
                     for item in occurrences
                 ]
             )
+        event._return_parent()._apply_return_content(event, payload)
         return True
 
     def _apply_nova_validade(self, event):

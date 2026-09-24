@@ -1743,6 +1743,7 @@ class DereDeclaration(models.Model):
                     for item in occurrences
                 ]
             )
+        event._return_parent()._apply_return_content(event, payload)
         return True
 
     def _reject_batch_events(self, batch, parsed):

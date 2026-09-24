@@ -298,6 +298,13 @@ RETURN_HEADER = {
     ),
 }
 RETURN_FRACTION_RE = re.compile(r"\.(\d+)")
+RETURN_TOTAL_FIELDS = (
+    "codTrib",
+    "indTribISS",
+    "vApurTot",
+    "vTotSaldoInic",
+    "vTotSaldoFinal",
+)
 
 
 def _localname(element):
@@ -343,6 +350,28 @@ def parse_datetime(value):
     if moment.tzinfo:
         moment = moment.astimezone(timezone.utc).replace(tzinfo=None)
     return moment
+
+
+def _children(element, name):
+    if element is None:
+        return []
+    return [
+        child
+        for child in element.iterchildren(tag=etree.Element)
+        if _localname(child) == name
+    ]
+
+
+def _return_totals(node):
+    info = _child(node, "infoEvento")
+    balan = _child(info, "infoTotBalan")
+    if balan is not None:
+        return [
+            {name: _path_text(group, name) for name in RETURN_TOTAL_FIELDS}
+            for group in _children(balan, "gTotalCodTrib")
+        ]
+    total = _path_text(info, "infoTotAplicFin", "vApurTot")
+    return [{"vApurTot": total}] if total else []
 
 
 def _return_node(root):
@@ -392,6 +421,7 @@ def _parse_event_return(root):
         "xml": False,
         "perApur": False,
         "nrReciboPGCC": False,
+        "totals": [],
         "ocorrencias": [],
     }
     node = _return_node(root)
@@ -404,6 +434,7 @@ def _parse_event_return(root):
                 "nrReciboPGCC": _path_text(
                     node, "infoEvento", "infoAdic", "nrReciboPGCC"
                 ),
+                "totals": _return_totals(node),
             }
         )
         _read_return_header(node, data)

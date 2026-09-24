@@ -97,6 +97,11 @@ class DereEvent(models.Model):
     dh_recepcao = fields.Datetime(string="Received at", copy=False)
     dh_process = fields.Datetime(string="Processed at", copy=False)
     nr_recibo_pgcc = fields.Char(string="PGCC receipt used", size=31, copy=False)
+    total_ids = fields.One2many(
+        comodel_name="l10n_br_dere.event.total",
+        inverse_name="event_id",
+        string="RFB totals",
+    )
 
     _SENT_WRITE_FIELDS = frozenset(
         {
@@ -225,6 +230,10 @@ class DereEvent(models.Model):
             "dh_process": xml_builder.parse_datetime(payload.get("dhProcess")),
             "nr_recibo_pgcc": payload.get("nrReciboPGCC") or False,
         }
+
+    def _return_parent(self):
+        self.ensure_one()
+        return self.declaration_id or self.table_period_id
 
     def _check_return_schema(self):
         for rec in self.filtered("return_xml"):

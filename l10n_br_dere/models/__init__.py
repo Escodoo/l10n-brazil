@@ -10,7 +10,9 @@ from . import dere_deduction_line
 from . import dere_event_ops
 from . import dere_table_period
 from . import dere_declaration
+from . import dere_declaration_rfb
 from . import dere_event
+from . import dere_event_total
 from . import dere_pgcc_account
 from . import dere_trial_line
 from . import dere_batch

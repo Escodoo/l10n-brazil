@@ -41,6 +41,10 @@ class DereEventParentMixin(models.AbstractModel):
         self.ensure_one()
         return self._event_records(event_type).sorted("id")[-1:]
 
+    def _apply_return_content(self, event, payload):
+        """Persist the D-9xxx content of an accepted return."""
+        return True
+
     def _period_is_closed(self):
         return False
 

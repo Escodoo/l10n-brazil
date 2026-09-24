@@ -66,6 +66,12 @@ D-1011 receipt used by the RFB (`nrReciboPGCC`) and the return XML. The
 return is checked against its official XSD: differences are posted on the
 event chatter and never undo the RFB decision.
 
+The **RFB Assessment** tab of the declaration lists the D-9101 totals per
+`codTrib` / `indTribISS` and the D-9106 total next to the `vApur` sent in
+D-1101 / D-1106. A warning banner and a chatter note appear when a total
+differs or when D-9101, D-9106 or D-9112 used another PGCC receipt than
+the D-1011 in force.
+
 ## Homologation checklist
 
 Use a company whose chart already maps at least one administration-fee
