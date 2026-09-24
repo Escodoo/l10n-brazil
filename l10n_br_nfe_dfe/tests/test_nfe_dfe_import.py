@@ -77,6 +77,9 @@ class TestNFeDFe(TransactionCase):
         self.assertEqual(fiscal_doc.document_key, access_key)
         self.assertEqual(_mock_post.call_count, 1)
 
+        imported_dfe = dfe_docs.filtered(lambda d: d.access_key == access_key)
+        self.assertEqual(imported_dfe.fiscal_document_id, fiscal_doc)
+
     @mock.patch.object(DefaultTransport, "post")
     def test_search_dfe_success(self, _mock_post):
         _mock_post.return_value = _bytes(response_sucesso_multiplos)
