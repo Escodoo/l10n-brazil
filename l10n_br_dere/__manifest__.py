@@ -28,6 +28,7 @@
         "data/ir_cron.xml",
         "views/res_company_view.xml",
         "views/account_account_view.xml",
+        "views/account_group_view.xml",
         "views/fiscal_operation_view.xml",
         "views/dere_activity_view.xml",
         "views/dere_tax_code_view.xml",

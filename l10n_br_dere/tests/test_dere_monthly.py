@@ -68,11 +68,9 @@ class TestDereMonthly(DereCommon):
                 "l10n_br_dere_cta_interna": "4881",
                 "l10n_br_dere_dbr_mista": "000",
                 "l10n_br_dere_cta_ref": "120110006",
-                "l10n_br_dere_ind_cta": "A",
                 "l10n_br_dere_nat_cta": "C",
                 "l10n_br_dere_cod_nat": "4",
                 "l10n_br_dere_cod_trib": self.tax_admin_fee.id,
-                "l10n_br_dere_nivel_cta": 1,
             }
         )
         pass_through = self.env["account.account"].create(
@@ -85,10 +83,8 @@ class TestDereMonthly(DereCommon):
                 "l10n_br_dere_cta_interna": "2888",
                 "l10n_br_dere_dbr_mista": "000",
                 "l10n_br_dere_cta_ref": "2",
-                "l10n_br_dere_ind_cta": "A",
                 "l10n_br_dere_nat_cta": "C",
                 "l10n_br_dere_cod_nat": "2",
-                "l10n_br_dere_nivel_cta": 1,
             }
         )
         declaration = self._create_declaration("2027-08")

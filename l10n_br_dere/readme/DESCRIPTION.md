@@ -4,7 +4,7 @@ Específicos (DeRE)** layout **1.2.0**.
 It lets an Odoo company:
 
 - store the DeRE tax regime, activities and referential chart
-- map `account.account` lines to PGCC fields (`cCtaRef`, `codTrib`, `codNat`)
+- map `account.group` (synthetic) and `account.account` (analytic) PGCC fields
 - generate local XML for D-1001, D-1011, D-1101, D-1106, D-1121, D-1198
   and D-1199
 - send signed batches to Receita Integra, consult processing (manually or

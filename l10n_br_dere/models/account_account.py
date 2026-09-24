@@ -36,10 +36,24 @@ class AccountAccount(models.Model):
     l10n_br_dere_cta_ref = fields.Char(
         string="DeRE referential account",
         size=13,
+        help="Leave empty to inherit the referential code from the account group.",
     )
-    l10n_br_dere_ind_cta = fields.Selection(IND_CTA, string="DeRE account indicator")
-    l10n_br_dere_nat_cta = fields.Selection(NAT_CTA, string="DeRE account nature")
-    l10n_br_dere_cod_nat = fields.Selection(COD_NAT, string="DeRE nature code")
+    l10n_br_dere_ind_cta = fields.Selection(
+        IND_CTA,
+        string="DeRE account indicator",
+        compute="_compute_l10n_br_dere_hierarchy",
+        help="Analytic accounts are always A. Synthetic nodes live on account groups.",
+    )
+    l10n_br_dere_nat_cta = fields.Selection(
+        NAT_CTA,
+        string="DeRE account nature",
+        help="Leave empty to inherit the nature from the account group.",
+    )
+    l10n_br_dere_cod_nat = fields.Selection(
+        COD_NAT,
+        string="DeRE nature code",
+        help="Leave empty to inherit the nature code from the account group.",
+    )
     l10n_br_dere_cod_trib = fields.Many2one(
         comodel_name="l10n_br_dere.tax.code",
         string="DeRE taxation code",
@@ -48,11 +62,16 @@ class AccountAccount(models.Model):
         IND_TRIB_ISS, string="DeRE ISS indicator"
     )
     l10n_br_dere_cta_sup_id = fields.Many2one(
-        comodel_name="account.account",
-        string="DeRE parent account",
+        comodel_name="account.group",
+        string="DeRE parent group",
         ondelete="restrict",
+        help="Leave empty to use the prefix account group. Set only when the "
+        "chart is not prefix-based.",
     )
-    l10n_br_dere_nivel_cta = fields.Integer(string="DeRE account level", default=1)
+    l10n_br_dere_nivel_cta = fields.Integer(
+        string="DeRE account level",
+        compute="_compute_l10n_br_dere_hierarchy",
+    )
     l10n_br_dere_desc_cta = fields.Char(string="DeRE account description", size=600)
     l10n_br_dere_reserve_invest = fields.Boolean(
         string="DeRE technical-reserve investment",
@@ -70,11 +89,25 @@ class AccountAccount(models.Model):
     @api.depends("l10n_br_dere_cta_interna", "l10n_br_dere_dbr_mista", "code")
     def _compute_l10n_br_dere_cta(self):
         for account in self:
-            internal = account.l10n_br_dere_cta_interna or re.sub(
-                r"[^0-9A-Za-z]", "", account.code or ""
-            )
+            internal = account._dere_internal_code()
             split = account.l10n_br_dere_dbr_mista or "000"
             account.l10n_br_dere_cta = f"{internal}{split}" if internal else False
+
+    @api.depends(
+        "l10n_br_dere_cta_ref",
+        "l10n_br_dere_cta_sup_id",
+        "l10n_br_dere_cta_sup_id.l10n_br_dere_nivel_cta",
+        "group_id",
+        "group_id.l10n_br_dere_cta_ref",
+        "group_id.l10n_br_dere_nivel_cta",
+    )
+    def _compute_l10n_br_dere_hierarchy(self):
+        for account in self:
+            parent = account._dere_parent_group()
+            account.l10n_br_dere_ind_cta = "A" if account._dere_cta_ref() else False
+            account.l10n_br_dere_nivel_cta = (
+                (parent.l10n_br_dere_nivel_cta or 0) + 1 if parent else 1
+            )
 
     @api.constrains("l10n_br_dere_dbr_mista")
     def _check_l10n_br_dere_dbr_mista(self):
@@ -84,3 +117,25 @@ class AccountAccount(models.Model):
                 raise ValidationError(
                     _("The DeRE mixed-account split must use three digits (000-999).")
                 )
+
+    def _dere_internal_code(self):
+        self.ensure_one()
+        return self.l10n_br_dere_cta_interna or re.sub(
+            r"[^0-9A-Za-z]", "", self.code or ""
+        )
+
+    def _dere_parent_group(self):
+        self.ensure_one()
+        return self.l10n_br_dere_cta_sup_id or self.group_id
+
+    def _dere_cta_ref(self):
+        self.ensure_one()
+        return self.l10n_br_dere_cta_ref or self.group_id.l10n_br_dere_cta_ref
+
+    def _dere_nat_cta(self):
+        self.ensure_one()
+        return self.l10n_br_dere_nat_cta or self.group_id.l10n_br_dere_nat_cta
+
+    def _dere_cod_nat(self):
+        self.ensure_one()
+        return self.l10n_br_dere_cod_nat or self.group_id.l10n_br_dere_cod_nat

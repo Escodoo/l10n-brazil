@@ -375,8 +375,8 @@ Específicos (DeRE)</strong> layout <strong>1.2.0</strong>.</p>
 <p>It lets an Odoo company:</p>
 <ul class="simple">
 <li>store the DeRE tax regime, activities and referential chart</li>
-<li>map <tt class="docutils literal">account.account</tt> lines to PGCC fields (<tt class="docutils literal">cCtaRef</tt>,
-<tt class="docutils literal">codTrib</tt>, <tt class="docutils literal">codNat</tt>)</li>
+<li>map <tt class="docutils literal">account.group</tt> (synthetic) and <tt class="docutils literal">account.account</tt> (analytic)
+PGCC fields</li>
 <li>generate local XML for D-1001, D-1011, D-1101, D-1106, D-1121, D-1198
 and D-1199</li>
 <li>send signed batches to Receita Integra, consult processing (manually
@@ -427,10 +427,16 @@ account.</li>
 <li>If the taxpayer must send D-1121, enable <strong>Subject to D-1121</strong> and
 mark inbound fiscal operations as DeRE deductible.</li>
 </ol>
-<p>On each account used in the declaration, fill the <strong>DeRE</strong> tab:</p>
+<p>On each <strong>account group</strong> used as a synthetic DeRE node, fill the
+<strong>DeRE</strong> tab (<tt class="docutils literal">cCtaRef</tt>, nature). Level and parent come from the
+prefix hierarchy.</p>
+<p>On each <strong>analytic account</strong> used in the declaration, fill the <strong>DeRE</strong>
+tab:</p>
 <ul class="simple">
 <li>internal code and 3-digit mixed-account split (<tt class="docutils literal">cDbrMista</tt>)</li>
-<li>parent account, referential code, nature and optional <tt class="docutils literal">codTrib</tt></li>
+<li>referential code, nature and optional <tt class="docutils literal">codTrib</tt> (empty values
+inherit from the prefix group)</li>
+<li>parent group only when the chart is not prefix-based</li>
 </ul>
 <p>Do not reuse the ECD/ECF field <tt class="docutils literal">l10n_br_sped_referential_code</tt> for
 DeRE.</p>

@@ -1,5 +1,6 @@
 from . import res_company
 from . import account_account
+from . import account_group
 from . import fiscal_operation
 from . import dere_activity
 from . import dere_tax_code

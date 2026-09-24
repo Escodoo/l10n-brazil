@@ -14,12 +14,13 @@
                             <field name="l10n_br_dere_cta_interna" />
                             <field name="l10n_br_dere_dbr_mista" />
                             <field name="l10n_br_dere_cta" />
+                            <field name="group_id" readonly="1" />
                             <field name="l10n_br_dere_cta_sup_id" />
                             <field name="l10n_br_dere_nivel_cta" />
+                            <field name="l10n_br_dere_ind_cta" />
                         </group>
                         <group>
                             <field name="l10n_br_dere_cta_ref" />
-                            <field name="l10n_br_dere_ind_cta" />
                             <field name="l10n_br_dere_nat_cta" />
                             <field name="l10n_br_dere_cod_nat" />
                             <field name="l10n_br_dere_cod_trib" />

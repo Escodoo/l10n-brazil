@@ -54,21 +54,20 @@ class DereCommon(TransactionCase):
                 }
             )
             cls.company.certificate_nfe_id = certificate
-        cls.parent_account = cls.env["account.account"].create(
+        cls.parent_group = cls.env["account.group"].create(
             {
                 "name": "Health revenue",
-                "code": "DERE31",
-                "account_type": "income",
-                "company_ids": [Command.set(cls.company.ids)],
+                "code_prefix_start": "DERE31",
+                "code_prefix_end": "DERE31",
+                "company_id": cls.company.root_id.id,
                 "l10n_br_dere_cta_interna": "31",
                 "l10n_br_dere_dbr_mista": "000",
                 "l10n_br_dere_cta_ref": "12011",
-                "l10n_br_dere_ind_cta": "S",
                 "l10n_br_dere_nat_cta": "C",
                 "l10n_br_dere_cod_nat": "4",
-                "l10n_br_dere_nivel_cta": 1,
             }
         )
+        cls.parent_account = cls.parent_group
         cls.fee_account = cls.env["account.account"].create(
             {
                 "name": "Administration fees",
@@ -78,12 +77,9 @@ class DereCommon(TransactionCase):
                 "l10n_br_dere_cta_interna": "311",
                 "l10n_br_dere_dbr_mista": "000",
                 "l10n_br_dere_cta_ref": "120110006",
-                "l10n_br_dere_ind_cta": "A",
                 "l10n_br_dere_nat_cta": "C",
                 "l10n_br_dere_cod_nat": "4",
                 "l10n_br_dere_cod_trib": cls.tax_admin_fee.id,
-                "l10n_br_dere_cta_sup_id": cls.parent_account.id,
-                "l10n_br_dere_nivel_cta": 2,
             }
         )
         cls.equity_account = cls.env["account.account"].create(
@@ -95,10 +91,8 @@ class DereCommon(TransactionCase):
                 "l10n_br_dere_cta_interna": "21",
                 "l10n_br_dere_dbr_mista": "000",
                 "l10n_br_dere_cta_ref": "2",
-                "l10n_br_dere_ind_cta": "A",
                 "l10n_br_dere_nat_cta": "C",
                 "l10n_br_dere_cod_nat": "3",
-                "l10n_br_dere_nivel_cta": 1,
             }
         )
         cls.receivable = cls.env["account.account"].create(
@@ -120,10 +114,8 @@ class DereCommon(TransactionCase):
                 "l10n_br_dere_cta_interna": "22",
                 "l10n_br_dere_dbr_mista": "000",
                 "l10n_br_dere_cta_ref": "2",
-                "l10n_br_dere_ind_cta": "A",
                 "l10n_br_dere_nat_cta": "C",
                 "l10n_br_dere_cod_nat": "2",
-                "l10n_br_dere_nivel_cta": 1,
             }
         )
         cls.journal = cls.env["account.journal"].search(

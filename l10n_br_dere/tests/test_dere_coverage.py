@@ -233,10 +233,8 @@ class TestDereCoverage(DereCommon):
                 "l10n_br_dere_cta_interna": self.fee_account.l10n_br_dere_cta_interna,
                 "l10n_br_dere_dbr_mista": "000",
                 "l10n_br_dere_cta_ref": "120110006",
-                "l10n_br_dere_ind_cta": "A",
                 "l10n_br_dere_nat_cta": "C",
                 "l10n_br_dere_cod_nat": "4",
-                "l10n_br_dere_nivel_cta": 2,
             }
         )
         self.assertTrue(duplicate.l10n_br_dere_cta)

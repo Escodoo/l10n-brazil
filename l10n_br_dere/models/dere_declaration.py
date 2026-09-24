@@ -505,55 +505,104 @@ class DereDeclaration(models.Model):
             rec._generate_d1011()
         return True
 
-    def _account_name_for_xml(self, account):
-        """Return the account name in the company language for official XML."""
+    def _account_name_for_xml(self, record):
+        """Return the account or group name in the company language for XML."""
         self.ensure_one()
         lang = self.company_id.partner_id.lang or "en_US"
-        name = account.with_context(lang=lang).name or account.name or ""
+        name = record.with_context(lang=lang).name or record.name or ""
         return name[:100]
+
+    def _mapped_pgcc_accounts(self):
+        self.ensure_one()
+        accounts = self.env["account.account"].search(
+            [("company_ids", "in", self.company_id.ids)]
+        )
+        return accounts.filtered(
+            lambda acc: acc._dere_cta_ref() and acc.l10n_br_dere_cta
+        )
+
+    def _mapped_pgcc_groups(self, accounts):
+        self.ensure_one()
+        groups = self.env["account.group"].search(
+            [
+                ("company_id", "=", self.company_id.root_id.id),
+                ("l10n_br_dere_cta_ref", "!=", False),
+            ]
+        )
+        for account in accounts:
+            parent = account._dere_parent_group()
+            if parent:
+                groups |= parent._dere_ancestors()
+        return groups
+
+    def _pgcc_row_from_group(self, group, codes):
+        c_cta = group.l10n_br_dere_cta
+        if not c_cta or c_cta in codes or not group.l10n_br_dere_cta_ref:
+            return False
+        codes.add(c_cta)
+        name = self._account_name_for_xml(group)
+        return {
+            "declaration_id": self.id,
+            "group_id": group.id,
+            "dere12_cCta": c_cta,
+            "dere12_cCtaInterna": group._dere_internal_code(),
+            "dere12_cDbrMista": group.l10n_br_dere_dbr_mista or "000",
+            "dere12_nomeCta": name,
+            "dere12_indCta": "S",
+            "dere12_descCta": group.l10n_br_dere_desc_cta or name,
+            "dere12_cCtaSup": group.l10n_br_dere_cta_sup,
+            "dere12_cCtaRef": group.l10n_br_dere_cta_ref,
+            "dere12_nivelCta": group.l10n_br_dere_nivel_cta or 1,
+            "dere12_natCta": group.l10n_br_dere_nat_cta or "V",
+            "dere12_codNat": group.l10n_br_dere_cod_nat or "1",
+            "dere12_iniVig": self.ini_valid or self.date_from,
+            "dere12_fimVig": self.fim_valid,
+        }
+
+    def _pgcc_row_from_account(self, account, codes):
+        c_cta = account.l10n_br_dere_cta
+        if not c_cta or c_cta in codes:
+            return False
+        codes.add(c_cta)
+        parent = account._dere_parent_group()
+        name = self._account_name_for_xml(account)
+        return {
+            "declaration_id": self.id,
+            "account_id": account.id,
+            "dere12_cCta": c_cta,
+            "dere12_cCtaInterna": account._dere_internal_code(),
+            "dere12_cDbrMista": account.l10n_br_dere_dbr_mista or "000",
+            "dere12_nomeCta": name,
+            "dere12_indCta": "A",
+            "dere12_descCta": account.l10n_br_dere_desc_cta or name,
+            "dere12_cCtaSup": parent.l10n_br_dere_cta if parent else False,
+            "dere12_cCtaRef": account._dere_cta_ref(),
+            "dere12_nivelCta": account.l10n_br_dere_nivel_cta or 1,
+            "dere12_natCta": account._dere_nat_cta() or "V",
+            "dere12_codNat": account._dere_cod_nat() or "1",
+            "tax_code_id": account.l10n_br_dere_cod_trib.id,
+            "dere12_indTribISS": account.l10n_br_dere_ind_trib_iss,
+            "dere12_iniVig": self.ini_valid or self.date_from,
+            "dere12_fimVig": self.fim_valid,
+        }
 
     def _sync_pgcc_from_accounts(self):
         self.ensure_one()
         self.pgcc_account_ids.unlink()
-        accounts = self.env["account.account"].search(
-            [
-                ("company_ids", "in", self.company_id.ids),
-                ("l10n_br_dere_cta_ref", "!=", False),
-            ]
-        )
+        accounts = self._mapped_pgcc_accounts()
         if not accounts:
             raise UserError(_("Map at least one account with a DeRE referential code."))
+        groups = self._mapped_pgcc_groups(accounts)
         rows = []
         codes = set()
+        for group in groups.sorted(lambda rec: rec.l10n_br_dere_nivel_cta or 1):
+            row = self._pgcc_row_from_group(group, codes)
+            if row:
+                rows.append(row)
         for account in accounts:
-            c_cta = account.l10n_br_dere_cta
-            if not c_cta or c_cta in codes:
-                continue
-            codes.add(c_cta)
-            parent = account.l10n_br_dere_cta_sup_id
-            account_name = self._account_name_for_xml(account)
-            rows.append(
-                {
-                    "declaration_id": self.id,
-                    "account_id": account.id,
-                    "dere12_cCta": c_cta,
-                    "dere12_cCtaInterna": account.l10n_br_dere_cta_interna
-                    or re.sub(r"[^0-9A-Za-z]", "", account.code or ""),
-                    "dere12_cDbrMista": account.l10n_br_dere_dbr_mista or "000",
-                    "dere12_nomeCta": account_name,
-                    "dere12_indCta": account.l10n_br_dere_ind_cta or "A",
-                    "dere12_descCta": account.l10n_br_dere_desc_cta or account_name,
-                    "dere12_cCtaSup": parent.l10n_br_dere_cta if parent else False,
-                    "dere12_cCtaRef": account.l10n_br_dere_cta_ref,
-                    "dere12_nivelCta": account.l10n_br_dere_nivel_cta or 1,
-                    "dere12_natCta": account.l10n_br_dere_nat_cta or "V",
-                    "dere12_codNat": account.l10n_br_dere_cod_nat or "1",
-                    "tax_code_id": account.l10n_br_dere_cod_trib.id,
-                    "dere12_indTribISS": account.l10n_br_dere_ind_trib_iss,
-                    "dere12_iniVig": self.ini_valid or self.date_from,
-                    "dere12_fimVig": self.fim_valid,
-                }
-            )
+            row = self._pgcc_row_from_account(account, codes)
+            if row:
+                rows.append(row)
         self.env["l10n_br_dere.pgcc.account"].create(rows)
         missing_parents = {
             line.dere12_cCtaSup

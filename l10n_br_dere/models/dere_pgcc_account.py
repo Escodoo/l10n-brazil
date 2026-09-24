@@ -1,7 +1,7 @@
 # Copyright 2026 - TODAY, Marcel Savegnago <marcel.savegnago@escodoo.com.br>
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 from odoo.addons.l10n_br_dere_spec.models.v1_2.types import (
@@ -33,10 +33,15 @@ class DerePgccAccount(models.Model):
         string="Accounting account",
         ondelete="restrict",
     )
+    group_id = fields.Many2one(
+        comodel_name="account.group",
+        string="Account group",
+        ondelete="restrict",
+    )
     account_name = fields.Char(
-        related="account_id.name",
+        compute="_compute_account_name",
         string="Chart account name",
-        help="Accounting account name, translated for the current user.",
+        help="Accounting account or group name, translated for the current user.",
     )
     tax_code_id = fields.Many2one(
         comodel_name="l10n_br_dere.tax.code",
@@ -133,6 +138,13 @@ class DerePgccAccount(models.Model):
         string="Validity end",
         help="Official DeRE field fimVig.",
     )
+
+    @api.depends_context("lang")
+    @api.depends("account_id", "group_id")
+    def _compute_account_name(self):
+        for rec in self:
+            source = rec.account_id or rec.group_id
+            rec.account_name = source.name if source else False
 
     def write(self, vals):
         if not self.env.context.get(

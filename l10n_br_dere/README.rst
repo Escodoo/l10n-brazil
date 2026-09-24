@@ -34,8 +34,8 @@ Específicos (DeRE)** layout **1.2.0**.
 It lets an Odoo company:
 
 - store the DeRE tax regime, activities and referential chart
-- map ``account.account`` lines to PGCC fields (``cCtaRef``,
-  ``codTrib``, ``codNat``)
+- map ``account.group`` (synthetic) and ``account.account`` (analytic)
+  PGCC fields
 - generate local XML for D-1001, D-1011, D-1101, D-1106, D-1121, D-1198
   and D-1199
 - send signed batches to Receita Integra, consult processing (manually
@@ -82,10 +82,17 @@ On the company form, open the **DeRE** tab and set:
 8. If the taxpayer must send D-1121, enable **Subject to D-1121** and
    mark inbound fiscal operations as DeRE deductible.
 
-On each account used in the declaration, fill the **DeRE** tab:
+On each **account group** used as a synthetic DeRE node, fill the
+**DeRE** tab (``cCtaRef``, nature). Level and parent come from the
+prefix hierarchy.
+
+On each **analytic account** used in the declaration, fill the **DeRE**
+tab:
 
 - internal code and 3-digit mixed-account split (``cDbrMista``)
-- parent account, referential code, nature and optional ``codTrib``
+- referential code, nature and optional ``codTrib`` (empty values
+  inherit from the prefix group)
+- parent group only when the chart is not prefix-based
 
 Do not reuse the ECD/ECF field ``l10n_br_sped_referential_code`` for
 DeRE.

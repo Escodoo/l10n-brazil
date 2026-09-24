@@ -56,12 +56,18 @@ class TestDereErrors(DereCommon):
                 ("l10n_br_dere_cta_ref", "!=", False),
             ]
         ).l10n_br_dere_cta_ref = False
+        self.env["account.group"].search(
+            [
+                ("company_id", "=", self.company.root_id.id),
+                ("l10n_br_dere_cta_ref", "!=", False),
+            ]
+        ).l10n_br_dere_cta_ref = False
         with self.assertRaises(UserError):
             declaration.action_generate_d1011()
 
     def test_missing_parent_account_is_rejected(self):
         declaration = self._create_declaration("2026-05")
-        self.parent_account.l10n_br_dere_cta_ref = False
+        self.parent_group.l10n_br_dere_cta_ref = False
         with self.assertRaises(UserError):
             declaration.action_generate_d1011()
 

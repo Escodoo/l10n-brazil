@@ -36,6 +36,7 @@
                             <field name="dere12_iniVig" />
                             <field name="declaration_id" />
                             <field name="account_id" />
+                            <field name="group_id" />
                         </group>
                         <group>
                             <field name="dere12_cCtaInterna" />

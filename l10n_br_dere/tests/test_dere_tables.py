@@ -63,6 +63,19 @@ class TestDereTables(DereCommon):
         self.assertGreaterEqual(len(codes), 2)
         self.assertIn("31000", [node.text for node in codes])
         self.assertIn("311000", [node.text for node in codes])
+        parent = declaration.pgcc_account_ids.filtered(
+            lambda rec: rec.group_id == self.parent_group
+        )
+        child = declaration.pgcc_account_ids.filtered(
+            lambda rec: rec.account_id == self.fee_account
+        )
+        self.assertEqual(parent.dere12_indCta, "S")
+        self.assertFalse(parent.account_id)
+        self.assertEqual(child.dere12_indCta, "A")
+        self.assertEqual(child.dere12_cCtaSup, parent.dere12_cCta)
+        self.assertEqual(self.fee_account.group_id, self.parent_group)
+        self.assertEqual(self.fee_account.l10n_br_dere_ind_cta, "A")
+        self.assertEqual(self.fee_account.l10n_br_dere_nivel_cta, 2)
         splits = {node.text for node in root.findall(".//{*}cDbrMista")}
         self.assertTrue(all(len(code) == 3 for code in splits))
         self.assertEqual(declaration.state, "tables_ok")
@@ -70,6 +83,31 @@ class TestDereTables(DereCommon):
         self.assertTrue(declaration.can_send_tables)
         self.assertTrue(declaration.can_generate_trial)
         self.assertEqual(declaration.primary_action, "send_tables")
+
+    def test_d1011_inherits_group_mapping_on_analytic_account(self):
+        inherited = self.env["account.account"].create(
+            {
+                "name": "Inherited health revenue",
+                "code": "DERE312",
+                "account_type": "income",
+                "company_ids": [Command.set(self.company.ids)],
+                "l10n_br_dere_cta_interna": "312",
+            }
+        )
+        self.assertEqual(inherited.group_id, self.parent_group)
+        self.assertEqual(inherited._dere_cta_ref(), "12011")
+        self.assertEqual(inherited._dere_nat_cta(), "C")
+        self.assertEqual(inherited._dere_cod_nat(), "4")
+        declaration = self._create_declaration("2026-01")
+        declaration.action_generate_d1011()
+        line = declaration.pgcc_account_ids.filtered(
+            lambda rec: rec.account_id == inherited
+        )
+        self.assertEqual(line.dere12_cCtaRef, "12011")
+        self.assertEqual(line.dere12_natCta, "C")
+        self.assertEqual(line.dere12_codNat, "4")
+        self.assertEqual(line.dere12_cCtaSup, "31000")
+        self.assertEqual(line.dere12_indCta, "A")
 
     def test_d1011_uses_company_language_account_name(self):
         self.env["res.lang"]._activate_lang("pt_BR")
