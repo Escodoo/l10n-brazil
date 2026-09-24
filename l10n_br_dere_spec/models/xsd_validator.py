@@ -19,6 +19,17 @@ EVENT_SCHEMA = {
     "D-1199": "evtFechMensal-v0_0_2.xsd",
 }
 LOTE_SCHEMA = "envioLoteDere-v1_0_1.xsd"
+RETURN_NS = "http://www.dere.gov.br/schemas"
+RETURN_SCHEMA = {
+    f"{RETURN_NS}/evtRetornoTabela/v1_0_1": "evtRetornoTabela-v1_0_1.xsd",
+    f"{RETURN_NS}/evtRetornoBalan/v1_0_0": "evtRetornoBalan-v1_0_0.xsd",
+    f"{RETURN_NS}/evtRetornoAplicFin/v1_0_0": "evtRetornoAplicFin-v1_0_0.xsd",
+    f"{RETURN_NS}/evtRetornoRDed/v0_0_1": "evtRetornoRDed-v0_0_1.xsd",
+    f"{RETURN_NS}/evtRetornoTitPub/v0_0_2": "evtRetornoTitPub-v0_0_2.xsd",
+    f"{RETURN_NS}/evtRetornoReabert/v0_0_1": "evtRetornoReabert-v0_0_1.xsd",
+    f"{RETURN_NS}/evtRetornoMensal/v0_0_2": "evtRetornoMensal-v0_0_2.xsd",
+    f"{RETURN_NS}/evtRetornoTransac/v0_0_1": "evtRetornoTransac-v0_0_1.xsd",
+}
 
 # Official event XSDs require ds:Signature. Stored DeRE XML stays unsigned, so
 # unsigned validation appends this placeholder before checking the schema.
@@ -78,6 +89,24 @@ def validate(xml_content, event_type, signed=False):
 def validate_lote(xml_content):
     root = etree.fromstring(_to_bytes(xml_content))
     schema = _schema(LOTE_SCHEMA)
+    if schema.validate(root):
+        return []
+    return _error_messages(schema.error_log)
+
+
+def validate_return(xml_content):
+    """Validate a D-9xxx return against its official XSD.
+
+    Returns ``None`` when the payload is not a ``DeRE`` root in a known
+    return namespace, otherwise the list of schema errors.
+    """
+    root = etree.fromstring(_to_bytes(xml_content))
+    qname = etree.QName(root)
+    filename = RETURN_SCHEMA.get(qname.namespace)
+    if qname.localname != "DeRE" or not filename:
+        return None
+    root = _with_placeholder_signature(root)
+    schema = _schema(filename)
     if schema.validate(root):
         return []
     return _error_messages(schema.error_log)
