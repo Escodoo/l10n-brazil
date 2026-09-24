@@ -137,6 +137,25 @@ class TestDereTransmit(DereCommon):
         self.assertEqual(parsed["protocoloLote"], "PROT-2026-0000000001")
         self.assertEqual(parsed["tpEv"], "D-1001")
 
+    def test_parse_return_ignores_extract_receipts(self):
+        extract = """
+    <extratoEventos>
+      <detEvento>
+        <nrRecibo>REC-D1001-OLDER</nrRecibo>
+        <iniValid>2026-01-01</iniValid>
+      </detEvento>
+      <detEvento>
+        <nrRecibo>REC-D1001-NEWER</nrRecibo>
+        <iniValid>2026-10-01</iniValid>
+      </detEvento>
+    </extratoEventos>
+  </evtRetornoTabela>"""
+        parsed = xml_builder.parse_return(
+            RETURN_D9001.replace("\n  </evtRetornoTabela>", extract)
+        )
+        self.assertEqual(parsed["nrRecibo"], "REC-D1001-000000000000001")
+        self.assertEqual(parsed["events"][0]["nrRecibo"], "REC-D1001-000000000000001")
+
     def test_send_tables_with_http_mock(self):
         declaration = self._create_declaration()
         declaration.action_generate_tables()

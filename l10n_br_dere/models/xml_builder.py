@@ -282,8 +282,33 @@ def build_d1199(vals):
     return etree.tostring(root, encoding="unicode", pretty_print=True)
 
 
+RETURN_HEADER = {
+    "ideStatus": ("cdRetorno", "descRetorno"),
+    "infoRecEv": ("nrRecibo", "protocoloLote", "protocolo", "tpEv", "hash"),
+}
+
+
 def _localname(element):
     return etree.QName(element).localname
+
+
+def _child(element, name):
+    if element is None:
+        return None
+    for child in element.iterchildren(tag=etree.Element):
+        if _localname(child) == name:
+            return child
+    return None
+
+
+def _return_node(root):
+    if _localname(root).startswith("evtRetorno"):
+        return root
+    if _localname(root) == "DeRE":
+        for child in root.iterchildren(tag=etree.Element):
+            if _localname(child).startswith("evtRetorno"):
+                return child
+    return None
 
 
 def _occurrence_vals(element):
@@ -291,6 +316,19 @@ def _occurrence_vals(element):
     for child in element:
         occurrence[_localname(child)] = (child.text or "").strip()
     return occurrence
+
+
+def _read_return_header(node, data):
+    # D-9001 repeats nrRecibo inside extratoEventos, so the header must be
+    # read from its own groups only.
+    for group, names in RETURN_HEADER.items():
+        parent = _child(node, group)
+        source = parent if parent is not None else node
+        for name in names:
+            element = _child(source, name)
+            if element is not None and element.text:
+                data[name] = element.text.strip()
+    return data
 
 
 def _parse_event_return(root):
@@ -305,6 +343,10 @@ def _parse_event_return(root):
         "hash": False,
         "ocorrencias": [],
     }
+    node = _return_node(root)
+    if node is not None:
+        root = node
+        _read_return_header(node, data)
     if root.get("id"):
         data["id"] = root.get("id")
     for element in root.iter():
@@ -318,7 +360,7 @@ def _parse_event_return(root):
             "tpEv",
             "hash",
         ):
-            if element.text:
+            if node is None and element.text:
                 data[name] = element.text.strip()
         elif name == "ocorrencias":
             occurrence = _occurrence_vals(element)
