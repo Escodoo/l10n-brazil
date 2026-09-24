@@ -109,6 +109,11 @@ TIPO_OCORRENCIA = [
     ("2", "Warning"),
 ]
 
+IND_AJUSTE_AUTO = [
+    ("0", "No"),
+    ("1", "Yes, cut by the system"),
+]
+
 USAR_BCN = [
     ("0", "Do not use accumulated negative base"),
     ("1", "Use accumulated negative base"),

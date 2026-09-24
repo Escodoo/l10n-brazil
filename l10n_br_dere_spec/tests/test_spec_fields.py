@@ -22,8 +22,24 @@ class TestDereSpecFields(TransactionCase):
             "dere.12.evtfechmensal",
             "dere.12.infobcn",
             "dere.12.evtretornostabela",
+            "dere.12.detevento",
+            "dere.12.detlacuna",
+            "dere.12.gtotalcodtrib",
+            "dere.12.detbc",
+            "dere.12.totaltributos",
         ):
             self.assertIn(name, self.env.registry)
+
+    def test_return_suffixes_repeated_xsd_names(self):
+        fields_map = self.env["dere.12.detbc"]._fields
+        for name in (
+            "dere12_vDedBCNIBS",
+            "dere12_vDedBCNCBS",
+            "dere12_vSaldoFinalBCNIBS",
+            "dere12_vSaldoFinalBCNCBS",
+        ):
+            self.assertIn(name, fields_map)
+        self.assertEqual(fields_map["dere12_pIBS"].get_digits(self.env), (9, 6))
 
     def test_event_id_size_matches_xsd(self):
         field = self.env["dere.12.evtinfocontrib"]._fields["dere12_id"]
