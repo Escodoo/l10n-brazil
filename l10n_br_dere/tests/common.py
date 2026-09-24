@@ -82,6 +82,7 @@ class DereCommon(TransactionCase):
                 "l10n_br_dere_cod_trib": cls.tax_admin_fee.id,
             }
         )
+        cls.tax_equity = cls.env.ref("l10n_br_dere.tax_120110007")
         cls.equity_account = cls.env["account.account"].create(
             {
                 "name": "Unmapped continuity",
@@ -93,6 +94,7 @@ class DereCommon(TransactionCase):
                 "l10n_br_dere_cta_ref": "2",
                 "l10n_br_dere_nat_cta": "C",
                 "l10n_br_dere_cod_nat": "3",
+                "l10n_br_dere_cod_trib": cls.tax_equity.id,
             }
         )
         cls.receivable = cls.env["account.account"].create(
@@ -116,6 +118,7 @@ class DereCommon(TransactionCase):
                 "l10n_br_dere_cta_ref": "2",
                 "l10n_br_dere_nat_cta": "C",
                 "l10n_br_dere_cod_nat": "2",
+                "l10n_br_dere_cod_trib": cls.tax_equity.id,
             }
         )
         cls.journal = cls.env["account.journal"].search(

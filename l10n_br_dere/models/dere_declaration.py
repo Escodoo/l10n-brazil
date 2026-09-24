@@ -21,6 +21,8 @@ from odoo.addons.l10n_br_dere_spec.models.v1_2.types import (
 )
 
 from ..constants import (
+    CODTRIB_D1106,
+    CODTRIB_D1121,
     D1199_RECEIPT_RE,
     DEDUCTION_DOCUMENT_EXCLUDED_STATES,
     DEFAULT_TP_ATIV_BY_REGIME,
@@ -594,6 +596,12 @@ class DereDeclaration(models.Model):
         accounts = self._mapped_pgcc_accounts()
         if not accounts:
             raise UserError(_("Map at least one account with a DeRE referential code."))
+        missing_tax = accounts.filtered(lambda acc: not acc.l10n_br_dere_cod_trib)
+        if missing_tax:
+            raise UserError(
+                _("Analytic DeRE accounts must have a taxation code: %s")
+                % ", ".join(missing_tax.mapped("code"))
+            )
         groups = self._mapped_pgcc_groups(accounts)
         rows = []
         codes = set()
@@ -669,6 +677,32 @@ class DereDeclaration(models.Model):
         }
         return mapping.get(freq or "M", {1})
 
+    def _cycle_start(self, freq, date_from):
+        year = date_from.year
+        month = date_from.month
+        starts = {
+            "A": [1],
+            "S": [1, 7],
+            "Q": [1, 5, 9],
+            "T": [1, 4, 7, 10],
+            "B": [1, 3, 5, 7, 9, 11],
+            "M": list(range(1, 13)),
+        }
+        candidates = [value for value in starts.get(freq or "M", [1]) if value <= month]
+        return date(year, candidates[-1] if candidates else 1, 1)
+
+    def _previous_trial_closing(self):
+        previous = self._previous_declaration()
+        return {
+            line.pgcc_account_id.account_id.id: (
+                line.dere12_vSaldoFinal
+                if line.dere12_natSaldoFinal == "D"
+                else -line.dere12_vSaldoFinal
+            )
+            for line in previous.trial_line_ids
+            if line.pgcc_account_id.account_id
+        }
+
     def _account_balances(self):
         self.ensure_one()
         AccountMoveLine = self.env["account.move.line"]
@@ -679,12 +713,27 @@ class DereDeclaration(models.Model):
             ("display_type", "not in", ("line_section", "line_note")),
         ]
         opening = defaultdict(lambda: 0.0)
-        period = defaultdict(lambda: {"debit": 0.0, "credit": 0.0})
+        opening_cycle = defaultdict(lambda: 0.0)
+        period = defaultdict(
+            lambda: {
+                "debit": 0.0,
+                "credit": 0.0,
+                "ajuste_debt": 0.0,
+                "ajuste_cred": 0.0,
+            }
+        )
+        freq = self.company_id.dere_freq_encerr or "M"
+        cycle_start = (
+            self._cycle_start(freq, self.date_from) if self.date_from else False
+        )
+        prev_closing = self._previous_trial_closing()
         if self.date_from:
             for line in AccountMoveLine.search(
                 domain_base + [("date", "<", self.date_from)]
             ):
                 opening[line.account_id.id] += line.balance
+                if cycle_start and line.date >= cycle_start:
+                    opening_cycle[line.account_id.id] += line.balance
         for line in AccountMoveLine.search(
             domain_base
             + [
@@ -692,20 +741,60 @@ class DereDeclaration(models.Model):
                 ("date", "<=", self.date_to),
             ]
         ):
-            period[line.account_id.id]["debit"] += line.debit
-            period[line.account_id.id]["credit"] += line.credit
-        return opening, period
+            values = period[line.account_id.id]
+            values["debit"] += line.debit
+            values["credit"] += line.credit
+            if line.move_id.reversed_entry_id:
+                if line.debit:
+                    values["ajuste_cred"] += line.debit
+                if line.credit:
+                    values["ajuste_debt"] += line.credit
+        return opening, opening_cycle, period, prev_closing, cycle_start
 
     def action_generate_d1101(self):
         for rec in self:
             rec._generate_d1101()
         return True
 
+    def _trial_opening(
+        self, pgcc, opening, opening_cycle, prev_closing, month, reset_months
+    ):
+        if pgcc.dere12_codNat in ("4", "5"):
+            if month in reset_months:
+                return 0.0
+            return opening_cycle[pgcc.account_id.id]
+        if pgcc.account_id.id in prev_closing:
+            return prev_closing[pgcc.account_id.id]
+        return opening[pgcc.account_id.id]
+
+    def _trial_vapur(self, nature, debit, credit, ajuste_debt, ajuste_cred):
+        if nature == "D":
+            return max(debit - ajuste_debt + ajuste_cred, 0.0)
+        return max(credit - ajuste_cred + ajuste_debt, 0.0)
+
+    def _pgcc_codes(self):
+        self.ensure_one()
+        return set(filter(None, self.pgcc_account_ids.mapped("dere12_codTrib")))
+
+    def _is_subject_d1106(self):
+        self.ensure_one()
+        return self.company_id.dere_subject_d1106 or bool(
+            self._pgcc_codes() & CODTRIB_D1106
+        )
+
+    def _is_subject_d1121(self):
+        self.ensure_one()
+        return self.company_id.dere_subject_d1121 or bool(
+            self._pgcc_codes() & CODTRIB_D1121
+        )
+
     def _generate_d1101(self):
         self.ensure_one()
         if not self.pgcc_account_ids:
             self._sync_pgcc_from_accounts()
-        opening, period = self._account_balances()
+        opening, opening_cycle, period, prev_closing, _cycle_start = (
+            self._account_balances()
+        )
         month = int(self.per_apur.split("-")[1])
         reset_months = self._reset_months(self.company_id.dere_freq_encerr)
         self.trial_line_ids.unlink()
@@ -713,29 +802,37 @@ class DereDeclaration(models.Model):
         for pgcc in self.pgcc_account_ids.filtered(
             lambda acc: acc.dere12_indCta == "A"
         ):
-            debit = period[pgcc.account_id.id]["debit"]
-            credit = period[pgcc.account_id.id]["credit"]
-            if pgcc.dere12_codNat in ("4", "5") and month in reset_months:
-                open_bal = 0.0
-            else:
-                open_bal = opening[pgcc.account_id.id]
+            values = period[pgcc.account_id.id]
+            debit = values["debit"]
+            credit = values["credit"]
+            ajuste_debt = values["ajuste_debt"]
+            ajuste_cred = values["ajuste_cred"]
+            open_bal = self._trial_opening(
+                pgcc, opening, opening_cycle, prev_closing, month, reset_months
+            )
             close_bal = open_bal + debit - credit
             if not any((open_bal, debit, credit, close_bal)):
                 continue
-            taxable = bool(pgcc.tax_code_id)
-            net = debit - credit
-            v_apur = abs(net) if taxable else 0.0
+            nat_inic = "D" if open_bal > 0 else "C" if open_bal < 0 else "D"
+            if abs(close_bal) < 0.005:
+                nat_final = nat_inic
+            else:
+                nat_final = "D" if close_bal > 0 else "C"
+            nature = pgcc.dere12_natCta or nat_final
+            v_apur = self._trial_vapur(nature, debit, credit, ajuste_debt, ajuste_cred)
             rows.append(
                 {
                     "declaration_id": self.id,
                     "pgcc_account_id": pgcc.id,
-                    "dere12_natSaldoInic": "D" if open_bal >= 0 else "C",
+                    "dere12_natSaldoInic": nat_inic,
                     "dere12_vSaldoInic": abs(open_bal),
                     "dere12_vMovDebt": abs(debit),
+                    "dere12_vAjusteDebt": abs(ajuste_debt) or False,
                     "dere12_vMovCred": abs(credit),
-                    "dere12_natSaldoFinal": "D" if close_bal >= 0 else "C",
+                    "dere12_vAjusteCred": abs(ajuste_cred) or False,
+                    "dere12_natSaldoFinal": nat_final,
                     "dere12_vSaldoFinal": abs(close_bal),
-                    "dere12_natVApur": ("D" if net >= 0 else "C") if v_apur else False,
+                    "dere12_natVApur": nature if v_apur else False,
                     "dere12_vApur": v_apur,
                 }
             )
@@ -746,6 +843,7 @@ class DereDeclaration(models.Model):
         event = self._get_or_create_event(EVENT_D1101)
         vals["id"] = event.event_id_attr or vals["id"]
         event.event_id_attr = vals["id"]
+        event.nr_recibo_prev = self._latest_event(EVENT_D1011).nr_recibo
         event._store_xml(
             xml_builder.build_d1101(
                 vals, [line._to_xml_vals() for line in self.trial_line_ids]
@@ -1126,10 +1224,46 @@ class DereDeclaration(models.Model):
             raise UserError(
                 _("Generate a new trial balance after reopening before closing.")
             )
-        if self.company_id.dere_subject_d1106:
+        if self._is_subject_d1106():
             d1106 = self._latest_event(EVENT_D1106)
             if not d1106 or not d1106.xml_content:
                 raise UserError(_("Generate D-1106 before closing."))
+        self._assert_d1106_matches_trial()
+        self._assert_pgcc_receipt_matches_trial()
+
+    def _assert_d1106_matches_trial(self):
+        self.ensure_one()
+        if not self.reserve_line_ids:
+            return
+        trial = {
+            line.dere12_cCta: line.dere12_vSaldoFinal for line in self.trial_line_ids
+        }
+        totals = defaultdict(float)
+        for line in self.reserve_line_ids:
+            totals[line.dere12_cCta] += line.dere12_vSaldoFinal
+        mismatches = [
+            code
+            for code, total in totals.items()
+            if abs(total - (trial.get(code) or 0.0)) > 0.005
+        ]
+        if mismatches:
+            raise UserError(
+                _("D-1106 closing balances must match D-1101 for accounts: %s")
+                % ", ".join(sorted(mismatches))
+            )
+
+    def _assert_pgcc_receipt_matches_trial(self):
+        self.ensure_one()
+        trial = self._latest_event(EVENT_D1101)
+        pgcc = self._latest_event(EVENT_D1011)
+        if trial and pgcc and trial.nr_recibo_prev and pgcc.nr_recibo:
+            if trial.nr_recibo_prev != pgcc.nr_recibo:
+                raise UserError(
+                    _(
+                        "The D-1011 receipt used by D-1101 no longer matches the "
+                        "chart of accounts in force."
+                    )
+                )
 
     def _d1199_info_vals(self):
         self.ensure_one()

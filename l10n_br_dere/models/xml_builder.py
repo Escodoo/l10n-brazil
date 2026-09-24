@@ -1,6 +1,8 @@
 # Copyright 2026 - TODAY, Marcel Savegnago <marcel.savegnago@escodoo.com.br>
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 
+from decimal import ROUND_HALF_EVEN, Decimal
+
 from lxml import etree
 from signxml import XMLSigner, methods
 
@@ -19,13 +21,18 @@ DS_NS = "http://www.w3.org/2000/09/xmldsig#"
 C14N_ALG = "http://www.w3.org/TR/2001/REC-xml-c14n-20010315"
 
 
+def _round_nbr5891(value, decimals=2):
+    quantize = Decimal("1").scaleb(-decimals)
+    return Decimal(str(value or 0)).quantize(quantize, rounding=ROUND_HALF_EVEN)
+
+
 def _money(value, signed=False):
-    amount = float(value or 0.0)
-    if abs(amount) < 0.005:
+    amount = _round_nbr5891(value)
+    if amount.copy_abs() < Decimal("0.005"):
         return "0.00"
     if signed:
         return f"{amount:.2f}"
-    return f"{abs(amount):.2f}"
+    return f"{amount.copy_abs():.2f}"
 
 
 def _text(parent, tag, value, required=False):

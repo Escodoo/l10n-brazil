@@ -92,6 +92,7 @@ class TestDereTables(DereCommon):
                 "account_type": "income",
                 "company_ids": [Command.set(self.company.ids)],
                 "l10n_br_dere_cta_interna": "312",
+                "l10n_br_dere_cod_trib": self.tax_admin_fee.id,
             }
         )
         self.assertEqual(inherited.group_id, self.parent_group)

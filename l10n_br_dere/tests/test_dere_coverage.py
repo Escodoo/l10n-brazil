@@ -222,6 +222,8 @@ class TestDereCoverage(DereCommon):
             xml_builder.build_d1001({**header, "tpOper": False})
         self.assertEqual(xml_builder._money(0.001), "0.00")
         self.assertEqual(xml_builder._money(-3.2), "3.20")
+        self.assertEqual(xml_builder._money(1.225), "1.22")
+        self.assertEqual(xml_builder._money(1.235), "1.24")
 
     def test_trial_syncs_pgcc_and_skips_duplicate_account_codes(self):
         duplicate = self.env["account.account"].create(
@@ -235,6 +237,7 @@ class TestDereCoverage(DereCommon):
                 "l10n_br_dere_cta_ref": "120110006",
                 "l10n_br_dere_nat_cta": "C",
                 "l10n_br_dere_cod_nat": "4",
+                "l10n_br_dere_cod_trib": self.tax_admin_fee.id,
             }
         )
         self.assertTrue(duplicate.l10n_br_dere_cta)

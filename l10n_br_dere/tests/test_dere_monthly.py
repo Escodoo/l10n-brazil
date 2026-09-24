@@ -134,7 +134,7 @@ class TestDereMonthly(DereCommon):
         self.assertEqual(fee_line.dere12_vMovCred, 100000.0)
         self.assertEqual(fee_line.dere12_vApur, 100000.0)
         self.assertEqual(pass_line.dere12_vMovCred, 1150000.0)
-        self.assertEqual(pass_line.dere12_vApur, 0.0)
+        self.assertEqual(pass_line.dere12_vApur, 1150000.0)
         root = etree.fromstring(
             declaration.event_ids.filtered(
                 lambda ev: ev.event_type == "D-1101"
@@ -147,8 +147,10 @@ class TestDereMonthly(DereCommon):
             accounts[fee_line.dere12_cCta].findtext("{*}vApur"), "100000.00"
         )
         self.assertEqual(accounts[fee_line.dere12_cCta].findtext("{*}natVApur"), "C")
-        self.assertEqual(accounts[pass_line.dere12_cCta].findtext("{*}vApur"), "0.00")
-        self.assertIsNone(accounts[pass_line.dere12_cCta].find("{*}natVApur"))
+        self.assertEqual(
+            accounts[pass_line.dere12_cCta].findtext("{*}vApur"), "1150000.00"
+        )
+        self.assertEqual(accounts[pass_line.dere12_cCta].findtext("{*}natVApur"), "C")
 
     def test_d1199_requires_trial_and_forbids_deduction_flag(self):
         declaration = self._create_declaration()
@@ -182,7 +184,7 @@ class TestDereMonthly(DereCommon):
         self.assertRegex(event.event_id_attr, STRUCTURED_EVENT_ID_RE)
         self.assertTrue(event.event_id_attr.startswith("DeRE11991"))
 
-    def test_d1101_requires_full_cnpj(self):
+    def test_d1101_pads_cnpj_root_in_event_id(self):
         declaration = self._create_declaration()
         declaration.action_generate_tables()
         self._post_entry(
@@ -191,10 +193,97 @@ class TestDereMonthly(DereCommon):
             self.fee_account,
             100.0,
         )
-        with (
-            patch.object(type(self.company), "_dere_cnpj", return_value="12345678"),
-            self.assertRaises(UserError) as error,
-        ):
+        with patch.object(type(self.company), "_dere_cnpj", return_value="12345678"):
             declaration.action_generate_d1101()
-        self.assertIn("14", error.exception.args[0])
-        self.assertIn("CNPJ", error.exception.args[0])
+        event = declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1101")
+        self.assertTrue(event.event_id_attr.startswith("DeRE11011"))
+        self.assertIn("00000012345678", event.event_id_attr)
+
+    def test_d1101_vapur_uses_adjustments_and_zero_keeps_opening_nature(self):
+        declaration = self._create_declaration("2027-03")
+        declaration.action_generate_tables()
+        move = self._post_entry(
+            "2027-03-10",
+            self.receivable,
+            self.fee_account,
+            80.0,
+            ref="Fee",
+        )
+        self._post_entry(
+            "2027-02-28",
+            self.receivable,
+            self.equity_account,
+            40.0,
+            ref="Opening equity",
+        )
+        reversal = move._reverse_moves(
+            default_values_list=[{"date": "2027-03-20", "ref": "Fee reversal"}]
+        )
+        if reversal.state != "posted":
+            reversal.action_post()
+        declaration.action_generate_d1101()
+        fee_line = declaration.trial_line_ids.filtered(
+            lambda line: line.pgcc_account_id.account_id == self.fee_account
+        )
+        equity_line = declaration.trial_line_ids.filtered(
+            lambda line: line.pgcc_account_id.account_id == self.equity_account
+        )
+        self.assertEqual(fee_line.dere12_vMovCred, 80.0)
+        self.assertEqual(fee_line.dere12_vMovDebt, 80.0)
+        self.assertEqual(fee_line.dere12_vAjusteCred, 80.0)
+        self.assertEqual(fee_line.dere12_vApur, 0.0)
+        self.assertEqual(fee_line.dere12_natSaldoInic, "D")
+        self.assertEqual(fee_line.dere12_natSaldoFinal, "D")
+        self.assertEqual(equity_line.dere12_natSaldoInic, "C")
+        self.assertEqual(equity_line.dere12_vSaldoFinal, 40.0)
+
+    def test_d1101_result_opening_uses_closing_cycle(self):
+        self.company.dere_freq_encerr = "A"
+        declaration = self._create_declaration("2027-03")
+        declaration.action_generate_tables()
+        self._post_entry(
+            "2026-12-15",
+            self.receivable,
+            self.fee_account,
+            300.0,
+            ref="Previous year",
+        )
+        self._post_entry(
+            "2027-01-20",
+            self.receivable,
+            self.fee_account,
+            50.0,
+            ref="Current cycle",
+        )
+        declaration.action_generate_d1101()
+        fee_line = declaration.trial_line_ids.filtered(
+            lambda line: line.pgcc_account_id.account_id == self.fee_account
+        )
+        self.assertEqual(fee_line.dere12_vSaldoInic, 50.0)
+        self.assertEqual(fee_line.dere12_natSaldoInic, "C")
+
+    def test_d1106_must_match_trial_closing_balance(self):
+        self.company.dere_subject_d1106 = True
+        self.equity_account.l10n_br_dere_reserve_invest = True
+        self.env["l10n_br_dere.reserve.asset"].create(
+            {
+                "company_id": self.company.id,
+                "id_ativo": "RES01",
+                "desc_ativo": "Reserve",
+                "account_id": self.equity_account.id,
+            }
+        )
+        declaration = self._create_declaration("2027-04")
+        declaration.action_generate_tables()
+        self._post_entry(
+            "2027-04-10",
+            self.equity_account,
+            self.fee_account,
+            25.0,
+            ref="Reserve buy",
+        )
+        declaration.action_generate_d1101()
+        declaration.action_generate_d1106()
+        declaration.reserve_line_ids.write({"dere12_vSaldoFinal": 1.0})
+        with self.assertRaises(UserError):
+            declaration.action_generate_d1199()
