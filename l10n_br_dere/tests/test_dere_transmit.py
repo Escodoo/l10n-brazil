@@ -3,9 +3,10 @@
 
 from unittest.mock import Mock, patch
 
+import requests
+
 from odoo.exceptions import UserError
 from odoo.tests import tagged
-from odoo.tools import mute_logger
 
 from odoo.addons.l10n_br_dere.models import xml_builder
 
@@ -89,16 +90,13 @@ class TestDereTransmit(DereCommon):
     def _processing_get(self, url, **_kwargs):
         return _FakeResponse(text=PROCESSING_LOTE)
 
+    def _make_batch_due(self, declaration):
+        declaration.batch_ids.write({"next_consult_at": False})
+
     def _send_tables(self, declaration):
-        with (
-            patch(
-                "odoo.addons.l10n_br_dere.models.receita_integra.requests.post",
-                side_effect=self._fake_post,
-            ),
-            patch(
-                "odoo.addons.l10n_br_dere.models.receita_integra.requests.get",
-                side_effect=self._processing_get,
-            ),
+        with patch(
+            "odoo.addons.l10n_br_dere.models.receita_integra.requests.post",
+            side_effect=self._fake_post,
         ):
             declaration.action_send_tables()
 
@@ -147,6 +145,7 @@ class TestDereTransmit(DereCommon):
         self.assertEqual(declaration.batch_ids.protocol, "PROT-2026-0000000001")
         self.assertNotIn("evtRetorno", declaration.batch_ids.protocol)
         self.assertTrue(declaration.can_consult_results)
+        self.assertTrue(declaration.batch_ids.next_consult_at)
         self._consult_results(declaration)
         self.assertFalse(declaration.can_consult_results)
         self.assertEqual(event.state, "accepted")
@@ -154,7 +153,7 @@ class TestDereTransmit(DereCommon):
         self.assertEqual(event.cd_retorno, "1")
         self.assertEqual(declaration.batch_ids.state, "done")
 
-    def test_send_consults_the_batch_right_away(self):
+    def test_send_does_not_consult_immediately(self):
         declaration = self._create_declaration()
         declaration.action_generate_tables()
         with (
@@ -165,31 +164,24 @@ class TestDereTransmit(DereCommon):
             patch(
                 "odoo.addons.l10n_br_dere.models.receita_integra.requests.get",
                 side_effect=self._fake_get,
-            ),
-        ):
-            declaration.action_send_tables()
-        event = declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1001")
-        self.assertEqual(event.state, "accepted")
-        self.assertEqual(declaration.batch_ids.state, "done")
-
-    @mute_logger("odoo.addons.l10n_br_dere.models.dere_declaration")
-    def test_send_survives_a_failing_consult(self):
-        declaration = self._create_declaration()
-        declaration.action_generate_tables()
-        with (
-            patch(
-                "odoo.addons.l10n_br_dere.models.receita_integra.requests.post",
-                side_effect=self._fake_post,
-            ),
-            patch(
-                "odoo.addons.l10n_br_dere.models.receita_integra.requests.get",
-                side_effect=OSError("network down"),
-            ),
+            ) as mocked_get,
         ):
             declaration.action_send_tables()
         event = declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1001")
         self.assertEqual(event.state, "sent")
         self.assertEqual(declaration.batch_ids.state, "sent")
+        mocked_get.assert_not_called()
+
+    def test_send_timeout_keeps_unknown_batch(self):
+        declaration = self._create_declaration()
+        declaration.action_generate_tables()
+        with patch(
+            "odoo.addons.l10n_br_dere.models.receita_integra.requests.post",
+            side_effect=requests.Timeout("timed out"),
+        ):
+            action = declaration.action_send_tables()
+        self.assertEqual(declaration.batch_ids.state, "unknown")
+        self.assertEqual(action["tag"], "display_notification")
 
     def test_consult_keeps_sent_while_processing(self):
         declaration = self._create_declaration()
@@ -207,6 +199,7 @@ class TestDereTransmit(DereCommon):
         declaration = self._create_declaration()
         declaration.action_generate_tables()
         self._send_tables(declaration)
+        self._make_batch_due(declaration)
         self._cron_consult()
         event = declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1001")
         self.assertEqual(event.state, "accepted")
@@ -217,6 +210,7 @@ class TestDereTransmit(DereCommon):
         declaration = self._create_declaration()
         declaration.action_generate_tables()
         self._send_tables(declaration)
+        self._make_batch_due(declaration)
         self._cron_consult(
             get_side_effect=lambda url, **_kw: _FakeResponse(text=PROCESSING_LOTE),
         )
@@ -228,6 +222,7 @@ class TestDereTransmit(DereCommon):
         declaration = self._create_declaration()
         declaration.action_generate_tables()
         self._send_tables(declaration)
+        self._make_batch_due(declaration)
         self._cron_consult(
             get_side_effect=lambda url, **_kw: _FakeResponse(
                 status_code=503, text="unavailable"
@@ -244,6 +239,7 @@ class TestDereTransmit(DereCommon):
         declaration = self._create_declaration()
         declaration.action_generate_tables()
         self._send_tables(declaration)
+        self._make_batch_due(declaration)
         self._cron_consult()
         self.assertEqual(declaration.batch_ids.state, "done")
         action = self._consult_results(declaration)
@@ -356,3 +352,86 @@ class TestDereTransmit(DereCommon):
         self.assertIn("sha256", lote)
         self.assertIn(f'URI="#{event.event_id_attr}"', lote)
         self.assertNotIn("Signature", event.xml_content)
+
+    def test_send_accepts_plain_text_protocol(self):
+        declaration = self._create_declaration("2025-01")
+        declaration.action_generate_tables()
+
+        def fake_post(url, **_kwargs):
+            if "token" in url:
+                return _FakeResponse(
+                    payload={"access_token": "demo-token", "expires_in": 3600}
+                )
+            return _FakeResponse(text="2.000001.123456")
+
+        with patch(
+            "odoo.addons.l10n_br_dere.models.receita_integra.requests.post",
+            side_effect=fake_post,
+        ):
+            declaration.action_send_tables()
+        self.assertEqual(declaration.batch_ids.protocol, "2.000001.123456")
+
+    def test_consult_rejects_events_on_lot_error(self):
+        declaration = self._create_declaration("2025-02")
+        declaration.action_generate_tables()
+        self._send_tables(declaration)
+        rejected = """<?xml version="1.0" encoding="utf-8"?>
+<DeRE xmlns="http://www.dere.gov.br/schemas/retornoLoteDere/v1_0_1">
+  <retornoLoteEventos>
+    <status>
+      <cdResposta>7</cdResposta>
+      <descResposta>Schema error</descResposta>
+      <ocorrencias>
+        <ocorrencia>
+          <codigo>MS1050</codigo>
+          <descricao>Invalid event id</descricao>
+          <tipo>1</tipo>
+        </ocorrencia>
+      </ocorrencias>
+    </status>
+  </retornoLoteEventos>
+</DeRE>
+"""
+        self._consult_results(
+            declaration,
+            get_side_effect=lambda url, **_kw: _FakeResponse(text=rejected),
+        )
+        event = declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1001")
+        self.assertEqual(event.state, "rejected")
+        self.assertEqual(event.occurrence_ids.codigo, "MS1050")
+        self.assertEqual(declaration.batch_ids.state, "error")
+
+    def test_parse_return_matches_lot_events_by_id(self):
+        parsed = xml_builder.parse_return(
+            """<?xml version="1.0" encoding="utf-8"?>
+<DeRE xmlns="http://www.dere.gov.br/schemas/retornoLoteDere/v1_0_1">
+  <retornoLoteEventos>
+    <status>
+      <cdResposta>2</cdResposta>
+      <descResposta>Done</descResposta>
+    </status>
+    <retornoEventos>
+      <evento id="DeRE100110000001234567820260101000001">
+        <evtRetornoTabela>
+          <ideStatus>
+            <cdRetorno>1</cdRetorno>
+            <descRetorno>Sucesso</descRetorno>
+          </ideStatus>
+          <infoRecEv>
+            <nrRecibo>REC-LOT-1</nrRecibo>
+            <tpEv>D-1001</tpEv>
+          </infoRecEv>
+        </evtRetornoTabela>
+      </evento>
+    </retornoEventos>
+  </retornoLoteEventos>
+</DeRE>
+"""
+        )
+        self.assertEqual(parsed["cdResposta"], "2")
+        self.assertEqual(len(parsed["events"]), 1)
+        self.assertEqual(
+            parsed["events"][0]["id"],
+            "DeRE100110000001234567820260101000001",
+        )
+        self.assertEqual(parsed["events"][0]["nrRecibo"], "REC-LOT-1")

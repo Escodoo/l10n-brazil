@@ -2,6 +2,7 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 
 import logging
+from datetime import timedelta
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
@@ -11,6 +12,7 @@ from odoo.addons.l10n_br_dere_spec.models.v1_2.types import TP_AMB
 _logger = logging.getLogger(__name__)
 
 CRON_CONSULT_LIMIT = 50
+CONSULT_BACKOFF_MINUTES = (2, 4, 8, 16, 32, 60)
 
 
 class DereBatch(models.Model):
@@ -33,6 +35,7 @@ class DereBatch(models.Model):
         [
             ("draft", "Draft"),
             ("sent", "Sent"),
+            ("unknown", "Unknown"),
             ("done", "Done"),
             ("error", "Error"),
         ],
@@ -40,6 +43,18 @@ class DereBatch(models.Model):
         required=True,
     )
     response_text = fields.Text(string="Response")
+    consult_attempts = fields.Integer(default=0)
+    next_consult_at = fields.Datetime(string="Next consult")
+
+    def _schedule_next_consult(self, processed=False):
+        self.ensure_one()
+        if processed:
+            self.next_consult_at = False
+            return
+        index = min(self.consult_attempts, len(CONSULT_BACKOFF_MINUTES) - 1)
+        delay = CONSULT_BACKOFF_MINUTES[index]
+        self.consult_attempts += 1
+        self.next_consult_at = fields.Datetime.now() + timedelta(minutes=delay)
 
     def action_consult(self):
         for batch in self:
@@ -65,6 +80,7 @@ class DereBatch(models.Model):
             )
             if raise_error:
                 raise
+            self._schedule_next_consult()
             return False
         self.response_text = result["text"]
         if not result["ok"]:
@@ -79,14 +95,26 @@ class DereBatch(models.Model):
                 self.id,
                 result["text"],
             )
+            self._schedule_next_consult()
             return False
-        self.declaration_id._apply_consult_result(self, result["text"])
-        return True
+        applied = self.declaration_id._apply_consult_result(self, result["text"])
+        if self.state == "sent":
+            self._schedule_next_consult()
+        else:
+            self._schedule_next_consult(processed=True)
+        return applied
 
     @api.model
     def _cron_consult_batches(self):
+        now = fields.Datetime.now()
         batches = self.search(
-            [("state", "=", "sent"), ("protocol", "!=", False)],
+            [
+                ("state", "=", "sent"),
+                ("protocol", "!=", False),
+                "|",
+                ("next_consult_at", "=", False),
+                ("next_consult_at", "<=", now),
+            ],
             limit=CRON_CONSULT_LIMIT,
             order="id",
         )

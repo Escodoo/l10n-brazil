@@ -584,6 +584,9 @@ class TestDereCoverage(DereCommon):
         self.assertFalse(declaration._extract_protocol(False))
         self.assertFalse(declaration._extract_protocol("{bad"))
         self.assertFalse(declaration._extract_protocol("plain-text"))
+        self.assertEqual(
+            declaration._extract_protocol("2.000001.123456"), "2.000001.123456"
+        )
         self.assertFalse(declaration._extract_protocol("<broken>"))
         self.assertEqual(
             declaration._extract_protocol(

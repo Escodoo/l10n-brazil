@@ -8,6 +8,7 @@ import re
 from collections import defaultdict
 from datetime import date, timedelta
 
+import requests
 from lxml import etree
 
 from odoo import _, api, fields, models
@@ -34,6 +35,7 @@ from ..constants import (
     EVENT_D1199,
     PERIODIC_EVENTS,
     PRIMARY_ACTIONS,
+    PROTOCOL_RE,
     TABLE_EVENTS,
 )
 from . import xml_builder
@@ -1377,9 +1379,31 @@ class DereDeclaration(models.Model):
                 "xml_content": xml,
             }
         )
-        result = self.env["l10n_br_dere.receita.integra"].send_batch(
-            self.company_id, xml
-        )
+        try:
+            result = self.env["l10n_br_dere.receita.integra"].send_batch(
+                self.company_id, xml
+            )
+        except (requests.Timeout, requests.ConnectionError) as exc:
+            batch.write(
+                {
+                    "state": "unknown",
+                    "response_text": str(exc),
+                }
+            )
+            return {
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "title": _("Transmission unknown"),
+                    "message": _(
+                        "The DeRE batch request failed before a protocol was "
+                        "received. Check the transmission before sending again."
+                    ),
+                    "type": "warning",
+                    "sticky": True,
+                    "next": {"type": "ir.actions.client", "tag": "soft_reload"},
+                },
+            }
         batch.write(
             {
                 "state": "sent" if result["ok"] else "error",
@@ -1387,6 +1411,8 @@ class DereDeclaration(models.Model):
                 "protocol": self._extract_protocol(result["text"]),
             }
         )
+        if result["ok"]:
+            batch._schedule_next_consult()
         events.write(
             {
                 "state": "sent" if result["ok"] else "rejected",
@@ -1396,20 +1422,6 @@ class DereDeclaration(models.Model):
         if not result["ok"]:
             raise UserError(
                 _("Receita Integra rejected the batch: %s") % result["text"]
-            )
-        self._consult_after_send(batch)
-        return batch
-
-    def _consult_after_send(self, batch):
-        """Fetch the result at once. The cron retries while it is processing."""
-        try:
-            batch._consult(raise_error=False)
-        except Exception:
-            # The batch is already transmitted, so a failed query is not fatal.
-            _logger.warning(
-                "DeRE consult after send failed for batch %s",
-                batch.id,
-                exc_info=True,
             )
         return batch
 
@@ -1500,6 +1512,32 @@ class DereDeclaration(models.Model):
             )
         return True
 
+    def _reject_batch_events(self, batch, parsed):
+        events = batch.event_ids.filtered(lambda ev: ev.state == "sent")
+        events.with_context(dere_force_event_write=True).write(
+            {
+                "state": "rejected",
+                "cd_retorno": "0",
+                "desc_retorno": parsed.get("descResposta") or parsed.get("descRetorno"),
+            }
+        )
+        occurrences = parsed.get("ocorrencias") or []
+        if occurrences:
+            events.occurrence_ids.unlink()
+            self.env["l10n_br_dere.event.occurrence"].create(
+                [
+                    {
+                        "event_id": event.id,
+                        "codigo": item.get("codigo") or "0",
+                        "descricao": item.get("descricao") or "",
+                        "tipo": item.get("tipo") or "1",
+                        "localizacao": item.get("localizacao"),
+                    }
+                    for event in events
+                    for item in occurrences
+                ]
+            )
+
     def _apply_consult_result(self, batch, xml_content):
         self.ensure_one()
         if not xml_content or "<" not in xml_content:
@@ -1511,22 +1549,51 @@ class DereDeclaration(models.Model):
         cd_resposta = str(parsed.get("cdResposta") or "")
         if cd_resposta == "1":
             return False
-        if parsed.get("cdRetorno"):
-            self._apply_parsed_return(
-                batch.event_ids, parsed, parsed.get("protocoloLote") or batch.protocol
-            )
         if cd_resposta in ("4", "5", "7", "9"):
             batch.state = "error"
+            self._reject_batch_events(batch, parsed)
             return False
+        protocol = (
+            parsed.get("protocoloLote") or parsed.get("protocolo") or batch.protocol
+        )
+        applied = False
+        for item in parsed.get("events") or []:
+            target = batch.event_ids
+            if item.get("id"):
+                event_id = item["id"]
+                matched = target.filtered(
+                    lambda ev, current=event_id: ev.event_id_attr == current
+                )
+                if matched:
+                    target = matched
+            if item.get("tpEv"):
+                event_type = item["tpEv"]
+                target = target.filtered(
+                    lambda ev, current=event_type: ev.event_type == current
+                )
+            if not target:
+                continue
+            self.apply_return(
+                target[0],
+                item.get("cdRetorno") or "0",
+                desc_retorno=item.get("descRetorno"),
+                nr_recibo=item.get("nrRecibo"),
+                protocol=item.get("protocoloLote") or protocol,
+                occurrences=item.get("ocorrencias"),
+            )
+            applied = True
         pending = batch.event_ids.filtered(lambda ev: ev.state == "sent")
         if cd_resposta in ("2", "3") or (batch.event_ids and not pending):
             batch.state = "done"
-        return True
+            return True
+        return applied
 
     def _extract_protocol(self, text):
         if not text:
             return False
         stripped = text.strip()
+        if re.fullmatch(PROTOCOL_RE, stripped):
+            return stripped
         if stripped.startswith("{"):
             try:
                 payload = json.loads(stripped)
