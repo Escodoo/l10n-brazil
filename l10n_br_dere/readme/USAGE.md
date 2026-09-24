@@ -57,6 +57,15 @@ same `perApur`. Table replacement may change validity only when the new
 dates differ from the current period. D-1121 rectification after reopening
 requires an explicit `finEvt` and the documents to rectify.
 
+## Return events (D-9xxx)
+
+Each consulted event keeps its own return. The **Return** tab of the event
+shows the return type (D-9001, D-9101, D-9106, D-9112, D-9198 or D-9199),
+the version sequence (`seqEvento`), reception and processing times, the
+D-1011 receipt used by the RFB (`nrReciboPGCC`) and the return XML. The
+return is checked against its official XSD: differences are posted on the
+event chatter and never undo the RFB decision.
+
 ## Homologation checklist
 
 Use a company whose chart already maps at least one administration-fee

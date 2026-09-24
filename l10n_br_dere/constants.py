@@ -10,9 +10,6 @@ EVENT_D1106 = "D-1106"
 EVENT_D1121 = "D-1121"
 EVENT_D1198 = "D-1198"
 EVENT_D1199 = "D-1199"
-EVENT_D9001 = "D-9001"
-EVENT_D9101 = "D-9101"
-EVENT_D9199 = "D-9199"
 
 EVENT_TYPES = [
     (EVENT_D1001, "D-1001 Taxpayer information"),
@@ -22,10 +19,37 @@ EVENT_TYPES = [
     (EVENT_D1121, "D-1121 Deductions"),
     (EVENT_D1198, "D-1198 Period reopening"),
     (EVENT_D1199, "D-1199 Monthly closing"),
-    (EVENT_D9001, "D-9001 Table-event return"),
-    (EVENT_D9101, "D-9101 Trial-balance return"),
-    (EVENT_D9199, "D-9199 Closing return"),
 ]
+
+RETURN_D9001 = "D-9001"
+RETURN_D9101 = "D-9101"
+RETURN_D9106 = "D-9106"
+RETURN_D9112 = "D-9112"
+RETURN_D9121 = "D-9121"
+RETURN_D9198 = "D-9198"
+RETURN_D9199 = "D-9199"
+RETURN_D9209 = "D-9209"
+
+RETURN_TYPES = [
+    (RETURN_D9001, "D-9001 Table-event return"),
+    (RETURN_D9101, "D-9101 Trial-balance return"),
+    (RETURN_D9106, "D-9106 Technical-reserve return"),
+    (RETURN_D9112, "D-9112 Deductions return"),
+    (RETURN_D9121, "D-9121 Public-bond operations return"),
+    (RETURN_D9198, "D-9198 Reopening return"),
+    (RETURN_D9199, "D-9199 Monthly closing return"),
+    (RETURN_D9209, "D-9209 Transactional return"),
+]
+RETURN_TYPE_BY_TAG = {
+    "evtRetornoTabela": RETURN_D9001,
+    "evtRetornoBalan": RETURN_D9101,
+    "evtRetornoAplicFin": RETURN_D9106,
+    "evtRetornoRDed": RETURN_D9112,
+    "evtRetornoTitPub": RETURN_D9121,
+    "evtRetornoReabert": RETURN_D9198,
+    "evtRetornoMensal": RETURN_D9199,
+    "evtRetornoTransac": RETURN_D9209,
+}
 
 TABLE_EVENTS = (EVENT_D1001, EVENT_D1011)
 PERIODIC_EVENTS = (EVENT_D1198, EVENT_D1101, EVENT_D1106, EVENT_D1121, EVENT_D1199)

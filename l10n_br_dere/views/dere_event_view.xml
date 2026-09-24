@@ -16,6 +16,8 @@
                 <field name="protocol" />
                 <field name="nr_recibo" />
                 <field name="cd_retorno" />
+                <field name="seq_evento" optional="hide" />
+                <field name="dh_process" optional="hide" />
             </list>
         </field>
     </record>
@@ -54,6 +56,24 @@
                                 readonly="state != 'draft'"
                             />
                             <field name="xml_hash" readonly="1" />
+                        </page>
+                        <page
+                            string="Return"
+                            name="return"
+                            invisible="not return_type and not return_xml"
+                        >
+                            <group>
+                                <group>
+                                    <field name="return_type" readonly="1" />
+                                    <field name="seq_evento" readonly="1" />
+                                    <field name="nr_recibo_pgcc" readonly="1" />
+                                </group>
+                                <group>
+                                    <field name="dh_recepcao" readonly="1" />
+                                    <field name="dh_process" readonly="1" />
+                                </group>
+                            </group>
+                            <field name="return_xml" widget="text" readonly="1" />
                         </page>
                         <page string="Occurrences" name="occurrences">
                             <field name="occurrence_ids" readonly="1">

@@ -1,6 +1,8 @@
 # Copyright 2026 - TODAY, Marcel Savegnago <marcel.savegnago@escodoo.com.br>
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 
+import re
+from datetime import datetime, timezone
 from decimal import ROUND_HALF_EVEN, Decimal
 
 from lxml import etree
@@ -284,8 +286,18 @@ def build_d1199(vals):
 
 RETURN_HEADER = {
     "ideStatus": ("cdRetorno", "descRetorno"),
-    "infoRecEv": ("nrRecibo", "protocoloLote", "protocolo", "tpEv", "hash"),
+    "infoRecEv": (
+        "nrRecibo",
+        "seqEvento",
+        "protocoloLote",
+        "protocolo",
+        "dhRecepcao",
+        "dhProcess",
+        "tpEv",
+        "hash",
+    ),
 }
+RETURN_FRACTION_RE = re.compile(r"\.(\d+)")
 
 
 def _localname(element):
@@ -299,6 +311,38 @@ def _child(element, name):
         if _localname(child) == name:
             return child
     return None
+
+
+def _path(element, *names):
+    for name in names:
+        element = _child(element, name)
+        if element is None:
+            return None
+    return element
+
+
+def _path_text(element, *names):
+    element = _path(element, *names)
+    if element is None or not element.text:
+        return False
+    return element.text.strip()
+
+
+def parse_datetime(value):
+    """Return a naive UTC datetime from a DeRE xs:dateTime string."""
+    if not value:
+        return False
+    text = value.strip().replace("Z", "+00:00")
+    text = RETURN_FRACTION_RE.sub(
+        lambda match: "." + (match.group(1) + "000000")[:6], text, count=1
+    )
+    try:
+        moment = datetime.fromisoformat(text)
+    except ValueError:
+        return False
+    if moment.tzinfo:
+        moment = moment.astimezone(timezone.utc).replace(tzinfo=None)
+    return moment
 
 
 def _return_node(root):
@@ -341,12 +385,29 @@ def _parse_event_return(root):
         "protocolo": False,
         "tpEv": False,
         "hash": False,
+        "seqEvento": False,
+        "dhRecepcao": False,
+        "dhProcess": False,
+        "returnTag": False,
+        "xml": False,
+        "perApur": False,
+        "nrReciboPGCC": False,
         "ocorrencias": [],
     }
     node = _return_node(root)
     if node is not None:
-        root = node
+        data.update(
+            {
+                "returnTag": _localname(node),
+                "xml": etree.tostring(root, encoding="unicode"),
+                "perApur": _path_text(node, "infoEvento", "idePeriodo", "perApur"),
+                "nrReciboPGCC": _path_text(
+                    node, "infoEvento", "infoAdic", "nrReciboPGCC"
+                ),
+            }
+        )
         _read_return_header(node, data)
+        root = node
     if root.get("id"):
         data["id"] = root.get("id")
     for element in root.iter():
@@ -379,14 +440,8 @@ def parse_return(xml_content):
     else:
         payload = (xml_content or "").encode("utf-8")
     root = etree.fromstring(payload)
-    data = _parse_event_return(root)
-    data.update(
-        {
-            "cdResposta": False,
-            "descResposta": False,
-            "events": [],
-        }
-    )
+    event = _parse_event_return(root)
+    data = dict(event, cdResposta=False, descResposta=False, events=[])
     for element in root.iter():
         name = _localname(element)
         if name in ("cdResposta", "descResposta") and element.text:
@@ -399,22 +454,7 @@ def parse_return(xml_content):
                 parsed["id"] = element.get("id") or parsed.get("id")
                 data["events"].append(parsed)
     if not data["events"] and data.get("cdRetorno"):
-        data["events"] = [
-            {
-                key: data.get(key)
-                for key in (
-                    "id",
-                    "cdRetorno",
-                    "descRetorno",
-                    "nrRecibo",
-                    "protocoloLote",
-                    "protocolo",
-                    "tpEv",
-                    "hash",
-                    "ocorrencias",
-                )
-            }
-        ]
+        data["events"] = [event]
     return data
 
 

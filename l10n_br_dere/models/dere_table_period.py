@@ -606,6 +606,7 @@ class DereTablePeriod(models.Model):
         nr_recibo=None,
         protocol=None,
         occurrences=None,
+        payload=None,
     ):
         event.write(
             {
@@ -614,8 +615,10 @@ class DereTablePeriod(models.Model):
                 "nr_recibo": nr_recibo,
                 "protocol": protocol or event.protocol,
                 "state": "accepted" if cd_retorno == "1" else "rejected",
+                **event._return_payload_vals(payload),
             }
         )
+        event._check_return_schema()
         if event.tp_oper == "2" and event.state == "accepted":
             self._apply_nova_validade(event)
         if self.tables_accepted():
@@ -722,6 +725,7 @@ class DereTablePeriod(models.Model):
                 nr_recibo=item.get("nrRecibo"),
                 protocol=item.get("protocoloLote") or protocol,
                 occurrences=item.get("ocorrencias"),
+                payload=item,
             )
             applied = True
         pending = batch.event_ids.filtered(lambda ev: ev.state == "sent")

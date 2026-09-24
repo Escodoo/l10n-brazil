@@ -1701,6 +1701,7 @@ class DereDeclaration(models.Model):
             nr_recibo=parsed.get("nrRecibo"),
             protocol=parsed.get("protocoloLote") or protocol,
             occurrences=parsed.get("ocorrencias"),
+            payload=parsed,
         )
 
     def apply_return(
@@ -1711,6 +1712,7 @@ class DereDeclaration(models.Model):
         nr_recibo=None,
         protocol=None,
         occurrences=None,
+        payload=None,
     ):
         event.write(
             {
@@ -1719,8 +1721,10 @@ class DereDeclaration(models.Model):
                 "nr_recibo": nr_recibo,
                 "protocol": protocol or event.protocol,
                 "state": "accepted" if cd_retorno == "1" else "rejected",
+                **event._return_payload_vals(payload),
             }
         )
+        event._check_return_schema()
         if event.event_type == EVENT_D1199 and event.state == "accepted":
             event.declaration_id.state = "closed"
         if event.event_type == EVENT_D1198 and event.state == "accepted":
@@ -1809,6 +1813,7 @@ class DereDeclaration(models.Model):
                 nr_recibo=item.get("nrRecibo"),
                 protocol=item.get("protocoloLote") or protocol,
                 occurrences=item.get("ocorrencias"),
+                payload=item,
             )
             applied = True
         pending = batch.event_ids.filtered(lambda ev: ev.state == "sent")

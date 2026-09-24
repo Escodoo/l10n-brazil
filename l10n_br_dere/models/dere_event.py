@@ -7,6 +7,8 @@ import uuid
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from markupsafe import Markup
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
@@ -26,8 +28,11 @@ from ..constants import (
     EVENT_D1199,
     EVENT_ID_INSCRIPTION_TYPE,
     EVENT_TYPES,
+    RETURN_TYPE_BY_TAG,
+    RETURN_TYPES,
     STRUCTURED_EVENT_ID,
 )
+from . import xml_builder
 
 
 class DereEvent(models.Model):
@@ -86,6 +91,12 @@ class DereEvent(models.Model):
         comodel_name="l10n_br_dere.event.occurrence",
         inverse_name="event_id",
     )
+    return_type = fields.Selection(RETURN_TYPES, string="Return event", copy=False)
+    return_xml = fields.Text(string="Return XML", copy=False)
+    seq_evento = fields.Char(string="Event version sequence", size=2, copy=False)
+    dh_recepcao = fields.Datetime(string="Received at", copy=False)
+    dh_process = fields.Datetime(string="Processed at", copy=False)
+    nr_recibo_pgcc = fields.Char(string="PGCC receipt used", size=31, copy=False)
 
     _SENT_WRITE_FIELDS = frozenset(
         {
@@ -94,6 +105,12 @@ class DereEvent(models.Model):
             "nr_recibo",
             "cd_retorno",
             "desc_retorno",
+            "return_type",
+            "return_xml",
+            "seq_evento",
+            "dh_recepcao",
+            "dh_process",
+            "nr_recibo_pgcc",
         }
     )
 
@@ -195,6 +212,32 @@ class DereEvent(models.Model):
                 }
             )
         return True
+
+    @api.model
+    def _return_payload_vals(self, payload):
+        if not payload:
+            return {}
+        return {
+            "return_type": RETURN_TYPE_BY_TAG.get(payload.get("returnTag"), False),
+            "return_xml": payload.get("xml") or False,
+            "seq_evento": payload.get("seqEvento") or False,
+            "dh_recepcao": xml_builder.parse_datetime(payload.get("dhRecepcao")),
+            "dh_process": xml_builder.parse_datetime(payload.get("dhProcess")),
+            "nr_recibo_pgcc": payload.get("nrReciboPGCC") or False,
+        }
+
+    def _check_return_schema(self):
+        for rec in self.filtered("return_xml"):
+            errors = xsd_validator.validate_return(rec.return_xml)
+            if not errors:
+                continue
+            rec.message_post(
+                body=Markup("%s<br/>%s")
+                % (
+                    _("The return XML does not match its official XSD:"),
+                    Markup("<br/>").join(errors[:8]),
+                )
+            )
 
     def _store_xml(self, xml):
         self.ensure_one()
