@@ -14,3 +14,12 @@
   interrupt processing, and the test suite uses future months
 - Transactional events (D-3201 and remaining D-22xx / D-32xx) after CGIBS
   publishes a stable transactional layout
+- D-9199 content not stored yet: `gCoeficientes` (financial services and
+  prize contests) and the `infoBCN` / `detBCN` breakdown of the negative
+  base carried forward per origin. Only the final negative balances are
+  kept on the assessment lines.
+- D-9121 (public-bond operations) and D-9209 (transactional) returns are
+  recognized and validated, but their content is not applied until the
+  matching events are implemented.
+- Optional journal entry for the IBS / CBS assessed by D-9199; today the
+  amounts are recorded for reference only.
