@@ -16,9 +16,7 @@ from .test_dere_transmit import _FakeResponse
 class TestDereXsd(DereCommon):
     def _validate_generated(self, declaration, event_types):
         for event_type in event_types:
-            event = declaration.event_ids.filtered(
-                lambda ev, current=event_type: ev.event_type == current
-            ).sorted("id")[-1:]
+            event = self._event(declaration, event_type)
             self.assertTrue(event.xml_content, event_type)
             self.assertFalse(
                 xsd_validator.validate(event.xml_content, event_type),
@@ -65,8 +63,8 @@ class TestDereXsd(DereCommon):
                 side_effect=lambda url, **_kw: _FakeResponse(status_code=503, text=""),
             ),
         ):
-            batch = declaration._send_events(
-                declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1001")
+            batch = self._table_period(declaration)._send_events(
+                self._event(declaration, "D-1001")
             )
         self.assertFalse(xsd_validator.validate_lote(batch.xml_content))
         self.assertTrue(batch.protocol)

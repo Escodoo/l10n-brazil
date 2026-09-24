@@ -7,6 +7,7 @@ from . import dere_tax_code
 from . import dere_reserve_asset
 from . import dere_reserve_line
 from . import dere_deduction_line
+from . import dere_table_period
 from . import dere_declaration
 from . import dere_event
 from . import dere_pgcc_account

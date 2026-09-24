@@ -67,9 +67,20 @@ class TestDereErrors(DereCommon):
 
     def test_missing_parent_account_is_rejected(self):
         declaration = self._create_declaration("2026-05")
-        self.parent_group.l10n_br_dere_cta_ref = False
-        with self.assertRaises(UserError):
-            declaration.action_generate_d1011()
+        original = type(self.env["l10n_br_dere.table.period"])._pgcc_row_from_group
+
+        def skip_parent(rec, group, codes):
+            if group == self.parent_group:
+                return False
+            return original(rec, group, codes)
+
+        with patch.object(
+            type(self.env["l10n_br_dere.table.period"]),
+            "_pgcc_row_from_group",
+            skip_parent,
+        ):
+            with self.assertRaises(UserError):
+                declaration.action_generate_d1011()
 
     def test_trial_requires_movement(self):
         declaration = self._create_declaration("2026-04")
@@ -150,9 +161,10 @@ class TestDereErrors(DereCommon):
         declaration = self._create_declaration("2026-03")
         self._post_entry("2026-03-10", self.receivable, self.fee_account, 50.0)
         declaration.action_generate_tables()
+        self._accept_tables(declaration)
+        declaration.action_generate_d1101()
         with self.assertRaises(UserError):
             declaration.write({"per_apur": "2026-06"})
-        declaration.action_generate_d1101()
         declaration.action_generate_d1199()
         self.assertEqual(declaration.state, "trial_ok")
         self._accept_closing(declaration)
@@ -160,7 +172,7 @@ class TestDereErrors(DereCommon):
         with self.assertRaises(UserError):
             declaration.write({"company_id": declaration.company_id.id})
         with self.assertRaises(UserError):
-            declaration.write({"ini_valid": declaration.date_from})
+            declaration.write({"table_period_id": declaration.table_period_id.id})
         with self.assertRaises(UserError):
             declaration.write({"ind_inexist_dedu": True})
         with self.assertRaises(UserError):
@@ -171,7 +183,7 @@ class TestDereErrors(DereCommon):
     def test_processed_event_cannot_be_edited_or_deleted(self):
         declaration = self._create_declaration("2026-04")
         declaration.action_generate_d1001()
-        event = declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1001")
+        event = self._event(declaration, "D-1001")
         event.write({"state": "accepted", "cd_retorno": "1"})
         with self.assertRaises(UserError):
             event.write({"tp_oper": "2"})
@@ -181,12 +193,10 @@ class TestDereErrors(DereCommon):
     def test_generated_event_can_be_deleted(self):
         declaration = self._create_declaration("2026-05")
         declaration.action_generate_d1001()
-        event = declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1001")
+        event = self._event(declaration, "D-1001")
         self.assertEqual(event.state, "generated")
         event.unlink()
-        self.assertFalse(
-            declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1001")
-        )
+        self.assertFalse(self._event(declaration, "D-1001"))
 
     def test_discard_local_closing_unlocks_generated_d1199(self):
         declaration = self._create_declaration("2026-07")
@@ -226,6 +236,7 @@ class TestDereErrors(DereCommon):
     def test_local_closing_blocks_input_regeneration(self):
         declaration = self._create_declaration("2026-06")
         declaration.action_generate_tables()
+        self._accept_tables(declaration)
         self._post_entry("2026-06-10", self.receivable, self.fee_account, 10.0)
         declaration.action_generate_d1101()
         declaration.action_generate_d1199()
@@ -341,11 +352,13 @@ class TestDereErrors(DereCommon):
     def test_regenerate_after_reject_creates_new_event(self):
         declaration = self._create_declaration("2025-10")
         declaration.action_generate_d1001()
-        event = declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1001")
+        event = self._event(declaration, "D-1001")
         declaration.apply_return(event, "0", desc_retorno="Erro")
         self.assertTrue(declaration.can_generate_tables)
         declaration.action_generate_d1001()
-        events = declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1001")
+        events = self._table_period(declaration).event_ids.filtered(
+            lambda ev: ev.event_type == "D-1001"
+        )
         self.assertEqual(len(events), 2)
         self.assertTrue(events.filtered(lambda ev: ev.state == "rejected"))
         self.assertTrue(events.filtered(lambda ev: ev.state == "generated"))
@@ -354,7 +367,7 @@ class TestDereErrors(DereCommon):
         declaration = self._create_declaration("2025-11")
         declaration.action_generate_d1001()
         declaration.action_apply_return_xml(RETURN_D9001.encode())
-        event = declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1001")
+        event = self._event(declaration, "D-1001")
         self.assertEqual(event.state, "accepted")
         parsed = xml_builder.parse_return(RETURN_D9001.encode())
         self.assertEqual(parsed["tpEv"], "D-1001")

@@ -129,13 +129,18 @@ class AccountAccount(models.Model):
         return self.l10n_br_dere_cta_sup_id or self.group_id
 
     def _dere_cta_ref(self):
+        """Own mapping or an explicit group mapping. Prefix is not enough."""
         self.ensure_one()
         return self.l10n_br_dere_cta_ref or self.group_id.l10n_br_dere_cta_ref
 
     def _dere_nat_cta(self):
         self.ensure_one()
-        return self.l10n_br_dere_nat_cta or self.group_id.l10n_br_dere_nat_cta
+        if self.l10n_br_dere_nat_cta:
+            return self.l10n_br_dere_nat_cta
+        return self.group_id._dere_nat_cta() if self.group_id else False
 
     def _dere_cod_nat(self):
         self.ensure_one()
-        return self.l10n_br_dere_cod_nat or self.group_id.l10n_br_dere_cod_nat
+        if self.l10n_br_dere_cod_nat:
+            return self.l10n_br_dere_cod_nat
+        return self.group_id._dere_cod_nat() if self.group_id else False

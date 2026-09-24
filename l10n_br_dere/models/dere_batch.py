@@ -23,10 +23,18 @@ class DereBatch(models.Model):
     name = fields.Char(required=True, default="New")
     declaration_id = fields.Many2one(
         comodel_name="l10n_br_dere.declaration",
-        required=True,
         ondelete="cascade",
     )
-    company_id = fields.Many2one(related="declaration_id.company_id", store=True)
+    table_period_id = fields.Many2one(
+        comodel_name="l10n_br_dere.table.period",
+        ondelete="cascade",
+    )
+    company_id = fields.Many2one(
+        comodel_name="res.company",
+        compute="_compute_company_id",
+        store=True,
+        index=True,
+    )
     tp_amb = fields.Selection(TP_AMB, string="Environment", required=True)
     event_ids = fields.Many2many(comodel_name="l10n_br_dere.event", string="Events")
     xml_content = fields.Text(string="XML")
@@ -46,6 +54,13 @@ class DereBatch(models.Model):
     consult_attempts = fields.Integer(default=0)
     next_consult_at = fields.Datetime(string="Next consult")
 
+    @api.depends("declaration_id.company_id", "table_period_id.company_id")
+    def _compute_company_id(self):
+        for rec in self:
+            rec.company_id = (
+                rec.declaration_id.company_id or rec.table_period_id.company_id
+            )
+
     def _schedule_next_consult(self, processed=False):
         self.ensure_one()
         if processed:
@@ -60,6 +75,10 @@ class DereBatch(models.Model):
         for batch in self:
             batch._consult(raise_error=True)
         return True
+
+    def _parent_record(self):
+        self.ensure_one()
+        return self.declaration_id or self.table_period_id
 
     def _consult(self, raise_error=True):
         self.ensure_one()
@@ -97,7 +116,10 @@ class DereBatch(models.Model):
             )
             self._schedule_next_consult()
             return False
-        applied = self.declaration_id._apply_consult_result(self, result["text"])
+        parent = self._parent_record()
+        applied = (
+            parent._apply_consult_result(self, result["text"]) if parent else False
+        )
         if self.state == "sent":
             self._schedule_next_consult()
         else:

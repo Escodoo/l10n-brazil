@@ -19,14 +19,14 @@ class DerePgccAccount(models.Model):
     _rec_name = "dere12_cCta"
     _order = "dere12_nivelCta, dere12_cCta"
 
-    declaration_id = fields.Many2one(
-        comodel_name="l10n_br_dere.declaration",
+    table_period_id = fields.Many2one(
+        comodel_name="l10n_br_dere.table.period",
         required=True,
         ondelete="cascade",
         index=True,
     )
     company_id = fields.Many2one(
-        related="declaration_id.company_id", store=True, index=True
+        related="table_period_id.company_id", store=True, index=True
     )
     account_id = fields.Many2one(
         comodel_name="account.account",
@@ -149,7 +149,9 @@ class DerePgccAccount(models.Model):
     def write(self, vals):
         if not self.env.context.get(
             "dere_force_declaration_write"
-        ) and self.declaration_id.filtered(lambda rec: rec.state == "closed"):
+        ) and self.table_period_id.declaration_ids.filtered(
+            lambda rec: rec.state == "closed"
+        ):
             raise UserError(
                 _(
                     "Closed DeRE declarations cannot be modified. "
@@ -161,7 +163,9 @@ class DerePgccAccount(models.Model):
     def unlink(self):
         if not self.env.context.get(
             "dere_force_declaration_write"
-        ) and self.declaration_id.filtered(lambda rec: rec.state == "closed"):
+        ) and self.table_period_id.declaration_ids.filtered(
+            lambda rec: rec.state == "closed"
+        ):
             raise UserError(
                 _(
                     "Closed DeRE declarations cannot be modified. "

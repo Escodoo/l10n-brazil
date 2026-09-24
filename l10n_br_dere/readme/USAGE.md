@@ -1,14 +1,15 @@
-1. Create a monthly declaration (`perApur` = `YYYY-MM`).
-2. Generate table events: D-1001 then D-1011. The stored XML stays unsigned
-   and is checked against the official XSD (a placeholder `ds:Signature` is
-   attached only for that check). Sending signs each event (XML-DSig
-   RSA-SHA256), validates the signed event and the lote, then posts one type
-   per batch.
-3. Sending already consults the batch once. While the return says the batch is
-   still processing, use **Consult Results** or wait for the two-minute cron
-   until the D-9001 receipt arrives.
-   Then generate the trial balance (D-1101) from posted `account.move.line`
-   records.
+1. Open **Fiscal → DeRE → Table Periods** and create a company-level validity
+   (`iniValid` / optional `fimValid`). Monthly declarations pick the period
+   that covers `perApur`.
+2. Generate table events D-1001 then D-1011 from the table period (or from
+   the monthly declaration). The stored XML stays unsigned and is checked
+   against the official XSD. Sending signs each event (XML-DSig RSA-SHA256),
+   validates the signed event and the lote, then posts one type per batch.
+3. Sending does **not** consult immediately. Use **Consult Results** or wait
+   for the cron (exponential backoff from 2 minutes up to 60) until the
+   D-9001 receipt arrives. Then generate the trial balance (D-1101) from
+   posted `account.move.line` records. The trial button stays hidden until
+   D-1001 and D-1011 are accepted.
 4. Generate D-1199 with **Close Period** (`tpOper` inclusion only). That only
    stores the XML; the declaration stays in *Trial balance ready*. Use
    **Discard Local Closing** to drop a D-1199 that was never sent. Send
@@ -21,9 +22,7 @@
    was never sent. **Send Periodics** and consult until D-1198 is accepted
    before generating a new trial balance. The declaration stays *Reopened*
    through the rework until the new D-1199 is accepted.
-   A closed declaration does not offer send or consult; **Consult Results**
-   only appears while a lote is still `sent`.    **Generate Tables** and
-   **Send Tables** disappear after D-1001 and D-1011 are sent or accepted.
+   **Consult Results** only appears while a lote is still `sent`.
    The blue header button is the next official step: generate, send or
    consult, then D-1106 / D-1121 when the company is subject, then close.
    **Generate Trial Balance** stays hidden after D-1101 is sent or accepted
@@ -37,32 +36,40 @@ subject to D-1106, generate that event after the trial balance (use
 `semAplic` when there are no reserve assets). If it is subject to D-1121,
 load inbound deductible documents or set *Declare no deductions*.
 
+Every analytic DeRE account must have `codTrib` before D-1011 is generated.
+`vApur` on D-1101 follows the official movement formula (gross nature-side
+amount plus adjustments). Reversal moves are reported as `vAjusteDebt` /
+`vAjusteCred`. Closing D-1199 is blocked when D-1106 closing balances do not
+match D-1101, or when the D-1011 receipt used to build D-1101 changed.
+
 ## Homologation checklist (Wave 1)
 
-Use a company whose chart already maps at least one administration-fee account
-(`codTrib` 120110006) and one pass-through liability (no `codTrib`). Posted
-journal items in the assessment month must split **own fee** vs **operator
-remittance**. The trial balance is never typed: it is rebuilt from those
-moves.
+Use a company whose chart already maps at least one administration-fee
+account (`codTrib` 120110006) and one pass-through liability (also with
+`codTrib`). Posted journal items in the assessment month must split **own
+fee** vs **operator remittance**. The trial balance is never typed: it is
+rebuilt from those moves.
 
-1. Switch to the company and open **Fiscal → DeRE → Declarations**.
-2. Open (or create) the month. Confirm `perApur` is `YYYY-MM` and `iniValid`
-   matches the first day of the table validity.
+1. Switch to the company and open **Fiscal → DeRE → Table Periods**.
+2. Create or reuse the validity that covers the month. Confirm `iniValid`.
 3. **Generate Tables**. Events D-1001 and D-1011 must exist with XML.
    - D-1001: `regTribPrinc` = 2 and `tpAtividade` = `02A` for a benefit
      administrator. No `servFinanc` / `prognosticos` unless a secondary
      regime requires them.
    - D-1011: `planoCtaRef` and `freqEncerr` present; `cDbrMista` has three
-     digits; fee account has `codTrib` 120110006; pass-through has no
-     `codTrib`.
-4. **Generate Trial Balance**. Footer totals need the hidden `brl_currency_id`.
-   - Fee line: credit = own revenue and `vApur` equals that net amount.
-   - Pass-through line: movement present and `vApur` = 0.00 (no `natVApur`).
+     digits; every analytic account has `codTrib`.
+4. Open the monthly declaration (`perApur` = `YYYY-MM`). After the tables
+   are accepted, **Generate Trial Balance**. Footer totals need the hidden
+   `brl_currency_id`.
+   - Fee line: credit = own revenue and `vApur` equals that gross credit
+     minus credit adjustments plus debit adjustments.
+   - Pass-through line: movement present and `vApur` follows the same rule
+     for the account nature.
 5. Open each event form and check the XML: dates use `YYYY-MM-DD`; `perApur`
-   uses `YYYY-MM`. Table `id` is 42 alphanumeric characters and starts with a
-   letter (lote `xs:ID`). D-1101 / D-1106 / D-1121 / D-1198 / D-1199 `id`
-   follows `DeRE` + event code + environment + CNPJ + 19 digits. Generation
-   already rejects XML that fails the official XSD.
+   uses `YYYY-MM`. Every event `id` follows
+   `DeRE` + event code + `1` + zero-padded CNPJ root + Brasília timestamp +
+   sequential `QQQQQ`. Generation already rejects XML that fails the official
+   XSD.
 6. If the company is subject to D-1106, **Generate D-1106** before closing.
    Register technical-reserve assets under Fiscal configuration, or the event
    is sent with `semAplic=1`. With exactly one asset per account the period
@@ -82,12 +89,12 @@ moves.
    Closing** and generate again.
 8. Confirm the company has an A1 certificate. Sending signs the payload;
    the event form still shows the unsigned XML.
-9. Each send consults the batch once. Repeat with **Consult Results**, or wait
-   for the scheduled job
-   **DeRE: consult sent batch results**. The POST only returns a protocol;
-   acceptance and `nrRecibo` come from the later GET. Processing
-   (`cdResposta` 1) leaves the batch sent so the cron retries. A successful
-   D-1199 return sets the declaration to *Closed*.
+9. Repeat with **Consult Results**, or wait for the scheduled job
+   **DeRE: consult sent batch results**. The POST only returns a protocol
+   (`1.NNNNNN.N` or `2.NNNNNN.N`); acceptance and `nrRecibo` come from the
+   later GET. Processing (`cdResposta` 1) leaves the batch sent so the cron
+   retries with backoff. Lot errors (`cdResposta` 4, 5, 7 or 9) reject the
+   events. A successful D-1199 return sets the declaration to *Closed*.
 10. Do **not** send tables and periodics in the same batch. Do not send D-1011
     before D-1001 is accepted, nor D-1199 before D-1101 has a processing
     receipt.

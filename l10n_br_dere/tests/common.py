@@ -142,10 +142,18 @@ class DereCommon(TransactionCase):
         code = event_type.replace("D-", "")
         return f"{code}-{period.replace('-', '')}-{'0' * 19}"
 
+    def _table_period(self, declaration):
+        return declaration.table_period_id or declaration._require_table_period()
+
+    def _event(self, declaration, event_type):
+        if event_type in ("D-1001", "D-1011"):
+            events = self._table_period(declaration).event_ids
+        else:
+            events = declaration.event_ids
+        return events.filtered(lambda ev: ev.event_type == event_type).sorted("id")[-1:]
+
     def _accept_event(self, declaration, event_type):
-        event = declaration.event_ids.filtered(
-            lambda ev: ev.event_type == event_type
-        ).sorted("id")[-1:]
+        event = self._event(declaration, event_type)
         event.write(
             {
                 "state": "accepted",
@@ -158,6 +166,7 @@ class DereCommon(TransactionCase):
     def _accept_tables(self, declaration):
         for event_type in ("D-1001", "D-1011"):
             self._accept_event(declaration, event_type)
+        declaration.invalidate_recordset()
         return declaration
 
     def _nfe_access_key(self, number=1, period="2026-11"):
@@ -200,13 +209,31 @@ class DereCommon(TransactionCase):
         return event
 
     def _create_declaration(self, period="2026-10"):
-        vals = {
-            "company_id": self.company.id,
-            "per_apur": period,
-        }
-        if re.match(r"^20\d{2}-(0[1-9]|1[0-2])$", period):
-            vals["ini_valid"] = f"{period}-01"
-        return self.env["l10n_br_dere.declaration"].create(vals)
+        declaration = self.env["l10n_br_dere.declaration"].create(
+            {
+                "company_id": self.company.id,
+                "per_apur": period,
+            }
+        )
+        if declaration.date_from:
+            Table = self.env["l10n_br_dere.table.period"]
+            period_rec = Table.search(
+                [
+                    ("company_id", "=", self.company.id),
+                    ("ini_valid", "=", declaration.date_from),
+                ],
+                limit=1,
+            )
+            if not period_rec:
+                period_rec = Table.create(
+                    {
+                        "company_id": self.company.id,
+                        "ini_valid": declaration.date_from,
+                        "fim_valid": declaration.date_to,
+                    }
+                )
+            declaration.table_period_id = period_rec
+        return declaration
 
     def _post_entry(self, date, debit_account, credit_account, amount, ref="DeRE"):
         move = self.env["account.move"].create(

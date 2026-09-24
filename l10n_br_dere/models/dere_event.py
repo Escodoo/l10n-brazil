@@ -36,11 +36,20 @@ class DereEvent(models.Model):
     name = fields.Char(compute="_compute_name", store=True)
     declaration_id = fields.Many2one(
         comodel_name="l10n_br_dere.declaration",
-        required=True,
         ondelete="cascade",
         index=True,
     )
-    company_id = fields.Many2one(related="declaration_id.company_id", store=True)
+    table_period_id = fields.Many2one(
+        comodel_name="l10n_br_dere.table.period",
+        ondelete="cascade",
+        index=True,
+    )
+    company_id = fields.Many2one(
+        comodel_name="res.company",
+        compute="_compute_company_id",
+        store=True,
+        index=True,
+    )
     event_type = fields.Selection(EVENT_TYPES, required=True, tracking=True)
     state = fields.Selection(
         [
@@ -102,10 +111,22 @@ class DereEvent(models.Model):
             raise UserError(_("Only draft or generated events can be deleted."))
         return super().unlink()
 
-    @api.depends("event_type", "declaration_id.per_apur")
+    @api.depends("declaration_id.company_id", "table_period_id.company_id")
+    def _compute_company_id(self):
+        for rec in self:
+            rec.company_id = (
+                rec.declaration_id.company_id or rec.table_period_id.company_id
+            )
+
+    @api.depends(
+        "event_type",
+        "declaration_id.per_apur",
+        "table_period_id.ini_valid",
+    )
     def _compute_name(self):
         for rec in self:
-            rec.name = f"{rec.event_type or ''} {rec.declaration_id.per_apur or ''}"
+            period = rec.declaration_id.per_apur or rec.table_period_id.ini_valid or ""
+            rec.name = f"{rec.event_type or ''} {period}"
 
     _event_id_seq = {}
 

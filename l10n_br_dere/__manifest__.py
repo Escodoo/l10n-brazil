@@ -33,6 +33,7 @@
         "views/dere_activity_view.xml",
         "views/dere_tax_code_view.xml",
         "views/dere_reserve_asset_view.xml",
+        "views/dere_table_period_view.xml",
         "views/dere_declaration_view.xml",
         "views/dere_event_view.xml",
         "views/dere_pgcc_account_view.xml",

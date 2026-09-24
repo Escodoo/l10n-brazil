@@ -57,6 +57,7 @@ class TestDereMonthly(DereCommon):
         event_id = root.find(".//{*}evtBalancete").get("id") or ""
         self.assertRegex(event_id, STRUCTURED_EVENT_ID_RE)
         self.assertTrue(event_id.startswith("DeRE11011"))
+        self.assertIn(self.company._dere_cnpj_root().rjust(14, "0"), event_id)
 
     def test_d1101_fee_vs_pass_through(self):
         fee = self.env["account.account"].create(
@@ -85,6 +86,7 @@ class TestDereMonthly(DereCommon):
                 "l10n_br_dere_cta_ref": "2",
                 "l10n_br_dere_nat_cta": "C",
                 "l10n_br_dere_cod_nat": "2",
+                "l10n_br_dere_cod_trib": self.tax_equity.id,
             }
         )
         declaration = self._create_declaration("2027-08")
@@ -195,7 +197,7 @@ class TestDereMonthly(DereCommon):
         )
         with patch.object(type(self.company), "_dere_cnpj", return_value="12345678"):
             declaration.action_generate_d1101()
-        event = declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1101")
+        event = self._event(declaration, "D-1101")
         self.assertTrue(event.event_id_attr.startswith("DeRE11011"))
         self.assertIn("00000012345678", event.event_id_attr)
 

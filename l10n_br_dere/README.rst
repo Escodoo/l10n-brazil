@@ -36,10 +36,13 @@ It lets an Odoo company:
 - store the DeRE tax regime, activities and referential chart
 - map ``account.group`` (synthetic) and ``account.account`` (analytic)
   PGCC fields
+- keep D-1001 / D-1011 and the PGCC snapshot on a company table-validity
+  period reused by monthly declarations
 - generate local XML for D-1001, D-1011, D-1101, D-1106, D-1121, D-1198
   and D-1199
 - send signed batches to Receita Integra, consult processing (manually
-  or via cron) and store protocol, receipt and D-9xxx returns
+  or via cron with backoff) and store protocol, receipt and D-9xxx
+  returns
 
 It does **not** implement sector-specific rules (for example health-plan
 premium vs administration-fee reconciliation). Those stay in company
@@ -62,36 +65,50 @@ On the company form, open the **DeRE** tab and set:
 3. Referential chart (``planoCtaRef``) and closing frequency
    (``freqEncerr``)
 
-4. Receita Integra environment, token URL, OAuth client credentials and
-   the batch consult path (``{protocol}`` placeholder)
+4. Receita Integra environment. Restricted production uses
+   ``https://api.receitafederal.gov.br/prr-dere`` with
+   ``POST /v1/recepcao/lotes`` and
+   ``GET /v1/consulta/lotes/{protocol}``. Override the base URL and
+   paths only when production is published. Token requests use HTTP
+   Basic (``client_id`` / ``client_secret``) and
+   ``grant_type=client_credentials``. The access token is cached per
+   company.
 
 5. An ICP-Brasil A1 certificate on the Fiscal tab (NFe or e-CNPJ).
    Generation does not need it; sending does.
 
 6. Leave the scheduled action **DeRE: consult sent batch results**
-   enabled (every 2 minutes). The form button still consults
-   immediately.
+   enabled (every 2 minutes). It only consults batches whose backoff
+   window is due.
 
 7. If the taxpayer must send D-1106, enable **Subject to D-1106**, mark
    the investment accounts as technical-reserve and register each
-   ``idAtivo``. Keep one asset per account so **Generate D-1106** can
-   fill amounts from posted journal items. Optionally set **DeRE reserve
-   income account** for cash coupons that never hit the investment
-   account.
+   ``idAtivo``. Accounts whose ``codTrib`` is in the official D-1106
+   list also require the event. Keep one asset per account so **Generate
+   D-1106** can fill amounts from posted journal items. Optionally set
+   **DeRE reserve income account** for cash coupons that never hit the
+   investment account.
 
 8. If the taxpayer must send D-1121, enable **Subject to D-1121** and
-   mark inbound fiscal operations as DeRE deductible.
+   mark inbound fiscal operations as DeRE deductible. Accounts whose
+   ``codTrib`` is in the official D-1121 list also require the event.
+
+On **Fiscal → DeRE → Table Periods**, create the validity that covers
+the months you will declare. D-1001, D-1011 and the PGCC snapshot live
+there and are reused by every monthly declaration in force.
 
 On each **account group** used as a synthetic DeRE node, fill the
-**DeRE** tab (``cCtaRef``, nature). Level and parent come from the
-prefix hierarchy.
+**DeRE** tab (``cCtaRef``, nature) when the official referential code
+differs from the prefix. Ancestor groups of mapped analytic accounts are
+exported automatically; an empty ``cCtaRef`` uses the prefix and the
+first-digit nature. Level and parent come from the prefix hierarchy.
 
 On each **analytic account** used in the declaration, fill the **DeRE**
 tab:
 
 - internal code and 3-digit mixed-account split (``cDbrMista``)
-- referential code, nature and optional ``codTrib`` (empty values
-  inherit from the prefix group)
+- referential code, nature and **required** ``codTrib`` (empty
+  referential values inherit from the prefix group)
 - parent group only when the chart is not prefix-based
 
 Do not reuse the ECD/ECF field ``l10n_br_sped_referential_code`` for
@@ -100,16 +117,19 @@ DeRE.
 Usage
 =====
 
-1. Create a monthly declaration (``perApur`` = ``YYYY-MM``).
-2. Generate table events: D-1001 then D-1011. The stored XML stays
-   unsigned and is checked against the official XSD (a placeholder
-   ``ds:Signature`` is attached only for that check). Sending signs each
-   event (XML-DSig RSA-SHA256), validates the signed event and the lote,
-   then posts one type per batch.
-3. Sending already consults the batch once. While the return says the
-   batch is still processing, use **Consult Results** or wait for the
-   two-minute cron until the D-9001 receipt arrives. Then generate the
-   trial balance (D-1101) from posted ``account.move.line`` records.
+1. Open **Fiscal → DeRE → Table Periods** and create a company-level
+   validity (``iniValid`` / optional ``fimValid``). Monthly declarations
+   pick the period that covers ``perApur``.
+2. Generate table events D-1001 then D-1011 from the table period (or
+   from the monthly declaration). The stored XML stays unsigned and is
+   checked against the official XSD. Sending signs each event (XML-DSig
+   RSA-SHA256), validates the signed event and the lote, then posts one
+   type per batch.
+3. Sending does **not** consult immediately. Use **Consult Results** or
+   wait for the cron (exponential backoff from 2 minutes up to 60) until
+   the D-9001 receipt arrives. Then generate the trial balance (D-1101)
+   from posted ``account.move.line`` records. The trial button stays
+   hidden until D-1001 and D-1011 are accepted.
 4. Generate D-1199 with **Close Period** (``tpOper`` inclusion only).
    That only stores the XML; the declaration stays in *Trial balance
    ready*. Use **Discard Local Closing** to drop a D-1199 that was never
@@ -122,15 +142,12 @@ Usage
    drop a D-1198 that was never sent. **Send Periodics** and consult
    until D-1198 is accepted before generating a new trial balance. The
    declaration stays *Reopened* through the rework until the new D-1199
-   is accepted. A closed declaration does not offer send or consult;
-   **Consult Results** only appears while a lote is still ``sent``.
-   **Generate Tables** and **Send Tables** disappear after D-1001 and
-   D-1011 are sent or accepted. The blue header button is the next
-   official step: generate, send or consult, then D-1106 / D-1121 when
-   the company is subject, then close. **Generate Trial Balance** stays
-   hidden after D-1101 is sent or accepted until D-1198 is accepted.
-   **Send Periodics** appears only while a periodic XML is
-   ``generated``.
+   is accepted. **Consult Results** only appears while a lote is still
+   ``sent``. The blue header button is the next official step: generate,
+   send or consult, then D-1106 / D-1121 when the company is subject,
+   then close. **Generate Trial Balance** stays hidden after D-1101 is
+   sent or accepted until D-1198 is accepted. **Send Periodics** appears
+   only while a periodic XML is ``generated``.
 
 Receipt (``nrRecibo``) and batch protocol are stored separately on each
 event. Do not regenerate an event that is already sent or accepted
@@ -140,41 +157,47 @@ trial balance (use ``semAplic`` when there are no reserve assets). If it
 is subject to D-1121, load inbound deductible documents or set *Declare
 no deductions*.
 
+Every analytic DeRE account must have ``codTrib`` before D-1011 is
+generated. ``vApur`` on D-1101 follows the official movement formula
+(gross nature-side amount plus adjustments). Reversal moves are reported
+as ``vAjusteDebt`` / ``vAjusteCred``. Closing D-1199 is blocked when
+D-1106 closing balances do not match D-1101, or when the D-1011 receipt
+used to build D-1101 changed.
+
 Homologation checklist (Wave 1)
 -------------------------------
 
 Use a company whose chart already maps at least one administration-fee
-account (``codTrib`` 120110006) and one pass-through liability (no
-``codTrib``). Posted journal items in the assessment month must split
-**own fee** vs **operator remittance**. The trial balance is never
+account (``codTrib`` 120110006) and one pass-through liability (also
+with ``codTrib``). Posted journal items in the assessment month must
+split **own fee** vs **operator remittance**. The trial balance is never
 typed: it is rebuilt from those moves.
 
-1.  Switch to the company and open **Fiscal → DeRE → Declarations**.
-2.  Open (or create) the month. Confirm ``perApur`` is ``YYYY-MM`` and
-    ``iniValid`` matches the first day of the table validity.
+1.  Switch to the company and open **Fiscal → DeRE → Table Periods**.
+2.  Create or reuse the validity that covers the month. Confirm
+    ``iniValid``.
 3.  **Generate Tables**. Events D-1001 and D-1011 must exist with XML.
 
     - D-1001: ``regTribPrinc`` = 2 and ``tpAtividade`` = ``02A`` for a
       benefit administrator. No ``servFinanc`` / ``prognosticos`` unless
       a secondary regime requires them.
     - D-1011: ``planoCtaRef`` and ``freqEncerr`` present; ``cDbrMista``
-      has three digits; fee account has ``codTrib`` 120110006;
-      pass-through has no ``codTrib``.
+      has three digits; every analytic account has ``codTrib``.
 
-4.  **Generate Trial Balance**. Footer totals need the hidden
-    ``brl_currency_id``.
+4.  Open the monthly declaration (``perApur`` = ``YYYY-MM``). After the
+    tables are accepted, **Generate Trial Balance**. Footer totals need
+    the hidden ``brl_currency_id``.
 
-    - Fee line: credit = own revenue and ``vApur`` equals that net
-      amount.
-    - Pass-through line: movement present and ``vApur`` = 0.00 (no
-      ``natVApur``).
+    - Fee line: credit = own revenue and ``vApur`` equals that gross
+      credit minus credit adjustments plus debit adjustments.
+    - Pass-through line: movement present and ``vApur`` follows the same
+      rule for the account nature.
 
 5.  Open each event form and check the XML: dates use ``YYYY-MM-DD``;
-    ``perApur`` uses ``YYYY-MM``. Table ``id`` is 42 alphanumeric
-    characters and starts with a letter (lote ``xs:ID``). D-1101 /
-    D-1106 / D-1121 / D-1198 / D-1199 ``id`` follows ``DeRE`` + event
-    code + environment + CNPJ + 19 digits. Generation already rejects
-    XML that fails the official XSD.
+    ``perApur`` uses ``YYYY-MM``. Every event ``id`` follows ``DeRE`` +
+    event code + ``1`` + zero-padded CNPJ root + Brasília timestamp +
+    sequential ``QQQQQ``. Generation already rejects XML that fails the
+    official XSD.
 6.  If the company is subject to D-1106, **Generate D-1106** before
     closing. Register technical-reserve assets under Fiscal
     configuration, or the event is sent with ``semAplic=1``. With
@@ -196,12 +219,13 @@ typed: it is rebuilt from those moves.
     ``generated``, **Discard Local Closing** and generate again.
 8.  Confirm the company has an A1 certificate. Sending signs the
     payload; the event form still shows the unsigned XML.
-9.  Each send consults the batch once. Repeat with **Consult Results**,
-    or wait for the scheduled job **DeRE: consult sent batch results**.
-    The POST only returns a protocol; acceptance and ``nrRecibo`` come
-    from the later GET. Processing (``cdResposta`` 1) leaves the batch
-    sent so the cron retries. A successful D-1199 return sets the
-    declaration to *Closed*.
+9.  Repeat with **Consult Results**, or wait for the scheduled job
+    **DeRE: consult sent batch results**. The POST only returns a
+    protocol (``1.NNNNNN.N`` or ``2.NNNNNN.N``); acceptance and
+    ``nrRecibo`` come from the later GET. Processing (``cdResposta`` 1)
+    leaves the batch sent so the cron retries with backoff. Lot errors
+    (``cdResposta`` 4, 5, 7 or 9) reject the events. A successful D-1199
+    return sets the declaration to *Closed*.
 10. Do **not** send tables and periodics in the same batch. Do not send
     D-1011 before D-1001 is accepted, nor D-1199 before D-1101 has a
     processing receipt.
@@ -220,8 +244,9 @@ Known issues / Roadmap
   ``spec_driven_model.StackedModel`` before that binding. Generated and
   signed XML is already validated against the official 1.2.0 XSD.
 - Do not inherit event mixins (D-1001 / D-1011 / D-1101 / D-1199) on
-  ``l10n_br_dere.declaration`` or ``l10n_br_dere.event``: those
-  abstracts share ``dere12_id`` and ``dere12_tpOper``.
+  ``l10n_br_dere.declaration``, ``l10n_br_dere.table.period`` or
+  ``l10n_br_dere.event``: those abstracts share ``dere12_id`` and
+  ``dere12_tpOper``.
 - D-1106 / D-1121 ``tpOper`` 2/3/4 and D-1121 ``infoImovel``
 - Transactional events (D-3201 and remaining D-22xx / D-32xx) after
   CGIBS publishes a stable transactional layout

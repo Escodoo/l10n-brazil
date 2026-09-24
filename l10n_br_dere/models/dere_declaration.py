@@ -15,10 +15,6 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
 from odoo.addons.l10n_br_dere_spec.models import xsd_validator
-from odoo.addons.l10n_br_dere_spec.models.v1_2.types import (
-    FREQ_ENCERR,
-    PLANO_CTA_REF,
-)
 
 from ..constants import (
     CODTRIB_D1106,
@@ -67,12 +63,24 @@ class DereDeclaration(models.Model):
     )
     date_from = fields.Date(compute="_compute_period_dates", store=True)
     date_to = fields.Date(compute="_compute_period_dates", store=True)
-    ini_valid = fields.Date(string="Table validity start")
-    fim_valid = fields.Date(string="Table validity end")
+    table_period_id = fields.Many2one(
+        comodel_name="l10n_br_dere.table.period",
+        compute="_compute_table_period_id",
+        store=True,
+        readonly=False,
+        index=True,
+    )
+    ini_valid = fields.Date(
+        related="table_period_id.ini_valid",
+        string="Table validity start",
+    )
+    fim_valid = fields.Date(
+        related="table_period_id.fim_valid",
+        string="Table validity end",
+    )
     state = fields.Selection(
         [
             ("draft", "Draft"),
-            ("tables_ok", "Tables ready"),
             ("trial_ok", "Trial balance ready"),
             ("closed", "Closed"),
             ("reopened", "Reopened"),
@@ -86,8 +94,7 @@ class DereDeclaration(models.Model):
         inverse_name="declaration_id",
     )
     pgcc_account_ids = fields.One2many(
-        comodel_name="l10n_br_dere.pgcc.account",
-        inverse_name="declaration_id",
+        related="table_period_id.pgcc_account_ids",
     )
     trial_line_ids = fields.One2many(
         comodel_name="l10n_br_dere.trial.line",
@@ -184,6 +191,7 @@ class DereDeclaration(models.Model):
             "per_apur",
             "ini_valid",
             "fim_valid",
+            "table_period_id",
             "ind_inexist_dedu",
             "pgcc_account_ids",
             "trial_line_ids",
@@ -230,6 +238,26 @@ class DereDeclaration(models.Model):
                 rec.date_from = date(year, month, 1)
                 rec.date_to = date(year, month, last)
 
+    @api.depends("company_id", "date_to")
+    def _compute_table_period_id(self):
+        Table = self.env["l10n_br_dere.table.period"]
+        for rec in self:
+            rec.table_period_id = Table._find_covering(rec.company_id, rec.date_to)
+
+    def _require_table_period(self):
+        self.ensure_one()
+        if self.table_period_id:
+            return self.table_period_id
+        if not self.date_from:
+            raise UserError(
+                _("Set a valid assessment period before generating tables.")
+            )
+        period = self.env["l10n_br_dere.table.period"]._get_or_create_for(
+            self.company_id, self.date_from
+        )
+        self.table_period_id = period
+        return period
+
     @api.constrains("per_apur")
     def _check_per_apur(self):
         for rec in self:
@@ -266,6 +294,10 @@ class DereDeclaration(models.Model):
 
     def _latest_event(self, event_type):
         self.ensure_one()
+        if event_type in TABLE_EVENTS:
+            if not self.table_period_id:
+                return self.env["l10n_br_dere.event"]
+            return self.table_period_id._latest_event(event_type)
         events = self.event_ids.filtered(lambda ev: ev.event_type == event_type)
         return events.sorted("id")[-1:]
 
@@ -275,6 +307,10 @@ class DereDeclaration(models.Model):
         "event_ids.state",
         "batch_ids.state",
         "batch_ids.protocol",
+        "table_period_id.can_generate_tables",
+        "table_period_id.can_send_tables",
+        "table_period_id.can_consult_results",
+        "table_period_id.event_ids.state",
         "subject_d1106",
         "subject_d1121",
         "ind_inexist_dedu",
@@ -301,33 +337,36 @@ class DereDeclaration(models.Model):
                 rec.batch_ids.filtered(
                     lambda batch: batch.protocol and batch.state == "sent"
                 )
+                or rec.table_period_id.can_consult_results
             )
-            rec.can_generate_tables = rec.state != "closed" and all(
-                rec._event_can_be_generated(event_type) for event_type in TABLE_EVENTS
+            tables = rec.table_period_id
+            rec.can_generate_tables = rec.state != "closed" and (
+                not tables or tables.can_generate_tables
             )
             rec.can_send_tables = rec.state != "closed" and bool(
-                rec._next_events(TABLE_EVENTS)
+                tables and tables.can_send_tables
             )
             rec.can_generate_trial = (
                 rec.state
                 in (
-                    "tables_ok",
+                    "draft",
                     "trial_ok",
                     "reopened",
                 )
                 and not closing_pending
+                and bool(tables and tables.tables_accepted())
                 and rec._event_can_be_generated(EVENT_D1101)
             )
             rec.can_generate_d1106 = (
                 rec.state in ("trial_ok", "reopened")
                 and not closing_pending
-                and rec.subject_d1106
+                and rec._is_subject_d1106()
                 and rec._event_can_be_generated(EVENT_D1106)
             )
             rec.can_load_deductions = (
                 rec.state in ("trial_ok", "reopened")
                 and not closing_pending
-                and rec.subject_d1121
+                and rec._is_subject_d1121()
                 # Loading contradicts the declared absence of deductions.
                 and not rec.ind_inexist_dedu
                 and rec._event_can_be_generated(EVENT_D1121)
@@ -344,6 +383,22 @@ class DereDeclaration(models.Model):
             else:
                 rec.can_send_periodics = False
             rec.primary_action = rec._next_primary_action()
+
+    def _pgcc_codes(self):
+        self.ensure_one()
+        return set(filter(None, self.pgcc_account_ids.mapped("dere12_codTrib")))
+
+    def _is_subject_d1106(self):
+        self.ensure_one()
+        return self.company_id.dere_subject_d1106 or bool(
+            self._pgcc_codes() & CODTRIB_D1106
+        )
+
+    def _is_subject_d1121(self):
+        self.ensure_one()
+        return self.company_id.dere_subject_d1121 or bool(
+            self._pgcc_codes() & CODTRIB_D1121
+        )
 
     def _event_can_be_generated(self, event_type):
         self.ensure_one()
@@ -379,11 +434,11 @@ class DereDeclaration(models.Model):
             return False
         if self._needs_trial_after_reopening(trial):
             return False
-        if self.subject_d1106:
+        if self._is_subject_d1106():
             d1106 = self._latest_event(EVENT_D1106)
             if not d1106 or not d1106.xml_content:
                 return False
-        if self.subject_d1121:
+        if self._is_subject_d1121():
             if not self.deduction_line_ids:
                 # Closing without loading deductions would silently declare their
                 # absence, so wait for the load to confirm it.
@@ -466,43 +521,7 @@ class DereDeclaration(models.Model):
 
     def _generate_d1001(self):
         self.ensure_one()
-        company = self.company_id
-        if not company.dere_reg_trib_princ:
-            raise UserError(_("Set the DeRE main tax regime on the company."))
-        secund = [company.dere_reg_trib_secund] if company.dere_reg_trib_secund else []
-        if company.dere_reg_trib_princ in secund:
-            raise UserError(
-                _("The secondary tax regime cannot repeat the main regime.")
-            )
-        vals = self._header_vals(
-            {
-                "regTribPrinc": company.dere_reg_trib_princ,
-                "regTribSecund": secund,
-                "indNatTrib": company.dere_ind_nat_trib or "0",
-                "tpAtividadeFinanc": self._activity_codes("21"),
-                "tpAtividadeSaude": self._activity_codes("31"),
-                "tpAtividadeProg": self._activity_codes("41"),
-            },
-            event_type=EVENT_D1001,
-        )
-        regimes = {company.dere_reg_trib_princ, *secund}
-        if "1" in regimes and not vals["tpAtividadeFinanc"]:
-            raise UserError(_("Financial-services activities are required."))
-        if "2" in regimes and not vals["tpAtividadeSaude"]:
-            raise UserError(_("Health-plan activities are required."))
-        if "3" in regimes and not vals["tpAtividadeProg"]:
-            raise UserError(_("Prize-contest activities are required."))
-        if "1" not in regimes:
-            vals["tpAtividadeFinanc"] = []
-        if "2" not in regimes:
-            vals["tpAtividadeSaude"] = []
-        if "3" not in regimes:
-            vals["tpAtividadeProg"] = []
-        event = self._get_or_create_event(EVENT_D1001)
-        vals["id"] = event.event_id_attr or vals["id"]
-        event.event_id_attr = vals["id"]
-        event._store_xml(xml_builder.build_d1001(vals))
-        return event
+        return self._require_table_period()._generate_d1001()
 
     def action_generate_d1011(self):
         for rec in self:
@@ -516,155 +535,29 @@ class DereDeclaration(models.Model):
         name = record.with_context(lang=lang).name or record.name or ""
         return name[:100]
 
-    def _mapped_pgcc_accounts(self):
-        self.ensure_one()
-        accounts = self.env["account.account"].search(
-            [("company_ids", "in", self.company_id.ids)]
-        )
-        return accounts.filtered(
-            lambda acc: acc._dere_cta_ref() and acc.l10n_br_dere_cta
-        )
-
-    def _mapped_pgcc_groups(self, accounts):
-        self.ensure_one()
-        groups = self.env["account.group"].search(
-            [
-                ("company_id", "=", self.company_id.root_id.id),
-                ("l10n_br_dere_cta_ref", "!=", False),
-            ]
-        )
-        for account in accounts:
-            parent = account._dere_parent_group()
-            if parent:
-                groups |= parent._dere_ancestors()
-        return groups
-
     def _pgcc_row_from_group(self, group, codes):
-        c_cta = group.l10n_br_dere_cta
-        if not c_cta or c_cta in codes or not group.l10n_br_dere_cta_ref:
-            return False
-        codes.add(c_cta)
-        name = self._account_name_for_xml(group)
-        return {
-            "declaration_id": self.id,
-            "group_id": group.id,
-            "dere12_cCta": c_cta,
-            "dere12_cCtaInterna": group._dere_internal_code(),
-            "dere12_cDbrMista": group.l10n_br_dere_dbr_mista or "000",
-            "dere12_nomeCta": name,
-            "dere12_indCta": "S",
-            "dere12_descCta": group.l10n_br_dere_desc_cta or name,
-            "dere12_cCtaSup": group.l10n_br_dere_cta_sup,
-            "dere12_cCtaRef": group.l10n_br_dere_cta_ref,
-            "dere12_nivelCta": group.l10n_br_dere_nivel_cta or 1,
-            "dere12_natCta": group.l10n_br_dere_nat_cta or "V",
-            "dere12_codNat": group.l10n_br_dere_cod_nat or "1",
-            "dere12_iniVig": self.ini_valid or self.date_from,
-            "dere12_fimVig": self.fim_valid,
-        }
-
-    def _pgcc_row_from_account(self, account, codes):
-        c_cta = account.l10n_br_dere_cta
-        if not c_cta or c_cta in codes:
-            return False
-        codes.add(c_cta)
-        parent = account._dere_parent_group()
-        name = self._account_name_for_xml(account)
-        return {
-            "declaration_id": self.id,
-            "account_id": account.id,
-            "dere12_cCta": c_cta,
-            "dere12_cCtaInterna": account._dere_internal_code(),
-            "dere12_cDbrMista": account.l10n_br_dere_dbr_mista or "000",
-            "dere12_nomeCta": name,
-            "dere12_indCta": "A",
-            "dere12_descCta": account.l10n_br_dere_desc_cta or name,
-            "dere12_cCtaSup": parent.l10n_br_dere_cta if parent else False,
-            "dere12_cCtaRef": account._dere_cta_ref(),
-            "dere12_nivelCta": account.l10n_br_dere_nivel_cta or 1,
-            "dere12_natCta": account._dere_nat_cta() or "V",
-            "dere12_codNat": account._dere_cod_nat() or "1",
-            "tax_code_id": account.l10n_br_dere_cod_trib.id,
-            "dere12_indTribISS": account.l10n_br_dere_ind_trib_iss,
-            "dere12_iniVig": self.ini_valid or self.date_from,
-            "dere12_fimVig": self.fim_valid,
-        }
+        return self._require_table_period()._pgcc_row_from_group(group, codes)
 
     def _sync_pgcc_from_accounts(self):
         self.ensure_one()
-        self.pgcc_account_ids.unlink()
-        accounts = self._mapped_pgcc_accounts()
-        if not accounts:
-            raise UserError(_("Map at least one account with a DeRE referential code."))
-        missing_tax = accounts.filtered(lambda acc: not acc.l10n_br_dere_cod_trib)
-        if missing_tax:
-            raise UserError(
-                _("Analytic DeRE accounts must have a taxation code: %s")
-                % ", ".join(missing_tax.mapped("code"))
-            )
-        groups = self._mapped_pgcc_groups(accounts)
-        rows = []
-        codes = set()
-        for group in groups.sorted(lambda rec: rec.l10n_br_dere_nivel_cta or 1):
-            row = self._pgcc_row_from_group(group, codes)
-            if row:
-                rows.append(row)
-        for account in accounts:
-            row = self._pgcc_row_from_account(account, codes)
-            if row:
-                rows.append(row)
-        self.env["l10n_br_dere.pgcc.account"].create(rows)
-        missing_parents = {
-            line.dere12_cCtaSup
-            for line in self.pgcc_account_ids
-            if line.dere12_cCtaSup and line.dere12_cCtaSup not in codes
-        }
-        if missing_parents:
-            raise UserError(
-                _("Parent DeRE accounts are missing from the chart: %s")
-                % ", ".join(sorted(missing_parents))
-            )
-        return self.pgcc_account_ids
+        return self._require_table_period()._sync_pgcc_from_accounts()
 
     def _generate_d1011(self):
         self.ensure_one()
-        company = self.company_id
-        if not company.dere_plano_cta_ref or company.dere_plano_cta_ref not in dict(
-            PLANO_CTA_REF
-        ):
-            raise UserError(_("Set the DeRE referential chart on the company."))
-        if not company.dere_freq_encerr or company.dere_freq_encerr not in dict(
-            FREQ_ENCERR
-        ):
-            raise UserError(_("Set the DeRE closing frequency on the company."))
-        lines = self._sync_pgcc_from_accounts()
-        vals = self._header_vals(
-            {
-                "planoCtaRef": company.dere_plano_cta_ref,
-                "freqEncerr": company.dere_freq_encerr,
-            },
-            event_type=EVENT_D1011,
-        )
-        event = self._get_or_create_event(EVENT_D1011)
-        vals["id"] = event.event_id_attr or vals["id"]
-        event.event_id_attr = vals["id"]
-        event._store_xml(
-            xml_builder.build_d1011(vals, [line._to_xml_vals() for line in lines])
-        )
-        if self.event_ids.filtered(
-            lambda ev: ev.event_type == EVENT_D1001
-            and ev.state in ("generated", "accepted")
-        ):
-            self.state = "tables_ok"
-        return event
+        return self._require_table_period()._generate_d1011()
 
     def action_generate_tables(self):
         for rec in self:
-            rec._generate_d1001()
-            rec._generate_d1011()
-            if rec.state == "draft":
-                rec.state = "tables_ok"
+            rec._require_table_period().action_generate_tables()
         return True
+
+    def action_send_tables(self):
+        result = True
+        for rec in self:
+            action = rec._require_table_period().action_send_tables()
+            if isinstance(action, dict):
+                result = action
+        return result
 
     def _reset_months(self, freq):
         mapping = {
@@ -771,22 +664,6 @@ class DereDeclaration(models.Model):
         if nature == "D":
             return max(debit - ajuste_debt + ajuste_cred, 0.0)
         return max(credit - ajuste_cred + ajuste_debt, 0.0)
-
-    def _pgcc_codes(self):
-        self.ensure_one()
-        return set(filter(None, self.pgcc_account_ids.mapped("dere12_codTrib")))
-
-    def _is_subject_d1106(self):
-        self.ensure_one()
-        return self.company_id.dere_subject_d1106 or bool(
-            self._pgcc_codes() & CODTRIB_D1106
-        )
-
-    def _is_subject_d1121(self):
-        self.ensure_one()
-        return self.company_id.dere_subject_d1121 or bool(
-            self._pgcc_codes() & CODTRIB_D1121
-        )
 
     def _generate_d1101(self):
         self.ensure_one()
@@ -966,7 +843,7 @@ class DereDeclaration(models.Model):
             asset_count_by_account[asset.account_id.id] = (
                 asset_count_by_account.get(asset.account_id.id, 0) + 1
             )
-        opening, period = self._account_balances()
+        opening, _opening_cycle, period, _prev, _cycle = self._account_balances()
         existing = {line.dere12_idAtivo: line for line in self.reserve_line_ids}
         for asset in assets:
             pgcc = pgcc_by_account.get(asset.account_id.id)
@@ -1006,7 +883,7 @@ class DereDeclaration(models.Model):
 
     def _generate_d1106(self):
         self.ensure_one()
-        if not self.company_id.dere_subject_d1106:
+        if not self._is_subject_d1106():
             raise UserError(_("The company is not subject to D-1106."))
         if self.state not in ("trial_ok", "reopened", "closed"):
             raise UserError(_("Generate the trial balance before D-1106."))
@@ -1098,7 +975,7 @@ class DereDeclaration(models.Model):
 
     def _load_deductions(self):
         self.ensure_one()
-        if not self.company_id.dere_subject_d1121:
+        if not self._is_subject_d1121():
             raise UserError(_("The company is not subject to D-1121."))
         if self.state not in ("trial_ok", "reopened"):
             raise UserError(_("Generate the trial balance before loading deductions."))
@@ -1184,7 +1061,7 @@ class DereDeclaration(models.Model):
 
     def _generate_d1121(self):
         self.ensure_one()
-        if not self.company_id.dere_subject_d1121:
+        if not self._is_subject_d1121():
             raise UserError(_("The company is not subject to D-1121."))
         if self.state not in ("trial_ok", "reopened", "closed"):
             raise UserError(_("Generate the trial balance before D-1121."))
@@ -1278,7 +1155,7 @@ class DereDeclaration(models.Model):
                 _("Do not set the no-deductions flag when D-1121 was generated.")
             )
         if self.ind_inexist_dedu:
-            if not self.company_id.dere_subject_d1121:
+            if not self._is_subject_d1121():
                 raise UserError(
                     _(
                         "Do not set the no-deductions flag if the company is "
@@ -1286,10 +1163,10 @@ class DereDeclaration(models.Model):
                     )
                 )
             extra["indInexistDedu"] = "1"
-        elif self.company_id.dere_subject_d1121 and self.deduction_line_ids:
+        elif self._is_subject_d1121() and self.deduction_line_ids:
             if not d1121 or not d1121.xml_content:
                 raise UserError(_("Generate D-1121 before closing."))
-        elif self.company_id.dere_subject_d1121:
+        elif self._is_subject_d1121():
             self.ind_inexist_dedu = True
             extra["indInexistDedu"] = "1"
         return extra
@@ -1398,7 +1275,7 @@ class DereDeclaration(models.Model):
             EVENT_D1101,
             _("D-1101 processing receipt is required before sending D-1121."),
         )
-        if self.company_id.dere_subject_d1106:
+        if self._is_subject_d1106():
             self._require_processing_receipt(
                 EVENT_D1106,
                 _("D-1106 processing receipt is required before sending D-1121."),
@@ -1412,7 +1289,7 @@ class DereDeclaration(models.Model):
             raise UserError(
                 _("D-1101 processing receipt is required before sending D-1199.")
             )
-        if self.company_id.dere_subject_d1106:
+        if self._is_subject_d1106():
             self._require_processing_receipt(
                 EVENT_D1106,
                 _("D-1106 processing receipt is required before sending D-1199."),
@@ -1462,15 +1339,13 @@ class DereDeclaration(models.Model):
                 return events[:1]
         return self.env["l10n_br_dere.event"]
 
-    def action_send_tables(self):
-        for rec in self:
-            rec._send_events(rec._next_events(TABLE_EVENTS))
-        return True
-
     def action_send_periodics(self):
+        result = True
         for rec in self:
-            rec._send_events(rec._next_events(PERIODIC_EVENTS))
-        return True
+            action = rec._send_events(rec._next_events(PERIODIC_EVENTS))
+            if isinstance(action, dict):
+                result = action
+        return result
 
     def _get_dere_certificate(self):
         self.ensure_one()
@@ -1504,15 +1379,14 @@ class DereDeclaration(models.Model):
                 _("DeRE batch XML failed official XSD validation:\n%s")
                 % "\n".join(lote_errors[:8])
             )
-        batch = self.env["l10n_br_dere.batch"].create(
-            {
-                "name": f"{self.per_apur} {', '.join(events.mapped('event_type'))}",
-                "declaration_id": self.id,
-                "tp_amb": self.company_id.dere_tp_amb or "2",
-                "event_ids": [(6, 0, events.ids)],
-                "xml_content": xml,
-            }
-        )
+        batch_vals = {
+            "name": f"{self.per_apur} {', '.join(events.mapped('event_type'))}",
+            "declaration_id": self.id,
+            "tp_amb": self.company_id.dere_tp_amb or "2",
+            "event_ids": [(6, 0, events.ids)],
+            "xml_content": xml,
+        }
+        batch = self.env["l10n_br_dere.batch"].create(batch_vals)
         try:
             result = self.env["l10n_br_dere.receita.integra"].send_batch(
                 self.company_id, xml
@@ -1563,6 +1437,10 @@ class DereDeclaration(models.Model):
         consulted = self.env["l10n_br_dere.batch"]
         for rec in self:
             transmitted = rec.batch_ids.filtered(lambda batch: batch.protocol)
+            if rec.table_period_id:
+                transmitted |= rec.table_period_id.batch_ids.filtered(
+                    lambda batch: batch.protocol
+                )
             if not transmitted:
                 raise UserError(_("There is no sent batch with a protocol to consult."))
             batches = transmitted.filtered(lambda batch: batch.state == "sent")
@@ -1591,7 +1469,10 @@ class DereDeclaration(models.Model):
     def action_apply_return_xml(self, xml_content):
         self.ensure_one()
         parsed = xml_builder.parse_return(xml_content)
-        return self._apply_parsed_return(self.event_ids, parsed)
+        events = self.event_ids
+        if self.table_period_id:
+            events |= self.table_period_id.event_ids
+        return self._apply_parsed_return(events, parsed)
 
     def _apply_parsed_return(self, events, parsed, protocol=None):
         target = events

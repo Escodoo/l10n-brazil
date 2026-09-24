@@ -90,8 +90,12 @@ class TestDereTransmit(DereCommon):
     def _processing_get(self, url, **_kwargs):
         return _FakeResponse(text=PROCESSING_LOTE)
 
+    def _table_batches(self, declaration):
+        return self._table_period(declaration).batch_ids
+
     def _make_batch_due(self, declaration):
-        declaration.batch_ids.write({"next_consult_at": False})
+        batches = self._table_batches(declaration) | declaration.batch_ids
+        batches.write({"next_consult_at": False})
 
     def _send_tables(self, declaration):
         with patch(
@@ -137,21 +141,22 @@ class TestDereTransmit(DereCommon):
         declaration = self._create_declaration()
         declaration.action_generate_tables()
         self._send_tables(declaration)
-        event = declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1001")
+        event = self._event(declaration, "D-1001")
+        batch = self._table_batches(declaration)
         self.assertEqual(event.state, "sent")
         self.assertFalse(event.nr_recibo)
         self.assertEqual(event.protocol, "PROT-2026-0000000001")
-        self.assertTrue(declaration.batch_ids)
-        self.assertEqual(declaration.batch_ids.protocol, "PROT-2026-0000000001")
-        self.assertNotIn("evtRetorno", declaration.batch_ids.protocol)
+        self.assertTrue(batch)
+        self.assertEqual(batch.protocol, "PROT-2026-0000000001")
+        self.assertNotIn("evtRetorno", batch.protocol)
+        self.assertTrue(batch.next_consult_at)
         self.assertTrue(declaration.can_consult_results)
-        self.assertTrue(declaration.batch_ids.next_consult_at)
         self._consult_results(declaration)
         self.assertFalse(declaration.can_consult_results)
         self.assertEqual(event.state, "accepted")
         self.assertEqual(event.nr_recibo, "REC-D1001-000000000000001")
         self.assertEqual(event.cd_retorno, "1")
-        self.assertEqual(declaration.batch_ids.state, "done")
+        self.assertEqual(batch.state, "done")
 
     def test_send_does_not_consult_immediately(self):
         declaration = self._create_declaration()
@@ -167,21 +172,26 @@ class TestDereTransmit(DereCommon):
             ) as mocked_get,
         ):
             declaration.action_send_tables()
-        event = declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1001")
+        event = self._event(declaration, "D-1001")
         self.assertEqual(event.state, "sent")
-        self.assertEqual(declaration.batch_ids.state, "sent")
+        self.assertEqual(self._table_batches(declaration).state, "sent")
         mocked_get.assert_not_called()
 
     def test_send_timeout_keeps_unknown_batch(self):
         declaration = self._create_declaration()
         declaration.action_generate_tables()
-        with patch(
-            "odoo.addons.l10n_br_dere.models.receita_integra.requests.post",
+        period = self._table_period(declaration)
+        events = period._next_events(("D-1001",))
+        self.assertTrue(events)
+        with patch.object(
+            type(self.env["l10n_br_dere.receita.integra"]),
+            "send_batch",
             side_effect=requests.Timeout("timed out"),
         ):
-            action = declaration.action_send_tables()
-        self.assertEqual(declaration.batch_ids.state, "unknown")
+            action = period._send_events(events)
         self.assertEqual(action["tag"], "display_notification")
+        self.assertEqual(period.batch_ids.state, "unknown")
+        self.assertEqual(events.state, "generated")
 
     def test_consult_keeps_sent_while_processing(self):
         declaration = self._create_declaration()
@@ -191,9 +201,9 @@ class TestDereTransmit(DereCommon):
             declaration,
             get_side_effect=lambda url, **_kw: _FakeResponse(text=PROCESSING_LOTE),
         )
-        event = declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1001")
+        event = self._event(declaration, "D-1001")
         self.assertEqual(event.state, "sent")
-        self.assertEqual(declaration.batch_ids.state, "sent")
+        self.assertEqual(self._table_batches(declaration).state, "sent")
 
     def test_cron_consult_applies_return(self):
         declaration = self._create_declaration()
@@ -201,10 +211,19 @@ class TestDereTransmit(DereCommon):
         self._send_tables(declaration)
         self._make_batch_due(declaration)
         self._cron_consult()
-        event = declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1001")
+        event = self._event(declaration, "D-1001")
         self.assertEqual(event.state, "accepted")
         self.assertEqual(event.nr_recibo, "REC-D1001-000000000000001")
-        self.assertEqual(declaration.batch_ids.state, "done")
+        self.assertEqual(self._table_batches(declaration).state, "done")
+
+    def test_cron_consult_skips_batches_that_are_not_due(self):
+        declaration = self._create_declaration()
+        declaration.action_generate_tables()
+        self._send_tables(declaration)
+        self._cron_consult()
+        event = self._event(declaration, "D-1001")
+        self.assertEqual(event.state, "sent")
+        self.assertEqual(self._table_batches(declaration).state, "sent")
 
     def test_cron_consult_keeps_sent_while_processing(self):
         declaration = self._create_declaration()
@@ -214,9 +233,9 @@ class TestDereTransmit(DereCommon):
         self._cron_consult(
             get_side_effect=lambda url, **_kw: _FakeResponse(text=PROCESSING_LOTE),
         )
-        event = declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1001")
+        event = self._event(declaration, "D-1001")
         self.assertEqual(event.state, "sent")
-        self.assertEqual(declaration.batch_ids.state, "sent")
+        self.assertEqual(self._table_batches(declaration).state, "sent")
 
     def test_cron_consult_http_error_does_not_fail(self):
         declaration = self._create_declaration()
@@ -228,7 +247,7 @@ class TestDereTransmit(DereCommon):
                 status_code=503, text="unavailable"
             )
         )
-        self.assertEqual(declaration.batch_ids.state, "sent")
+        self.assertEqual(self._table_batches(declaration).state, "sent")
 
     def test_consult_without_protocol(self):
         declaration = self._create_declaration()
@@ -241,7 +260,7 @@ class TestDereTransmit(DereCommon):
         self._send_tables(declaration)
         self._make_batch_due(declaration)
         self._cron_consult()
-        self.assertEqual(declaration.batch_ids.state, "done")
+        self.assertEqual(self._table_batches(declaration).state, "done")
         action = self._consult_results(declaration)
         self.assertEqual(action["tag"], "display_notification")
         self.assertEqual(action["params"]["next"]["tag"], "soft_reload")
@@ -251,7 +270,7 @@ class TestDereTransmit(DereCommon):
         declaration.action_generate_tables()
         self._send_tables(declaration)
         self._consult_results(declaration)
-        declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1011").write(
+        self._event(declaration, "D-1011").write(
             {"state": "accepted", "cd_retorno": "1"}
         )
         self.assertFalse(declaration.can_generate_tables)
@@ -264,8 +283,9 @@ class TestDereTransmit(DereCommon):
         declaration.action_generate_tables()
         self._post_entry("2026-10-10", self.receivable, self.fee_account, 50.0)
         declaration.action_generate_d1101()
+        mixed = self._table_period(declaration).event_ids | declaration.event_ids
         with self.assertRaises(UserError):
-            declaration._send_events(declaration.event_ids)
+            declaration._send_events(mixed)
 
     def test_send_d1198_after_accepted_closing(self):
         declaration = self._create_declaration()
@@ -276,7 +296,7 @@ class TestDereTransmit(DereCommon):
         self._accept_closing(declaration)
         declaration.action_mark_reopened()
         self.assertEqual(declaration.state, "closed")
-        event = declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1198")
+        event = self._event(declaration, "D-1198")
         with (
             patch(
                 "odoo.addons.l10n_br_dere.models.receita_integra.requests.post",
@@ -304,14 +324,14 @@ class TestDereTransmit(DereCommon):
         self._post_entry("2026-10-10", self.receivable, self.fee_account, 50.0)
         declaration.action_generate_d1101()
         declaration.action_generate_d1199()
-        event = declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1199")
+        event = self._event(declaration, "D-1199")
         with self.assertRaises(UserError):
             declaration._send_events(event)
 
     def test_apply_return_occurrences(self):
         declaration = self._create_declaration()
         declaration.action_generate_d1001()
-        event = declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1001")
+        event = self._event(declaration, "D-1001")
         declaration.apply_return(
             event,
             "0",
@@ -343,10 +363,10 @@ class TestDereTransmit(DereCommon):
     def test_send_signs_event_with_sha256(self):
         declaration = self._create_declaration()
         declaration.action_generate_tables()
-        event = declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1001")
+        event = self._event(declaration, "D-1001")
         self.assertNotIn("Signature", event.xml_content)
         self._send_tables(declaration)
-        lote = declaration.batch_ids.xml_content
+        lote = self._table_batches(declaration).xml_content
         self.assertIn("Signature", lote)
         self.assertIn("rsa-sha256", lote)
         self.assertIn("sha256", lote)
@@ -369,7 +389,7 @@ class TestDereTransmit(DereCommon):
             side_effect=fake_post,
         ):
             declaration.action_send_tables()
-        self.assertEqual(declaration.batch_ids.protocol, "2.000001.123456")
+        self.assertEqual(self._table_batches(declaration).protocol, "2.000001.123456")
 
     def test_consult_rejects_events_on_lot_error(self):
         declaration = self._create_declaration("2025-02")
@@ -396,10 +416,10 @@ class TestDereTransmit(DereCommon):
             declaration,
             get_side_effect=lambda url, **_kw: _FakeResponse(text=rejected),
         )
-        event = declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1001")
+        event = self._event(declaration, "D-1001")
         self.assertEqual(event.state, "rejected")
         self.assertEqual(event.occurrence_ids.codigo, "MS1050")
-        self.assertEqual(declaration.batch_ids.state, "error")
+        self.assertEqual(self._table_batches(declaration).state, "error")
 
     def test_parse_return_matches_lot_events_by_id(self):
         parsed = xml_builder.parse_return(

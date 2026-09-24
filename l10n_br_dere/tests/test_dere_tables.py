@@ -13,7 +13,7 @@ from .common import DereCommon
 @tagged("post_install", "-at_install")
 class TestDereTables(DereCommon):
     def _event_xml(self, declaration, event_type):
-        event = declaration.event_ids.filtered(lambda ev: ev.event_type == event_type)
+        event = self._event(declaration, event_type)
         self.assertTrue(event.xml_content)
         return etree.fromstring(event.xml_content.encode("utf-8"))
 
@@ -78,10 +78,10 @@ class TestDereTables(DereCommon):
         self.assertEqual(self.fee_account.l10n_br_dere_nivel_cta, 2)
         splits = {node.text for node in root.findall(".//{*}cDbrMista")}
         self.assertTrue(all(len(code) == 3 for code in splits))
-        self.assertEqual(declaration.state, "tables_ok")
+        self.assertEqual(declaration.state, "draft")
         self.assertTrue(declaration.can_generate_tables)
         self.assertTrue(declaration.can_send_tables)
-        self.assertTrue(declaration.can_generate_trial)
+        self.assertFalse(declaration.can_generate_trial)
         self.assertEqual(declaration.primary_action, "send_tables")
 
     def test_d1011_inherits_group_mapping_on_analytic_account(self):
@@ -109,6 +109,26 @@ class TestDereTables(DereCommon):
         self.assertEqual(line.dere12_codNat, "4")
         self.assertEqual(line.dere12_cCtaSup, "31000")
         self.assertEqual(line.dere12_indCta, "A")
+
+    def test_d1011_emits_ancestor_groups_without_cta_ref(self):
+        self.parent_group.l10n_br_dere_cta_ref = False
+        self.parent_group.l10n_br_dere_nat_cta = False
+        self.parent_group.l10n_br_dere_cod_nat = False
+        declaration = self._create_declaration("2026-02")
+        declaration.action_generate_d1011()
+        parent = declaration.pgcc_account_ids.filtered(
+            lambda rec: rec.group_id == self.parent_group
+        )
+        self.assertTrue(parent)
+        self.assertEqual(parent.dere12_cCta, "31000")
+        self.assertEqual(parent.dere12_cCtaRef, "31")
+        self.assertEqual(parent.dere12_indCta, "S")
+        self.assertEqual(parent.dere12_natCta, "C")
+        self.assertEqual(parent.dere12_codNat, "4")
+        child = declaration.pgcc_account_ids.filtered(
+            lambda rec: rec.account_id == self.fee_account
+        )
+        self.assertEqual(child.dere12_cCtaSup, parent.dere12_cCta)
 
     def test_d1011_uses_company_language_account_name(self):
         self.env["res.lang"]._activate_lang("pt_BR")
@@ -149,10 +169,14 @@ class TestDereTables(DereCommon):
         self.assertIn("dere12_cCta", pgcc_fields)
         self.assertIn("dere12_nomeCta", pgcc_fields)
         self.assertIn("account_name", pgcc_fields)
+        self.assertIn("dere12_nivelCta", pgcc_fields)
+        self.assertIn("dere12_cCtaSup", pgcc_fields)
         self.assertIn("dere12_cCta", trial_fields)
         self.assertIn("account_name", trial_fields)
         self.assertIn("dere12_vApur", trial_fields)
         self.assertIn('name="dere12_cCta"', views["views"]["form"]["arch"])
         self.assertIn('name="account_name"', views["views"]["form"]["arch"])
+        self.assertIn('name="dere12_nivelCta"', views["views"]["form"]["arch"])
+        self.assertIn('optional="hide"', views["views"]["form"]["arch"])
         self.assertIn("state != 'draft'", views["views"]["form"]["arch"])
         self.assertIn("state == 'closed'", views["views"]["form"]["arch"])

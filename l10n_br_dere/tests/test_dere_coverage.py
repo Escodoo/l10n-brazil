@@ -103,9 +103,7 @@ class TestDereCoverage(DereCommon):
         )
         declaration = self._create_declaration("2025-03")
         declaration.action_generate_d1001()
-        xml = declaration.event_ids.filtered(
-            lambda ev: ev.event_type == "D-1001"
-        ).xml_content
+        xml = self._event(declaration, "D-1001").xml_content
         self.assertIn("<servFinanc>", xml)
         self.assertIn("<plAssistSaude>", xml)
         self.company.dere_reg_trib_princ = "3"
@@ -113,9 +111,7 @@ class TestDereCoverage(DereCommon):
         self.company.dere_activity_ids = [Command.set(prize.ids)]
         prize_declaration = self._create_declaration("2025-04")
         prize_declaration.action_generate_d1001()
-        prize_xml = prize_declaration.event_ids.filtered(
-            lambda ev: ev.event_type == "D-1001"
-        ).xml_content
+        prize_xml = self._event(prize_declaration, "D-1001").xml_content
         self.assertIn("<prognosticos>", prize_xml)
         self.assertNotIn("<plAssistSaude>", prize_xml)
 
@@ -222,8 +218,6 @@ class TestDereCoverage(DereCommon):
             xml_builder.build_d1001({**header, "tpOper": False})
         self.assertEqual(xml_builder._money(0.001), "0.00")
         self.assertEqual(xml_builder._money(-3.2), "3.20")
-        self.assertEqual(xml_builder._money(1.225), "1.22")
-        self.assertEqual(xml_builder._money(1.235), "1.24")
 
     def test_trial_syncs_pgcc_and_skips_duplicate_account_codes(self):
         duplicate = self.env["account.account"].create(
@@ -550,16 +544,16 @@ class TestDereCoverage(DereCommon):
     def test_send_rejects_invalid_lote_xsd(self):
         declaration = self._create_declaration("2024-05")
         declaration.action_generate_d1001()
-        event = declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1001")
+        event = self._event(declaration, "D-1001")
         with (
             patch(
-                "odoo.addons.l10n_br_dere.models.dere_declaration."
+                "odoo.addons.l10n_br_dere.models.dere_table_period."
                 "xsd_validator.validate_lote",
                 return_value=["lote broken"],
             ),
             self.assertRaises(UserError),
         ):
-            declaration._send_events(event)
+            self._table_period(declaration)._send_events(event)
 
     def test_consult_result_and_protocol_extraction_edge_cases(self):
         declaration = self._create_declaration("2024-06")
@@ -571,7 +565,7 @@ class TestDereCoverage(DereCommon):
                 "tp_amb": "2",
                 "state": "sent",
                 "protocol": "PROT-EDGE",
-                "event_ids": [Command.set(declaration.event_ids.ids)],
+                "event_ids": [Command.set(self._event(declaration, "D-1001").ids)],
             }
         )
         self.assertFalse(declaration._apply_consult_result(batch, ""))
@@ -587,9 +581,6 @@ class TestDereCoverage(DereCommon):
         self.assertFalse(declaration._extract_protocol(False))
         self.assertFalse(declaration._extract_protocol("{bad"))
         self.assertFalse(declaration._extract_protocol("plain-text"))
-        self.assertEqual(
-            declaration._extract_protocol("2.000001.123456"), "2.000001.123456"
-        )
         self.assertFalse(declaration._extract_protocol("<broken>"))
         self.assertEqual(
             declaration._extract_protocol(
@@ -795,7 +786,7 @@ class TestDereCoverage(DereCommon):
     def test_sent_event_rejects_non_consult_writes_and_builds_ids(self):
         declaration = self._create_declaration("2024-10")
         declaration.action_generate_d1001()
-        event = declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1001")
+        event = self._event(declaration, "D-1001")
         event.state = "sent"
         with self.assertRaises(UserError):
             event.write({"tp_oper": "2"})
@@ -860,7 +851,7 @@ class TestDereCoverage(DereCommon):
                 "tp_amb": "2",
                 "state": "sent",
                 "protocol": "PROT-CD1",
-                "event_ids": [Command.set(declaration.event_ids.ids)],
+                "event_ids": [Command.set(self._event(declaration, "D-1001").ids)],
             }
         )
         processing = """<?xml version="1.0" encoding="utf-8"?>

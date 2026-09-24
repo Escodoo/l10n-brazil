@@ -10,6 +10,13 @@
         sequence="40"
     />
     <menuitem
+        id="menu_dere_table_period"
+        name="Table Periods"
+        parent="menu_dere_root"
+        action="action_dere_table_period"
+        sequence="5"
+    />
+    <menuitem
         id="menu_dere_declaration"
         name="Declarations"
         parent="menu_dere_root"

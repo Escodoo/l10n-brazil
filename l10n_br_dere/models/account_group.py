@@ -8,6 +8,22 @@ from odoo.exceptions import ValidationError
 
 from odoo.addons.l10n_br_dere_spec.models.v1_2.types import COD_NAT, NAT_CTA
 
+# First digit of Brazilian CoA prefixes (ANS, XIPP, SPED-like).
+_PREFIX_NAT_CTA = {
+    "1": "D",
+    "2": "C",
+    "3": "C",
+    "4": "D",
+    "5": "D",
+}
+_PREFIX_COD_NAT = {
+    "1": "1",
+    "2": "2",
+    "3": "4",
+    "4": "5",
+    "5": "5",
+}
+
 
 class AccountGroup(models.Model):
     _inherit = "account.group"
@@ -44,6 +60,7 @@ class AccountGroup(models.Model):
     l10n_br_dere_nivel_cta = fields.Integer(
         string="DeRE account level",
         compute="_compute_l10n_br_dere_hierarchy",
+        recursive=True,
     )
 
     @api.depends(
@@ -84,6 +101,30 @@ class AccountGroup(models.Model):
         return self.l10n_br_dere_cta_interna or re.sub(
             r"[^0-9A-Za-z]", "", self.code_prefix_start or ""
         )
+
+    def _dere_cta_ref(self):
+        """Return the stored referential code or the group prefix."""
+        self.ensure_one()
+        ref = self.l10n_br_dere_cta_ref or self._dere_internal_code()
+        return ref[:13] if ref else False
+
+    def _dere_nat_cta(self):
+        self.ensure_one()
+        if self.l10n_br_dere_nat_cta:
+            return self.l10n_br_dere_nat_cta
+        if self.parent_id:
+            return self.parent_id._dere_nat_cta()
+        prefix = self._dere_internal_code()
+        return _PREFIX_NAT_CTA.get(prefix[0], "V") if prefix else False
+
+    def _dere_cod_nat(self):
+        self.ensure_one()
+        if self.l10n_br_dere_cod_nat:
+            return self.l10n_br_dere_cod_nat
+        if self.parent_id:
+            return self.parent_id._dere_cod_nat()
+        prefix = self._dere_internal_code()
+        return _PREFIX_COD_NAT.get(prefix[0]) if prefix else False
 
     def _dere_ancestors(self):
         groups = self.env["account.group"]

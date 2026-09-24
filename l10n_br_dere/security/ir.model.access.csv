@@ -3,6 +3,8 @@ access_dere_activity_user,l10n_br_dere.activity.user,model_l10n_br_dere_activity
 access_dere_activity_manager,l10n_br_dere.activity.manager,model_l10n_br_dere_activity,l10n_br_dere.group_manager,1,1,1,1
 access_dere_tax_code_user,l10n_br_dere.tax.code.user,model_l10n_br_dere_tax_code,l10n_br_dere.group_user,1,0,0,0
 access_dere_tax_code_manager,l10n_br_dere.tax.code.manager,model_l10n_br_dere_tax_code,l10n_br_dere.group_manager,1,1,1,1
+access_dere_table_period_user,l10n_br_dere.table.period.user,model_l10n_br_dere_table_period,l10n_br_dere.group_user,1,1,1,0
+access_dere_table_period_manager,l10n_br_dere.table.period.manager,model_l10n_br_dere_table_period,l10n_br_dere.group_manager,1,1,1,1
 access_dere_declaration_user,l10n_br_dere.declaration.user,model_l10n_br_dere_declaration,l10n_br_dere.group_user,1,1,1,0
 access_dere_declaration_manager,l10n_br_dere.declaration.manager,model_l10n_br_dere_declaration,l10n_br_dere.group_manager,1,1,1,1
 access_dere_event_user,l10n_br_dere.event.user,model_l10n_br_dere_event,l10n_br_dere.group_user,1,1,1,0
