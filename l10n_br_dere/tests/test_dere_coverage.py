@@ -670,10 +670,7 @@ class TestDereCoverage(DereCommon):
             self.env["l10n_br_dere.batch"]._cron_consult_batches()
 
     def test_token_cache_and_cnpj_vat_fallback(self):
-        cache = {}
-        client = self.env["l10n_br_dere.receita.integra"].with_context(
-            dere_token_cache=cache
-        )
+        client = self.env["l10n_br_dere.receita.integra"]
         frozen = fields.Datetime.now()
 
         class FakeTokenResp:
@@ -694,14 +691,55 @@ class TestDereCoverage(DereCommon):
             ),
         ):
             first = client._get_token(self.company)
-            second = client._get_token(self.company)
+            second = self.env["l10n_br_dere.receita.integra"]._get_token(self.company)
         self.assertEqual(first, "cached-token")
         self.assertEqual(second, "cached-token")
         self.assertEqual(mocked.call_count, 1)
-        self.assertIn(self.company.id, cache)
+        self.assertEqual(
+            mocked.call_args.kwargs.get("auth"), ("demo-client", "demo-secret")
+        )
+        stored = (
+            self.env["ir.config_parameter"]
+            .sudo()
+            .get_param(f"l10n_br_dere.token.{self.company.id}")
+        )
+        self.assertIn("cached-token", stored)
         self.company.partner_id.vat = False
         self.company.invalidate_recordset(["vat"])
         self.assertEqual(self.company._dere_cnpj(), "")
+
+    def test_authorized_request_retries_once_on_401(self):
+        client = self.env["l10n_br_dere.receita.integra"]
+        client._clear_token(self.company)
+        posts = []
+
+        class FakeToken:
+            status_code = 200
+            text = ""
+
+            def json(self):
+                return {"access_token": "retry-token", "expires_in": 3600}
+
+        class FakeApi:
+            def __init__(self, status_code, text="2.000001.9"):
+                self.status_code = status_code
+                self.text = text
+
+        def fake_post(url, **_kwargs):
+            if "token" in url:
+                return FakeToken()
+            posts.append(url)
+            if len(posts) == 1:
+                return FakeApi(401, "expired")
+            return FakeApi(200)
+
+        with patch(
+            "odoo.addons.l10n_br_dere.models.receita_integra.requests.post",
+            side_effect=fake_post,
+        ):
+            result = client.send_batch(self.company, "<DeRE/>")
+        self.assertTrue(result["ok"])
+        self.assertEqual(len(posts), 2)
 
     def test_closed_period_locks_deduction_and_reserve_rows(self):
         self.company.dere_subject_d1106 = True
@@ -768,7 +806,7 @@ class TestDereCoverage(DereCommon):
             company=self.company,
             tp_amb="9",
         )
-        self.assertTrue(event_id.startswith("DeRE11012"))
+        self.assertTrue(event_id.startswith("DeRE11011"))
         self.assertTrue(xsd_validator.validate(b"<broken/>", "D-1001"))
         self.assertTrue(xsd_validator.validate_lote(b"<broken/>"))
         with self.assertRaises(ValueError):

@@ -121,7 +121,7 @@ class TestDereErrors(DereCommon):
         self.assertTrue(event.xml_content)
         self.assertIn("<evtReabertMensal", event.xml_content)
         self.assertIn(self._closing_receipt("2026-02"), event.xml_content)
-        self.assertTrue(event.event_id_attr.startswith("DeRE11982"))
+        self.assertTrue(event.event_id_attr.startswith("DeRE11981"))
         self.assertTrue(declaration.can_discard_local_reopening)
         self.assertTrue(declaration.can_send_periodics)
         self.assertEqual(declaration.primary_action, "send_periodics")

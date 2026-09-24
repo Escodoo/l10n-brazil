@@ -41,14 +41,8 @@ PRIMARY_ACTIONS = [
     ("consult", "Consult Results"),
     ("reopen", "Reopen Period"),
 ]
-STRUCTURED_EVENT_ID = (
-    EVENT_D1101,
-    EVENT_D1106,
-    EVENT_D1121,
-    EVENT_D1198,
-    EVENT_D1199,
-)
-STRUCTURED_EVENT_ID_RE = r"^DeRE[0-9]{4}[1-2][0-9A-Z]{14}[0-9]{19}$"
+STRUCTURED_EVENT_ID = TABLE_EVENTS + PERIODIC_EVENTS
+STRUCTURED_EVENT_ID_RE = r"^DeRE[0-9]{4}1[0-9A-Z]{14}[0-9]{19}$"
 D1199_RECEIPT_RE = r"^[0-9]{4}-20[0-9]{2}(?:0[1-9]|1[0-2])-[0-9A-Z]{19}$"
 
 NS = {
@@ -79,6 +73,12 @@ DEDUCTION_DOCUMENT_EXCLUDED_STATES = (
 )
 
 TOKEN_URL_PROD = "https://api.receitafederal.gov.br/token"
-DEFAULT_API_URL = "https://api.receitafederal.gov.br"
+API_URL_RESTRICTED = "https://api.receitafederal.gov.br/prr-dere"
+API_URL_PROD = "https://api.receitafederal.gov.br/prr-dere"
+DEFAULT_API_URL = API_URL_RESTRICTED
+DEFAULT_API_PATH = "/v1/recepcao/lotes"
+DEFAULT_CONSULT_PATH = "/v1/consulta/lotes/{protocol}"
 DEFAULT_VER_APLIC = "odoo-dere-18.0"
-DEFAULT_CONSULT_PATH = "/dere/v1/consulta/lotes/{protocol}"
+PROTOCOL_RE = r"^[12]\.\d{6}\.\d{1,19}$"
+EVENT_ID_INSCRIPTION_TYPE = "1"
+BRASILIA_TZ = "America/Sao_Paulo"

@@ -52,7 +52,7 @@ class TestDereAuxiliaryEvents(DereCommon):
         self.assertTrue(event.xml_content)
         self.assertIn("<semAplic>1</semAplic>", event.xml_content)
         self.assertRegex(event.event_id_attr, STRUCTURED_EVENT_ID_RE)
-        self.assertTrue(event.event_id_attr.startswith("DeRE11062"))
+        self.assertTrue(event.event_id_attr.startswith("DeRE11061"))
 
     def test_d1106_with_asset_formulas(self):
         self.company.dere_subject_d1106 = True
@@ -253,7 +253,7 @@ class TestDereAuxiliaryEvents(DereCommon):
         self.assertEqual(root.findtext(".//{*}vOper"), "800.00")
         self.assertIsNone(root.find(".//{*}itemDFe"))
         self.assertRegex(event.event_id_attr, STRUCTURED_EVENT_ID_RE)
-        self.assertTrue(event.event_id_attr.startswith("DeRE11212"))
+        self.assertTrue(event.event_id_attr.startswith("DeRE11211"))
 
     def test_load_deductions_without_documents_reports_absence(self):
         self.company.dere_subject_d1121 = True

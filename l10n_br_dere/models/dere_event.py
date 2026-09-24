@@ -3,9 +3,9 @@
 
 import hashlib
 import re
-import secrets
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
@@ -19,7 +19,12 @@ from odoo.addons.l10n_br_dere_spec.models.v1_2.types import (
     TP_OPER,
 )
 
-from ..constants import EVENT_TYPES, STRUCTURED_EVENT_ID
+from ..constants import (
+    BRASILIA_TZ,
+    EVENT_ID_INSCRIPTION_TYPE,
+    EVENT_TYPES,
+    STRUCTURED_EVENT_ID,
+)
 
 
 class DereEvent(models.Model):
@@ -102,27 +107,37 @@ class DereEvent(models.Model):
         for rec in self:
             rec.name = f"{rec.event_type or ''} {rec.declaration_id.per_apur or ''}"
 
+    _event_id_seq = {}
+
+    @api.model
+    def _next_event_id_seq(self, timestamp):
+        last = self._event_id_seq.get(timestamp, 0) + 1
+        if last > 99999:
+            raise UserError(
+                _("Too many DeRE events were generated in the same second.")
+            )
+        self._event_id_seq[timestamp] = last
+        return f"{last:05d}"
+
     @api.model
     def _generate_event_id(self, event_type=None, company=None, tp_amb=None):
         if self and not event_type:
             event_type = self.event_type
             company = company or self.company_id
-            tp_amb = tp_amb or self.tp_amb
         if event_type not in STRUCTURED_EVENT_ID:
             # loteEventos/@id is xs:ID, so the value must start with a letter.
             return ("A" + uuid.uuid4().hex)[:42].ljust(42, "0")
         code = event_type.replace("D-", "")
-        environment = str(tp_amb or (company.dere_tp_amb if company else "2") or "2")
-        if environment not in ("1", "2"):
-            environment = "2"
-        cnpj = (company._dere_cnpj() if company else "").upper()
-        if not re.fullmatch(r"[0-9A-Z]{14}", cnpj):
-            raise UserError(_("Set a valid 14-character CNPJ on the company."))
-        seq = (
-            f"{datetime.now(timezone.utc):%Y%m%d%H%M%S}"
-            f"{secrets.randbelow(100000):05d}"
+        root = (company._dere_cnpj_root() if company else "").upper()
+        if not re.fullmatch(r"[0-9A-Z]{8}", root):
+            raise UserError(_("Set a valid 8-character CNPJ root on the company."))
+        inscription = root.rjust(14, "0")
+        now = datetime.now(ZoneInfo(BRASILIA_TZ))
+        timestamp = now.strftime("%Y%m%d%H%M%S")
+        return (
+            f"DeRE{code}{EVENT_ID_INSCRIPTION_TYPE}{inscription}"
+            f"{timestamp}{self._next_event_id_seq(timestamp)}"
         )
-        return f"DeRE{code}{environment}{cnpj}{seq}"
 
     def _format_xsd_errors(self, errors):
         return "\n".join(errors[:8])

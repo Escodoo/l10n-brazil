@@ -14,6 +14,9 @@ from odoo.addons.l10n_br_dere_spec.models.v1_2.types import (
 )
 
 from ..constants import (
+    API_URL_PROD,
+    API_URL_RESTRICTED,
+    DEFAULT_API_PATH,
     DEFAULT_API_URL,
     DEFAULT_CONSULT_PATH,
     DEFAULT_VER_APLIC,
@@ -82,7 +85,7 @@ class ResCompany(models.Model):
     )
     dere_api_path = fields.Char(
         string="DeRE batch path",
-        default="/dere/v1/lotes",
+        default=DEFAULT_API_PATH,
         help="Path appended to the API URL when posting a batch.",
     )
     dere_consult_path = fields.Char(
@@ -92,6 +95,18 @@ class ResCompany(models.Model):
     )
     dere_client_id = fields.Char(string="Receita Integra client id")
     dere_client_secret = fields.Char(string="Receita Integra client secret")
+
+    def _dere_api_base_url(self):
+        self.ensure_one()
+        if self.dere_api_url:
+            return self.dere_api_url.rstrip("/")
+        if self.dere_tp_amb == "1":
+            return API_URL_PROD
+        return API_URL_RESTRICTED
+
+    def _dere_batch_url(self):
+        self.ensure_one()
+        return self._dere_api_base_url() + (self.dere_api_path or DEFAULT_API_PATH)
 
     def _dere_cnpj(self):
         self.ensure_one()

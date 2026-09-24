@@ -56,7 +56,7 @@ class TestDereMonthly(DereCommon):
         self.assertEqual(root.findtext(".//{*}perApur"), "2026-10")
         event_id = root.find(".//{*}evtBalancete").get("id") or ""
         self.assertRegex(event_id, STRUCTURED_EVENT_ID_RE)
-        self.assertTrue(event_id.startswith("DeRE11012"))
+        self.assertTrue(event_id.startswith("DeRE11011"))
 
     def test_d1101_fee_vs_pass_through(self):
         fee = self.env["account.account"].create(
@@ -180,7 +180,7 @@ class TestDereMonthly(DereCommon):
         self.assertIn("<perApur>2026-10</perApur>", event.xml_content)
         self.assertNotIn("indInexistDedu", event.xml_content)
         self.assertRegex(event.event_id_attr, STRUCTURED_EVENT_ID_RE)
-        self.assertTrue(event.event_id_attr.startswith("DeRE11992"))
+        self.assertTrue(event.event_id_attr.startswith("DeRE11991"))
 
     def test_d1101_requires_full_cnpj(self):
         declaration = self._create_declaration()
