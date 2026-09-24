@@ -13,6 +13,7 @@ from . import dere_declaration
 from . import dere_declaration_rfb
 from . import dere_event
 from . import dere_event_total
+from . import dere_tax_assessment_line
 from . import dere_pgcc_account
 from . import dere_trial_line
 from . import dere_batch

@@ -198,6 +198,14 @@ per ``codTrib`` / ``indTribISS`` and the D-9106 total next to the
 appear when a total differs or when D-9101, D-9106 or D-9112 used
 another PGCC receipt than the D-1011 in force.
 
+When D-1199 is accepted, the same tab shows the D-9199 assessment: the
+IBS/CBS bases per specific regime (``detBC``), the general totals
+(``totalTributosGeral``) and the D-1101, D-1106 and D-1121 receipts used
+by the closing. The banner also appears when those receipts are not the
+events in force. The amounts are recorded for reference only; no journal
+entry is created. After D-1198 reopens the period, the previous
+assessment stays visible and is replaced by the next D-9199.
+
 Homologation checklist
 ----------------------
 

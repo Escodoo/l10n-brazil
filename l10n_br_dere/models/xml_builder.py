@@ -305,6 +305,40 @@ RETURN_TOTAL_FIELDS = (
     "vTotSaldoInic",
     "vTotSaldoFinal",
 )
+# D-9199 groups mapped to the REG_TRIB_SECUND regime codes.
+RETURN_TAX_GROUPS = {
+    "infoTotFinanceiro": "1",
+    "infoTotSaude": "2",
+    "infoTotProg": "3",
+}
+RETURN_DETBC_PATHS = {
+    "codBC": ("codBC",),
+    "xDetBC": ("xDetBC",),
+    "memoriaCalculo": ("memoriaCalculo",),
+    "vBCIBS": ("gBCIBS", "vBCIBS"),
+    "vBCNIBS": ("gBCIBS", "vBCNIBS"),
+    "vDedBCNIBS": ("gBCIBS", "vDedBCN"),
+    "vBCApurIBS": ("gBCIBS", "vBCApurIBS"),
+    "pIBSMun": ("gBCIBS", "pIBSMun"),
+    "vIBSMun": ("gBCIBS", "vIBSMun"),
+    "pIBSUF": ("gBCIBS", "pIBSUF"),
+    "vIBSUF": ("gBCIBS", "vIBSUF"),
+    "pIBS": ("gBCIBS", "pIBS"),
+    "vIBSTot": ("gBCIBS", "vIBSTot"),
+    "vBCCBS": ("gBCCBS", "vBCCBS"),
+    "vBCNCBS": ("gBCCBS", "vBCNCBS"),
+    "vDedBCNCBS": ("gBCCBS", "vDedBCN"),
+    "vBCApurCBS": ("gBCCBS", "vBCApurCBS"),
+    "pCBS": ("gBCCBS", "pCBS"),
+    "vCBS": ("gBCCBS", "vCBS"),
+    "vBCIS": ("gBCIS", "vBCIS"),
+    "vBCApurIS": ("gBCIS", "vBCApurIS"),
+    "pIS": ("gBCIS", "pIS"),
+    "vIS": ("gBCIS", "vIS"),
+    "vSaldoFinalBCNIBS": ("infoBCN", "gBCNIBS", "vSaldoFinal"),
+    "vSaldoFinalBCNCBS": ("infoBCN", "gBCNCBS", "vSaldoFinal"),
+}
+RETURN_TAX_TOTALS = ("vIS", "vIBSMun", "vIBSUF", "vIBSTot", "vCBS")
 
 
 def _localname(element):
@@ -374,6 +408,36 @@ def _return_totals(node):
     return [{"vApurTot": total}] if total else []
 
 
+def _return_taxes(node):
+    info = _child(node, "infoEvento")
+    lines = []
+    for group, regime in RETURN_TAX_GROUPS.items():
+        for det in _children(_child(info, group), "detBC"):
+            vals = {
+                key: _path_text(det, *path) for key, path in RETURN_DETBC_PATHS.items()
+            }
+            vals["regime"] = regime
+            lines.append(vals)
+    general = _child(info, "totalTributosGeral")
+    total = {}
+    if general is not None:
+        total = {name: _path_text(general, name) for name in RETURN_TAX_TOTALS}
+    return {"lines": lines, "total": total}
+
+
+def _return_receipts(node):
+    info_adic = _path(node, "infoEvento", "infoAdic")
+    return {
+        "nrReciboBalancete": _path_text(info_adic, "nrReciboBalancete"),
+        "nrReciboAplicFin": _path_text(info_adic, "nrReciboAplicFin"),
+        "nrReciboRelDedu": [
+            element.text.strip()
+            for element in _children(info_adic, "nrReciboRelDedu")
+            if element.text
+        ],
+    }
+
+
 def _return_node(root):
     if _localname(root).startswith("evtRetorno"):
         return root
@@ -422,6 +486,8 @@ def _parse_event_return(root):
         "perApur": False,
         "nrReciboPGCC": False,
         "totals": [],
+        "taxes": {"lines": [], "total": {}},
+        "receipts": {},
         "ocorrencias": [],
     }
     node = _return_node(root)
@@ -435,6 +501,8 @@ def _parse_event_return(root):
                     node, "infoEvento", "infoAdic", "nrReciboPGCC"
                 ),
                 "totals": _return_totals(node),
+                "taxes": _return_taxes(node),
+                "receipts": _return_receipts(node),
             }
         )
         _read_return_header(node, data)

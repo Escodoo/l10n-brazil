@@ -117,6 +117,50 @@ class TestDereReturns(DereCommon):
         )
         return event
 
+    def _mensal_info(self, declaration, balancete_receipt):
+        taxes = (
+            "<vIBSMun>5.00</vIBSMun><vIBSUF>5.00</vIBSUF>"
+            "<vIBSTot>10.00</vIBSTot><vCBS>9.00</vCBS>"
+        )
+        det_bc = (
+            "<detBC><codBC>2101</codBC><xDetBC>Health-plan revenue</xDetBC>"
+            "<memoriaCalculo>100.00 x 10%</memoriaCalculo>"
+            "<gBCIBS><vBCIBS>100.00</vBCIBS><vBCApurIBS>100.00</vBCApurIBS>"
+            "<pIBSMun>5.000000</pIBSMun><vIBSMun>5.00</vIBSMun>"
+            "<pIBSUF>5.000000</pIBSUF><vIBSUF>5.00</vIBSUF>"
+            "<pIBS>10.000000</pIBS><vIBSTot>10.00</vIBSTot></gBCIBS>"
+            "<gBCCBS><vBCCBS>100.00</vBCCBS><vBCApurCBS>100.00</vBCApurCBS>"
+            "<pCBS>9.000000</pCBS><vCBS>9.00</vCBS></gBCCBS>"
+            "</detBC>"
+        )
+        return (
+            "<infoEvento>"
+            f"<idePeriodo><perApur>{declaration.per_apur}</perApur></idePeriodo>"
+            "<infoAdic><nrReciboBalancete>"
+            f"{balancete_receipt}"
+            "</nrReciboBalancete></infoAdic>"
+            f"<infoTotSaude>{det_bc}<totalTributos>{taxes}</totalTributos>"
+            "</infoTotSaude>"
+            f"<totalTributosGeral>{taxes}</totalTributosGeral>"
+            "</infoEvento>"
+        )
+
+    def _accept_d1199(self, declaration, balancete_receipt=None):
+        fee = self._fee_line(declaration)
+        d1101 = self._accept_d1101(
+            declaration,
+            self._balan_totals((self.tax_admin_fee.code, "0", fee.dere12_vApur)),
+        )
+        declaration.action_generate_d1199()
+        event = self._event(declaration, "D-1199")
+        info = self._mensal_info(declaration, balancete_receipt or d1101.nr_recibo)
+        receipt = self._event_receipt("D-1199", declaration.per_apur)
+        self._consult(
+            declaration,
+            (event, self._event_return("evtRetornoMensal", event, receipt, info)),
+        )
+        return event
+
     def _schema_messages(self, event):
         return event.message_ids.filtered(
             lambda message: "official XSD" in (message.body or "")
@@ -241,6 +285,48 @@ class TestDereReturns(DereCommon):
         self.assertAlmostEqual(event.total_ids.dere12_vApurTot, 5.0)
         self.assertAlmostEqual(event.total_ids.local_v_apur, 0.0)
         self.assertTrue(declaration.rfb_mismatch)
+
+    def test_d9199_records_the_ibs_cbs_assessment(self):
+        declaration = self._prepare_trial()
+        event = self._accept_d1199(declaration)
+        self.assertEqual(event.return_type, "D-9199")
+        self.assertFalse(self._schema_messages(event))
+        self.assertEqual(declaration.state, "closed")
+        self.assertEqual(declaration.rfb_assessment_event_id, event)
+        line = declaration.tax_assessment_line_ids
+        self.assertEqual(len(line), 1)
+        self.assertEqual(line.regime, "2")
+        self.assertEqual(line.event_id, event)
+        self.assertEqual(line.dere12_codBC, "2101")
+        self.assertEqual(line.dere12_memoriaCalculo, "100.00 x 10%")
+        self.assertAlmostEqual(line.dere12_pIBS, 10.0)
+        self.assertAlmostEqual(line.dere12_vIBSTot, 10.0)
+        self.assertAlmostEqual(line.dere12_vCBS, 9.0)
+        self.assertAlmostEqual(declaration.rfb_v_ibs_mun, 5.0)
+        self.assertAlmostEqual(declaration.rfb_v_ibs_tot, 10.0)
+        self.assertAlmostEqual(declaration.rfb_v_cbs, 9.0)
+        self.assertFalse(declaration.rfb_v_is)
+        self.assertEqual(
+            declaration.rfb_nr_recibo_balancete,
+            self._event(declaration, "D-1101").nr_recibo,
+        )
+        self.assertFalse(declaration.rfb_nr_recibo_aplic_fin)
+        self.assertFalse(declaration.rfb_mismatch)
+
+    def test_d9199_flags_a_foreign_trial_receipt(self):
+        declaration = self._prepare_trial()
+        foreign = self._event_receipt("D-1101", "2026-01")
+        self._accept_d1199(declaration, balancete_receipt=foreign)
+        self.assertEqual(declaration.state, "closed")
+        self.assertTrue(declaration.rfb_mismatch)
+        self.assertTrue(
+            declaration.message_ids.filtered(
+                lambda message: foreign in (message.body or "")
+            )
+        )
+        declaration.write({"state": "reopened"})
+        self.assertFalse(declaration.rfb_mismatch)
+        self.assertTrue(declaration.tax_assessment_line_ids)
 
     def test_return_types_are_not_event_types(self):
         selection = dict(self.env["l10n_br_dere.event"]._fields["event_type"].selection)

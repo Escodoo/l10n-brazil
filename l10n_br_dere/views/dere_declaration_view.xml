@@ -366,9 +366,60 @@
                         <page
                             string="RFB Assessment"
                             name="rfb_assessment"
-                            invisible="not rfb_total_ids and not rfb_mismatch"
+                            invisible="not rfb_total_ids and not rfb_mismatch and not rfb_assessment_event_id"
                         >
                             <field name="rfb_mismatch" invisible="1" />
+                            <div
+                                class="alert alert-info"
+                                role="status"
+                                invisible="state != 'reopened' or not rfb_assessment_event_id"
+                            >
+                                The period was reopened. The assessment below
+                                comes from the previous closing and will be
+                                replaced by the next D-9199.
+                            </div>
+                            <group invisible="not rfb_assessment_event_id">
+                                <group string="Receipts used by the closing">
+                                    <field name="rfb_assessment_event_id" />
+                                    <field name="rfb_nr_recibo_balancete" />
+                                    <field name="rfb_nr_recibo_aplic_fin" />
+                                    <field name="rfb_nr_recibo_rel_dedu" />
+                                </group>
+                                <group string="Assessed taxes">
+                                    <field name="brl_currency_id" invisible="1" />
+                                    <field name="rfb_v_ibs_mun" />
+                                    <field name="rfb_v_ibs_uf" />
+                                    <field name="rfb_v_ibs_tot" />
+                                    <field name="rfb_v_cbs" />
+                                    <field name="rfb_v_is" />
+                                </group>
+                            </group>
+                            <field
+                                name="tax_assessment_line_ids"
+                                readonly="1"
+                                invisible="not tax_assessment_line_ids"
+                            >
+                                <list create="0" delete="0">
+                                    <field name="regime" />
+                                    <field name="dere12_codBC" />
+                                    <field name="dere12_xDetBC" />
+                                    <field
+                                        name="brl_currency_id"
+                                        column_invisible="1"
+                                    />
+                                    <field name="dere12_vBCApurIBS" />
+                                    <field name="dere12_pIBS" optional="hide" />
+                                    <field name="dere12_vIBSTot" sum="IBS" />
+                                    <field name="dere12_vBCApurCBS" />
+                                    <field name="dere12_pCBS" optional="hide" />
+                                    <field name="dere12_vCBS" sum="CBS" />
+                                    <field name="dere12_vIS" sum="IS" optional="hide" />
+                                    <field
+                                        name="dere12_memoriaCalculo"
+                                        optional="hide"
+                                    />
+                                </list>
+                            </field>
                             <field name="rfb_total_ids" readonly="1">
                                 <list create="0" delete="0">
                                     <field name="event_type" />
