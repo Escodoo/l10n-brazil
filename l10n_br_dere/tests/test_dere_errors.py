@@ -157,6 +157,18 @@ class TestDereErrors(DereCommon):
             2,
         )
 
+    def test_accepted_tables_lock_pgcc_snapshot(self):
+        declaration = self._create_declaration("2026-02")
+        declaration.action_generate_tables()
+        line = declaration.pgcc_account_ids[:1]
+        line.write({"dere12_nomeCta": "Draft edit"})
+        self.assertEqual(line.dere12_nomeCta, "Draft edit")
+        self._accept_tables(declaration)
+        with self.assertRaises(UserError):
+            line.write({"dere12_nomeCta": "Accepted edit"})
+        with self.assertRaises(UserError):
+            line.unlink()
+
     def test_closed_declaration_cannot_change_company_or_period(self):
         declaration = self._create_declaration("2026-03")
         self._post_entry("2026-03-10", self.receivable, self.fee_account, 50.0)

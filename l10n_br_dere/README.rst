@@ -95,7 +95,10 @@ On the company form, open the **DeRE** tab and set:
 
 On **Fiscal → DeRE → Table Periods**, create the validity that covers
 the months you will declare. D-1001, D-1011 and the PGCC snapshot live
-there and are reused by every monthly declaration in force.
+there and are reused by every monthly declaration in force. Edit the
+snapshot only on the table period, and only before D-1011 is accepted.
+The monthly form shows the same accounts as read-only context for
+D-1101.
 
 On each **account group** used as a synthetic DeRE node, fill the
 **DeRE** tab (``cCtaRef``, nature) when the official referential code

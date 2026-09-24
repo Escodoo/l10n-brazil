@@ -95,6 +95,9 @@ class DereDeclaration(models.Model):
     )
     pgcc_account_ids = fields.One2many(
         related="table_period_id.pgcc_account_ids",
+        readonly=True,
+        help="Read-only snapshot of the table period. Edit PGCC on "
+        "Fiscal → DeRE → Table Periods before D-1011 is accepted.",
     )
     trial_line_ids = fields.One2many(
         comodel_name="l10n_br_dere.trial.line",

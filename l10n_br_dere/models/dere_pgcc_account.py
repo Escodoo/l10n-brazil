@@ -139,6 +139,46 @@ class DerePgccAccount(models.Model):
         help="Official DeRE field fimVig.",
     )
 
+    def _auto_init(self):
+        """Drop leftover PGCC rows so table_period_id can become required."""
+        cr = self.env.cr
+        cr.execute("SELECT to_regclass('public.l10n_br_dere_pgcc_account')")
+        if cr.fetchone()[0]:
+            cr.execute(
+                """
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_name = 'l10n_br_dere_pgcc_account'
+                  AND column_name = 'declaration_id'
+                """
+            )
+            if cr.fetchone():
+                cr.execute(
+                    """
+                    UPDATE l10n_br_dere_pgcc_account AS pgcc
+                       SET table_period_id = declaration.table_period_id
+                      FROM l10n_br_dere_declaration AS declaration
+                     WHERE pgcc.declaration_id = declaration.id
+                       AND pgcc.table_period_id IS NULL
+                       AND declaration.table_period_id IS NOT NULL
+                    """
+                )
+            cr.execute(
+                """
+                DELETE FROM l10n_br_dere_pgcc_account AS pgcc
+                 WHERE pgcc.table_period_id IS NULL
+                   AND NOT EXISTS (
+                        SELECT 1 FROM l10n_br_dere_trial_line AS trial
+                         WHERE trial.pgcc_account_id = pgcc.id
+                   )
+                   AND NOT EXISTS (
+                        SELECT 1 FROM l10n_br_dere_reserve_line AS reserve
+                         WHERE reserve.pgcc_account_id = pgcc.id
+                   )
+                """
+            )
+        return super()._auto_init()
+
     @api.depends_context("lang")
     @api.depends("account_id", "group_id")
     def _compute_account_name(self):
@@ -146,10 +186,20 @@ class DerePgccAccount(models.Model):
             source = rec.account_id or rec.group_id
             rec.account_name = source.name if source else False
 
-    def write(self, vals):
-        if not self.env.context.get(
-            "dere_force_declaration_write"
-        ) and self.table_period_id.declaration_ids.filtered(
+    def _check_pgcc_locked(self):
+        if self.env.context.get("dere_force_declaration_write"):
+            return
+        if any(
+            period.state == "accepted" or period.tables_accepted()
+            for period in self.table_period_id
+        ):
+            raise UserError(
+                _(
+                    "Accepted DeRE table periods cannot change the PGCC "
+                    "snapshot. Create a new validity if the chart changed."
+                )
+            )
+        if self.table_period_id.declaration_ids.filtered(
             lambda rec: rec.state == "closed"
         ):
             raise UserError(
@@ -158,20 +208,13 @@ class DerePgccAccount(models.Model):
                     "Reopen the period first."
                 )
             )
+
+    def write(self, vals):
+        self._check_pgcc_locked()
         return super().write(vals)
 
     def unlink(self):
-        if not self.env.context.get(
-            "dere_force_declaration_write"
-        ) and self.table_period_id.declaration_ids.filtered(
-            lambda rec: rec.state == "closed"
-        ):
-            raise UserError(
-                _(
-                    "Closed DeRE declarations cannot be modified. "
-                    "Reopen the period first."
-                )
-            )
+        self._check_pgcc_locked()
         return super().unlink()
 
     def _to_xml_vals(self):

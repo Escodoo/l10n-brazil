@@ -216,8 +216,12 @@
                             </field>
                         </page>
                         <page string="PGCC" name="pgcc">
-                            <field name="pgcc_account_ids" readonly="state == 'closed'">
-                                <list create="0" delete="0">
+                            <field
+                                name="pgcc_account_ids"
+                                readonly="1"
+                                options="{'no_open': True}"
+                            >
+                                <list create="0" delete="0" edit="0">
                                     <field name="dere12_cCta" />
                                     <field name="account_name" />
                                     <field name="dere12_nomeCta" column_invisible="1" />
