@@ -14,6 +14,13 @@ from .common import DereCommon
 
 @tagged("post_install", "-at_install")
 class TestDereAuxiliaryEvents(DereCommon):
+    def test_tax_code_display_name_includes_code(self):
+        tax = self.env.ref("l10n_br_dere.tax_120110006")
+        self.assertTrue(tax.display_name.startswith("120110006"))
+        self.assertIn(tax.name, tax.display_name)
+        found = self.env["l10n_br_dere.tax.code"].name_search("120110006")
+        self.assertIn(tax.id, [row[0] for row in found])
+
     def _prepare_trial(self, period="2026-11"):
         declaration = self._create_declaration(period)
         declaration.action_generate_tables()
