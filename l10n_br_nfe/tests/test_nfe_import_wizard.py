@@ -308,3 +308,10 @@ class NFeImportWizardTest(TransactionCase):
         line.cfop_xml = "6101"
         line._compute_cfop_warning()
         self.assertFalse(line.cfop_warning)
+
+    def test_import_wizard_shows_document_total(self):
+        """The wizard must preview the total declared in the XML, so the user
+        can check it against the purchase order before confirming."""
+        self._prepare_wizard(self.xml_1)
+
+        self.assertEqual(self.wizard.amount_total, 14.00)
