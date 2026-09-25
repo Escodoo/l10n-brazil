@@ -387,9 +387,28 @@ class DereTablePeriod(models.Model):
             "dere12_fimVig": self.fim_valid,
         }
 
+    def _take_existing_pgcc(self, row, by_account, by_group, by_cta, used):
+        """Reuse the snapshot line of the same account, group or cCta."""
+        candidates = (
+            by_account.get(row.get("account_id")),
+            by_group.get(row.get("group_id")),
+            by_cta.get(row.get("dere12_cCta")),
+        )
+        for line in candidates:
+            if line and line.id not in used:
+                used.add(line.id)
+                return line
+        return self.env["l10n_br_dere.pgcc.account"]
+
     def _sync_pgcc_from_accounts(self):
+        """Refresh the PGCC snapshot without dropping referenced lines.
+
+        Trial-balance and reserve lines keep a restrict FK on the snapshot.
+        Rebuilding D-1011 after D-1101 / D-1106 therefore updates the
+        existing rows (for example a new ``codTrib``) instead of unlinking
+        them.
+        """
         self.ensure_one()
-        self.pgcc_account_ids.with_context(dere_force_declaration_write=True).unlink()
         accounts = self._mapped_pgcc_accounts()
         if not accounts:
             raise UserError(_("Map at least one account with a DeRE referential code."))
@@ -410,7 +429,39 @@ class DereTablePeriod(models.Model):
             row = self._pgcc_row_from_account(account, codes)
             if row:
                 rows.append(row)
-        self.env["l10n_br_dere.pgcc.account"].create(rows)
+        existing = self.pgcc_account_ids
+        by_account = {line.account_id.id: line for line in existing if line.account_id}
+        by_group = {line.group_id.id: line for line in existing if line.group_id}
+        by_cta = {line.dere12_cCta: line for line in existing}
+        used = set()
+        create_rows = []
+        kept = self.env["l10n_br_dere.pgcc.account"]
+        for row in rows:
+            match = self._take_existing_pgcc(row, by_account, by_group, by_cta, used)
+            if match:
+                match.with_context(dere_force_declaration_write=True).write(row)
+                kept |= match
+            else:
+                create_rows.append(row)
+        if create_rows:
+            self.env["l10n_br_dere.pgcc.account"].create(create_rows)
+        leftover = existing - kept
+        if leftover:
+            trial = self.env["l10n_br_dere.trial.line"].search(
+                [("pgcc_account_id", "in", leftover.ids)], limit=1
+            )
+            reserve = self.env["l10n_br_dere.reserve.line"].search(
+                [("pgcc_account_id", "in", leftover.ids)], limit=1
+            )
+            if trial or reserve:
+                raise UserError(
+                    _(
+                        "The PGCC snapshot cannot drop accounts still used by "
+                        "D-1101 or D-1106: %s"
+                    )
+                    % ", ".join(leftover.mapped("dere12_cCta"))
+                )
+            leftover.with_context(dere_force_declaration_write=True).unlink()
         missing_parents = {
             line.dere12_cCtaSup
             for line in self.pgcc_account_ids

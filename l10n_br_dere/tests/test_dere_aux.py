@@ -110,6 +110,25 @@ class TestDereAuxiliaryEvents(DereCommon):
         self.assertEqual(root.findtext(".//{*}vApur"), "12.00")
         self.assertIsNone(root.find(".//{*}semAplic"))
 
+    def test_replace_d1011_keeps_reserve_pgcc_link(self):
+        self.company.dere_subject_d1106 = True
+        self._map_d1106_codtrib()
+        self._create_reserve_asset(self.equity_account)
+        declaration = self._prepare_trial()
+        declaration.action_generate_d1106()
+        line = declaration.reserve_line_ids
+        pgcc = line.pgcc_account_id
+        other = self.env.ref("l10n_br_dere.tax_120110007")
+        self.equity_account.l10n_br_dere_cod_trib = other
+        period = self._table_period(declaration)
+        period._generate_d1011(tp_oper="2")
+        self.assertEqual(line.pgcc_account_id, pgcc)
+        self.assertEqual(pgcc.tax_code_id, other)
+        d1011 = period.event_ids.filtered(lambda ev: ev.event_type == "D-1011").sorted(
+            "id"
+        )[-1:]
+        self.assertIn(other.code, d1011.xml_content)
+
     def _create_reserve_asset(self, account, id_ativo="CDB2026001"):
         account.l10n_br_dere_reserve_invest = True
         return self.env["l10n_br_dere.reserve.asset"].create(
