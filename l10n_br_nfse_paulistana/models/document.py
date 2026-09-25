@@ -4,18 +4,23 @@
 import xml.etree.ElementTree as ET
 from datetime import datetime
 
+import pytz
 from erpbrasil.base import misc
-from nfselib.paulistana.v02.PedidoEnvioLoteRPS import (
+from nfselib.paulistana.v03.PedidoEnvioLoteRPS_v02 import (
     CabecalhoType,
     PedidoEnvioLoteRPS,
     tpChaveRPS,
-    tpCPFCNPJ,
+    tpCPFCNPJNIF,
     tpEndereco,
+    tpGIBSCBS,
+    tpIBSCBS,
     tpRPS,
+    tpTrib,
+    tpValores,
 )
 from unidecode import unidecode
 
-from odoo import _, models
+from odoo import _, api, models
 from odoo.exceptions import UserError
 
 from odoo.addons.l10n_br_fiscal.constants.fiscal import (
@@ -48,8 +53,8 @@ class Document(models.Model):
     _inherit = "l10n_br_fiscal.document"
 
     def convert_type_nfselib(self, class_object, object_filed, value):
-        if value is None:
-            return value
+        if value is None or value is False:
+            return None
 
         value_type = ""
         for field in class_object().member_data_items_:
@@ -66,11 +71,50 @@ class Document(models.Model):
         else:
             return value
 
+    @api.model
+    def _paulistana_datetime(self, value):
+        """PMSP returns xs:dateTime in local time ("2020-06-04T11:58:46", optionally
+        with fraction and offset); Datetime fields store naive UTC."""
+        if not value:
+            return value
+        moment = datetime.fromisoformat(value)
+        if moment.tzinfo is None:
+            moment = pytz.timezone("America/Sao_Paulo").localize(moment)
+        return moment.astimezone(pytz.utc).replace(tzinfo=None, microsecond=0)
+
+    def _nfse_paulistana_reforma_enabled(self):
+        return self.env["ir.config_parameter"].sudo().get_param(
+            "l10n_br_nfse_paulistana.reforma_ibscbs", "False"
+        ).lower() in ("1", "true")
+
     def _serialize(self, edocs):
         edocs = super()._serialize(edocs)
         for record in self.filtered(filter_oca_nfse).filtered(filter_paulistana):
+            if record._nfse_paulistana_reforma_enabled():
+                record._check_reforma_ibscbs_paulistana()
             edocs.append(record.serialize_nfse_paulistana())
         return edocs
+
+    def _check_reforma_ibscbs_paulistana(self):
+        for line in self.fiscal_line_ids:
+            label = line.name or line.product_id.display_name
+            mapping = line.city_taxation_code_id.ibs_cbs_mapping_ids[:1]
+            if not (mapping and mapping.cclass_id.code):
+                raise UserError(
+                    _(
+                        "Line '%s': set the IBS/CBS tax classification (cClassTrib) "
+                        "in the IBS/CBS mapping of the city taxation code.",
+                        label,
+                    )
+                )
+            if not line.nbs_id.indop:
+                raise UserError(
+                    _(
+                        "Line '%s': set the operation indicator (INDOP/cIndOp) on the "
+                        "NBS.",
+                        label,
+                    )
+                )
 
     def serialize_nfse_paulistana(self):
         dados_lote_rps = self._prepare_lote_rps()
@@ -83,10 +127,10 @@ class Document(models.Model):
 
     def _serialize_cabecalho(self, dados_lote_rps):
         return CabecalhoType(
-            Versao=self.convert_type_nfselib(CabecalhoType, "Versao", 1),
-            CPFCNPJRemetente=tpCPFCNPJ(
+            Versao=self.convert_type_nfselib(CabecalhoType, "Versao", 2),
+            CPFCNPJRemetente=tpCPFCNPJNIF(
                 CNPJ=self.convert_type_nfselib(
-                    CabecalhoType, "tpCPFCNPJ", dados_lote_rps["cnpj"]
+                    tpCPFCNPJNIF, "CNPJ", dados_lote_rps["cnpj"]
                 )
             ),
             transacao=False,  # TODO: Verficar origem do dado
@@ -96,19 +140,35 @@ class Document(models.Model):
                 dados_lote_rps["date_in_out"].split("T", 1)[0],
             ),
             dtFim=self.convert_type_nfselib(
-                CabecalhoType, "dtFim", dados_lote_rps["date_in_out"].split("T", 1)[0]
+                CabecalhoType,
+                "dtFim",
+                dados_lote_rps["date_in_out"].split("T", 1)[0],
             ),
             QtdRPS=self.convert_type_nfselib(CabecalhoType, "QtdRPS", "1"),
-            ValorTotalServicos=self.convert_type_nfselib(
-                CabecalhoType, "ValorTotalServicos", dados_lote_rps["total_recebido"]
-            ),
-            ValorTotalDeducoes=self.convert_type_nfselib(
-                CabecalhoType, "ValorTotalDeducoes", dados_lote_rps["carga_tributaria"]
-            ),
         )
 
     def _serialize_lote_rps(self, dados_lote_rps, dados_servico):
         dados_tomador = self._prepare_dados_tomador()
+        # The IBS/CBS reform fields (layout v3.3.4) only go out with the
+        # l10n_br_nfse_paulistana.reforma_ibscbs parameter on: while it is off the
+        # city validates the current schema and rejects them.
+        reforma = self._nfse_paulistana_reforma_enabled()
+        IBSCBS = None
+        if reforma:
+            gIBSCBS = tpGIBSCBS(
+                cClassTrib=self.convert_type_nfselib(
+                    tpGIBSCBS, "cClassTrib", dados_servico["cclass_trib"]
+                )
+            )
+            IBSCBS = tpIBSCBS(
+                finNFSe=self.convert_type_nfselib(tpIBSCBS, "finNFSe", 0),
+                indFinal=self.convert_type_nfselib(tpIBSCBS, "indFinal", 0),
+                cIndOp=self.convert_type_nfselib(
+                    tpIBSCBS, "cIndOp", dados_servico["indop"]
+                ),
+                indDest=self.convert_type_nfselib(tpIBSCBS, "indDest", 1),
+                valores=tpValores(trib=tpTrib(gIBSCBS=gIBSCBS)),
+            )
         return tpRPS(
             Assinatura=self.assinatura_rps(
                 dados_lote_rps, dados_servico, dados_tomador
@@ -136,8 +196,9 @@ class Document(models.Model):
                 "TributacaoRPS",
                 self._map_taxation_rps(dados_lote_rps["natureza_operacao"]),
             ),
-            ValorServicos=self.convert_type_nfselib(
-                tpRPS, "ValorServicos", dados_servico["valor_servicos"]
+            # Schema v02-4: ValorInicialCobrado xor ValorFinalCobrado (xs:choice).
+            ValorFinalCobrado=self.convert_type_nfselib(
+                tpRPS, "ValorFinalCobrado", dados_servico["valor_servicos"]
             ),
             ValorDeducoes=self.convert_type_nfselib(
                 tpRPS, "ValorDeducoes", dados_servico["valor_deducoes"]
@@ -160,24 +221,56 @@ class Document(models.Model):
             CodigoServico=self.convert_type_nfselib(
                 tpRPS, "CodigoServico", dados_servico["codigo_tributacao_municipio"]
             ),
+            ExigibilidadeSuspensa=(
+                self.convert_type_nfselib(tpRPS, "ExigibilidadeSuspensa", 0)
+                if reforma
+                else None
+            ),
+            PagamentoParceladoAntecipado=(
+                self.convert_type_nfselib(tpRPS, "PagamentoParceladoAntecipado", 0)
+                if reforma
+                else None
+            ),
+            NBS=(
+                self.convert_type_nfselib(tpRPS, "NBS", dados_servico["nbs"])
+                if reforma
+                else None
+            ),
+            # Schema v02-4: cLocPrestacao xor cPaisPrestacao (xs:choice); services
+            # rendered in Brazil use cLocPrestacao.
+            cLocPrestacao=(
+                self.convert_type_nfselib(
+                    tpRPS, "cLocPrestacao", self.partner_id.city_id.ibge_code
+                )
+                if reforma
+                else None
+            ),
+            ValorIPI=(
+                self.convert_type_nfselib(tpRPS, "ValorIPI", 0) if reforma else None
+            ),
             AliquotaServicos=self.convert_type_nfselib(
                 tpRPS, "AliquotaServicos", dados_servico["aliquota"]
             ),
-            ISSRetido="true" if dados_servico["iss_retido"] == "1" else "false",
-            # FIXME: Hardcoded
+            ISSRetido=(
+                "true"
+                if float(dados_servico.get("valor_iss_retido") or 0) > 0
+                else "false"
+            ),
             CPFCNPJTomador=self.convert_type_nfselib(
                 tpRPS,
                 "CPFCNPJTomador",
-                tpCPFCNPJ(CNPJ=dados_tomador["cnpj"], CPF=dados_tomador["cpf"]),
+                tpCPFCNPJNIF(CNPJ=dados_tomador["cnpj"], CPF=dados_tomador["cpf"]),
             ),
-            InscricaoMunicipalTomador=self.convert_type_nfselib(
-                tpRPS,
-                "InscricaoMunicipalTomador",
-                dados_tomador["inscricao_municipal"],
-            )
-            if dados_tomador["codigo_municipio"]
-            == int("%s" % (self.company_id.partner_id.city_id.ibge_code))
-            else None,
+            InscricaoMunicipalTomador=(
+                self.convert_type_nfselib(
+                    tpRPS,
+                    "InscricaoMunicipalTomador",
+                    dados_tomador["inscricao_municipal"],
+                )
+                if dados_tomador["codigo_municipio"]
+                == int("%s" % (self.company_id.partner_id.city_id.ibge_code))
+                else None
+            ),
             InscricaoEstadualTomador=self.convert_type_nfselib(
                 tpRPS, "InscricaoEstadualTomador", dados_tomador["inscricao_estadual"]
             ),
@@ -218,14 +311,6 @@ class Document(models.Model):
                     )
                 ),
             ),
-            ValorCargaTributaria=self.convert_type_nfselib(
-                tpRPS,
-                "ValorCargaTributaria",
-                dados_lote_rps["carga_tributaria_estimada"],
-            ),
-            FonteCargaTributaria=self.convert_type_nfselib(
-                tpRPS, "FonteCargaTributaria", "IBPT"
-            ),
             MunicipioPrestacao=self.convert_type_nfselib(
                 CabecalhoType,
                 "Versao",
@@ -234,66 +319,77 @@ class Document(models.Model):
                     dados_servico["codigo_municipio"],
                 ),
             ),
-        )
-
-    def _serialize_rps(self, dados):
-        return tpRPS(
-            InscricaoMunicipalTomador=self.convert_type_nfselib(
-                tpRPS, "InscricaoMunicipalTomador", dados["inscricao_municipal"]
+            IBSCBS=IBSCBS,
+            RetencaoPisCofins=(
+                self.convert_type_nfselib(
+                    tpRPS,
+                    "RetencaoPisCofins",
+                    self._map_retencao_pis_cofins(
+                        dados_servico["valor_pis_retido"],
+                        dados_servico["valor_cofins_retido"],
+                        dados_servico["valor_csll_retido"],
+                    ),
+                )
+                if reforma
+                else None
             ),
-            CPFCNPJTomador=tpCPFCNPJ(
-                Cnpj=self.convert_type_nfselib(tpCPFCNPJ, "Cnpj", dados["cnpj"]),
-                Cpf=self.convert_type_nfselib(tpCPFCNPJ, "Cpf", dados["cpf"]),
-            ),
-            RazaoSocialTomador=self.convert_type_nfselib(
-                tpRPS, "RazaoSocialTomador", dados["razao_social"]
-            ),
-            EnderecoTomador=tpEndereco(
-                Logradouro=self.convert_type_nfselib(
-                    tpEndereco, "Logradouro", dados["endereco"]
-                ),
-                NumeroEndereco=self.convert_type_nfselib(
-                    tpEndereco, "NumeroEndereco", dados["numero"]
-                ),
-                ComplementoEndereco=self.convert_type_nfselib(
-                    tpEndereco, "ComplementoEndereco", dados["complemento"]
-                ),
-                Bairro=self.convert_type_nfselib(tpEndereco, "Bairro", dados["bairro"]),
-                Cidade=self.convert_type_nfselib(
-                    tpEndereco, "Cidade", dados["codigo_municipio"]
-                ),
-                UF=self.convert_type_nfselib(tpEndereco, "UF", dados["uf"]),
-                CEP=self.convert_type_nfselib(tpEndereco, "CEP", dados["cep"]),
-            )
-            or None,
         )
 
     def assinatura_rps(self, dados_lote_rps, dados_servico, dados_tomador):
+        """ASCII bytes of the RPS signature string (before signing/Base64).
+
+        The IBS/CBS reform layout uses a 12-digit municipal registration; the
+        current layout (Paulistana manual v2) uses 8, following the reform switch.
+        """
         assinatura = ""
 
-        assinatura += dados_lote_rps["inscricao_municipal"].zfill(8)
-        assinatura += dados_lote_rps["serie"].ljust(5, " ")
-        assinatura += dados_lote_rps["numero"].zfill(12)
-        assinatura += datetime.strptime(
-            dados_lote_rps["data_emissao"], "%Y-%m-%dT%H:%M:%S"
-        ).strftime("%Y%m%d")
-        assinatura += self._map_taxation_rps(dados_lote_rps["natureza_operacao"])
-        assinatura += "N"  # Corrigir - Verificar status do RPS
-        assinatura += "S" if dados_servico["iss_retido"] == "1" else "N"
-        assinatura += (
-            ("%.2f" % dados_servico["valor_servicos"]).replace(".", "").zfill(15)
+        inscr_mun = misc.punctuation_rm(dados_lote_rps["inscricao_municipal"] or "")
+        assinatura += inscr_mun.zfill(
+            12 if self._nfse_paulistana_reforma_enabled() else 8
         )
-        assinatura += (
-            ("%.2f" % dados_lote_rps["carga_tributaria"]).replace(".", "").zfill(15)
-        )
-        assinatura += dados_servico["codigo_tributacao_municipio"].zfill(5)
-        assinatura += "2" if dados_tomador["cnpj"] else "1"
-        assinatura += (dados_tomador["cnpj"] or dados_tomador["cpf"]).zfill(14)
-        # assinatura += '3'
-        # assinatura += ''.zfill(14)
-        # assinatura += 'N'
+        assinatura += (dados_lote_rps["serie"] or "").ljust(5)[:5]
+        assinatura += str(dados_lote_rps["numero"]).zfill(12)
 
-        return assinatura
+        dt_emissao = datetime.strptime(
+            dados_lote_rps["data_emissao"], "%Y-%m-%dT%H:%M:%S"
+        )
+        assinatura += dt_emissao.strftime("%Y%m%d")
+        assinatura += self._map_taxation_rps(dados_lote_rps["natureza_operacao"])
+
+        status_rps = dados_lote_rps.get("status_rps") or "N"
+        assinatura += status_rps
+
+        assinatura += (
+            "S" if float(dados_servico.get("valor_iss_retido") or 0) > 0 else "N"
+        )
+
+        valor_inicial_cobrado = dados_servico.get("valor_inicial_cobrado")
+        valor_final_cobrado = dados_servico.get("valor_servicos")
+        valor_base_assinatura = (
+            valor_inicial_cobrado
+            if valor_inicial_cobrado is not None
+            else (
+                valor_final_cobrado
+                if valor_final_cobrado is not None
+                else dados_servico["valor_servicos"]
+            )
+        )
+        assinatura += ("%.2f" % float(valor_base_assinatura)).replace(".", "").zfill(15)
+
+        valor_deducoes = dados_servico.get("valor_deducoes", 0.0)
+        assinatura += ("%.2f" % float(valor_deducoes)).replace(".", "").zfill(15)
+
+        assinatura += str(dados_servico["codigo_tributacao_municipio"]).zfill(5)
+
+        has_cnpj_tomador = bool(dados_tomador.get("cnpj"))
+        assinatura += "2" if has_cnpj_tomador else "1"
+
+        doc_tomador = misc.punctuation_rm(
+            dados_tomador.get("cnpj") or dados_tomador.get("cpf") or ""
+        )
+        assinatura += doc_tomador.zfill(14)
+
+        return assinatura.encode("ascii")
 
     def _map_taxation_rps(self, operation_nature):
         # FIXME: Lidar com diferença de tributado em São Paulo ou não
@@ -323,6 +419,25 @@ class Document(models.Model):
 
         return dict_type_rps[rps_type]
 
+    def _map_retencao_pis_cofins(
+        self, valor_pis_retido, valor_cofins_retido, valor_csll_retido
+    ):
+        # NT-007: indicador de retenção de PIS/COFINS/CSLL
+        dict_retencao_pis_cofins_csll = {
+            (False, False, False): "0",  # PIS/COFINS/CSLL Não Retidos.
+            (True, True, True): "3",  # PIS/COFINS/CSLL Retidos.
+            (True, True, False): "4",  # PIS/COFINS Retidos, CSLL Não Retido.
+            (True, False, False): "5",  # PIS Retido, COFINS/CSLL Não Retidos.
+            (False, True, False): "6",  # COFINS Retido, PIS/CSLL Não Retidos.
+            (False, True, True): "7",  # PIS Não Retido, COFINS/CSLL Retidos.
+            (False, False, True): "8",  # PIS/COFINS Não Retidos, CSLL Retido.
+            (True, False, True): "9",  # COFINS Não Retido, PIS/CSLL Retidos.
+        }
+        pis_retido = float(valor_pis_retido or 0) > 0
+        cofins_retido = float(valor_cofins_retido or 0) > 0
+        csll_retido = float(valor_csll_retido or 0) > 0
+        return dict_retencao_pis_cofins_csll[(pis_retido, cofins_retido, csll_retido)]
+
     def _eletronic_document_send(self):
         super()._eletronic_document_send()
         for record in self.filtered(filter_oca_nfse).filtered(filter_paulistana):
@@ -343,9 +458,9 @@ class Document(models.Model):
                                 nfse = retorno.find(".//NFe")
                                 # TODO: Verificar resposta do ConsultarLote
                                 vals["document_number"] = nfse.find(".//NumeroNFe").text
-                                vals["authorization_date"] = nfse.find(
-                                    ".//DataEmissaoRPS"
-                                ).text
+                                vals["authorization_date"] = self._paulistana_datetime(
+                                    nfse.find(".//DataEmissaoRPS").text
+                                )
                                 vals["verify_code"] = nfse.find(
                                     ".//CodigoVerificacao"
                                 ).text
@@ -396,17 +511,18 @@ class Document(models.Model):
             )
             consulta = processador.analisa_retorno_consulta(processo)
             if isinstance(consulta, dict):
+                data_emissao = record._paulistana_datetime(consulta["data_emissao"])
                 record.write(
                     {
                         "verify_code": consulta["codigo_verificacao"],
                         "document_number": consulta["numero"],
-                        "authorization_date": consulta["data_emissao"],
+                        "authorization_date": data_emissao,
                     }
                 )
                 record.authorization_event_id.set_done(
                     status_code=4,
                     response=_("Procesado com Sucesso"),
-                    protocol_date=consulta["data_emissao"],
+                    protocol_date=data_emissao,
                     protocol_number=record.authorization_protocol,
                     file_response_xml=processo.retorno,
                 )

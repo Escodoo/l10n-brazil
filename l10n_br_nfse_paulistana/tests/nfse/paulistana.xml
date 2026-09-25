@@ -3,7 +3,7 @@
     xmlns:xsd="http://www.w3.org/2001/XMLSchema"
     xmlns="http://www.prefeitura.sp.gov.br/nfe"
 >
-    <Cabecalho xmlns="" Versao="1">
+    <Cabecalho xmlns="" Versao="2">
         <CPFCNPJRemetente>
             <CNPJ>59594315000157</CNPJ>
         </CPFCNPJRemetente>
@@ -11,12 +11,10 @@
         <dtInicio>2020-06-04</dtInicio>
         <dtFim>2020-06-04</dtFim>
         <QtdRPS>1</QtdRPS>
-        <ValorTotalServicos>100</ValorTotalServicos>
-        <ValorTotalDeducoes>0</ValorTotalDeducoes>
     </Cabecalho>
     <RPS xmlns="">
         <Assinatura
-        >00035172001  00000000005020200604TNN0000000000100000000000000000006311900281493979000189</Assinatura>
+        >MDAwMzUxNzIwMDEgIDAwMDAwMDAwMDA1MDIwMjAwNjA0VE5OMDAwMDAwMDAwMDEwMDAwMDAwMDAwMDAwMDAwMDAwNjMxMTkwMDI4MTQ5Mzk3OTAwMDE4OQ==</Assinatura>
         <ChaveRPS>
             <InscricaoPrestador>35172</InscricaoPrestador>
             <SerieRPS>001</SerieRPS>
@@ -26,7 +24,6 @@
         <DataEmissao>2020-06-04</DataEmissao>
         <StatusRPS>N</StatusRPS>
         <TributacaoRPS>T</TributacaoRPS>
-        <ValorServicos>100</ValorServicos>
         <ValorDeducoes>0</ValorDeducoes>
         <ValorPIS>0</ValorPIS>
         <ValorCOFINS>0</ValorCOFINS>
@@ -52,7 +49,6 @@
         <EmailTomador>cliente1@cliente1.com.br</EmailTomador>
         <Discriminacao
         >[ODOO_DEV] Customized Odoo Development|Documento emitido por: Marc Demo|</Discriminacao>
-        <ValorCargaTributaria>0</ValorCargaTributaria>
-        <FonteCargaTributaria>IBPT</FonteCargaTributaria>
+        <ValorFinalCobrado>100</ValorFinalCobrado>
     </RPS>
 </PedidoEnvioLoteRPS>
