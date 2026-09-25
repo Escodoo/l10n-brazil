@@ -21,6 +21,8 @@
         "views/res_company_view.xml",
         # Reports
         "reports/purchase_report_views.xml",
+        # Wizards
+        "wizards/document_import_wizard.xml",
         #        "reports/purchase_order_templates.xml",
     ],
     "demo": [

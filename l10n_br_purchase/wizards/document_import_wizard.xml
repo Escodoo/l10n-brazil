@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Copyright (C) 2026 - TODAY, Cristiano Mafra Junior
+     License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl). -->
+<odoo>
+    <record id="document_import_wizard_form" model="ir.ui.view">
+        <field name="name">l10n_br_purchase.document.import.wizard.form</field>
+        <field name="model">l10n_br_fiscal.document.import.wizard</field>
+        <field name="inherit_id" ref="l10n_br_fiscal.document_import_wizard_form" />
+        <field name="arch" type="xml">
+            <field name="amount_total" position="after">
+                <field name="issuer_partner_id" invisible="1" />
+                <field
+                    name="purchase_order_id"
+                    attrs="{'invisible': [('fiscal_operation_type', '!=', 'in')]}"
+                />
+                <field
+                    name="purchase_amount_total"
+                    attrs="{'invisible': ['|', ('fiscal_operation_type', '!=', 'in'), ('purchase_order_id', '=', False)]}"
+                />
+            </field>
+        </field>
+    </record>
+</odoo>
