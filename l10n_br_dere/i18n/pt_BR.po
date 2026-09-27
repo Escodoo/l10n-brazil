@@ -819,8 +819,7 @@ msgstr "Eventos condicionais"
 
 #. module: l10n_br_dere
 #. odoo-python
-#: code:addons/l10n_br_dere/models/dere_declaration.py:0
-#: code:addons/l10n_br_dere/models/dere_table_period.py:0
+#: code:addons/l10n_br_dere/models/res_company.py:0
 msgid "Configure an A1 certificate on the company before sending DeRE events."
 msgstr ""
 "Configure um certificado A1 na empresa antes de transmitir eventos DeRE."

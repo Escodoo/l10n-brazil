@@ -152,3 +152,30 @@ class ResCompany(models.Model):
     def _dere_cnpj_root(self):
         self.ensure_one()
         return self._dere_cnpj()[:8]
+
+    def _dere_has_signing_certificate(self):
+        """Return whether the company can sign DeRE events.
+
+        ``l10n_br_fiscal_certificate`` on OCA 18.0 now exposes a single
+        ``certificate_id`` (core ``certificate.certificate``). Older
+        revisions still use ``certificate_nfe_id`` / ``certificate_ecnpj_id``.
+        """
+        self.ensure_one()
+        company = self.sudo()
+        fields = company._fields
+        if "certificate_nfe_id" in fields:
+            return bool(company.certificate_nfe_id or company.certificate_ecnpj_id)
+        if "certificate_id" in fields:
+            return bool(company.certificate)
+        return False
+
+    def _dere_signing_certificate(self):
+        self.ensure_one()
+        if not self._dere_has_signing_certificate():
+            raise UserError(
+                _(
+                    "Configure an A1 certificate on the company before sending "
+                    "DeRE events."
+                )
+            )
+        return self._get_br_ecertificate()

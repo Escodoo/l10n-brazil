@@ -225,14 +225,11 @@ class TestDereCoverageGaps(DereCommon):
                 declaration.action_send_periodics()["type"], "ir.actions.client"
             )
         company = declaration.company_id
-        certificate = company.certificate_nfe_id
-        ecnpj = company.certificate_ecnpj_id
-        company.write({"certificate_nfe_id": False, "certificate_ecnpj_id": False})
+        saved = self._company_certificate_vals(company)
+        self._clear_company_certificate(company)
         with self.assertRaises(UserError):
             declaration._get_dere_certificate()
-        company.write(
-            {"certificate_nfe_id": certificate.id, "certificate_ecnpj_id": ecnpj.id}
-        )
+        self._restore_company_certificate(saved, company)
 
     def test_d1106_exclusion_and_reserve_sync_without_snapshot(self):
         declaration = self._prepare_d1106_trial("2028-04")

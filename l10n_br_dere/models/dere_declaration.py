@@ -1629,15 +1629,7 @@ class DereDeclaration(models.Model):
 
     def _get_dere_certificate(self):
         self.ensure_one()
-        company = self.company_id
-        if not company.certificate_nfe_id and not company.certificate_ecnpj_id:
-            raise UserError(
-                _(
-                    "Configure an A1 certificate on the company before sending "
-                    "DeRE events."
-                )
-            )
-        return company._get_br_ecertificate()
+        return self.company_id._dere_signing_certificate()
 
     def _send_events(self, events):
         self.ensure_one()

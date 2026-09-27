@@ -19,6 +19,7 @@ class DereCommon(TransactionCase):
         cls.env = cls.env(
             context=dict(cls.env.context, allowed_company_ids=cls.company.ids)
         )
+        cls.company = cls.company.with_env(cls.env)
         cls.activity_admin = cls.env.ref("l10n_br_dere.activity_31_02a")
         cls.activity_operator = cls.env.ref("l10n_br_dere.activity_31_05a")
         cls.tax_admin_fee = cls.env.ref("l10n_br_dere.tax_120110006")
@@ -38,22 +39,7 @@ class DereCommon(TransactionCase):
                 "dere_client_secret": "demo-secret",
             }
         )
-        if not cls.company.certificate_nfe_id and not cls.company.certificate_ecnpj_id:
-            certificate = cls.env["l10n_br_fiscal.certificate"].create(
-                {
-                    "type": "nf-e",
-                    "subtype": "a1",
-                    "password": "123456",
-                    "file": misc.create_fake_certificate_file(
-                        True,
-                        "123456",
-                        "EMISSOR A TESTE",
-                        "BR",
-                        "CERTIFICADO VALIDO TESTE",
-                    ),
-                }
-            )
-            cls.company.certificate_nfe_id = certificate
+        cls._ensure_company_certificate()
         cls.parent_group = cls.env["account.group"].create(
             {
                 "name": "Health revenue",
@@ -137,6 +123,69 @@ class DereCommon(TransactionCase):
                     "company_id": cls.company.id,
                 }
             )
+
+    @classmethod
+    def _fake_certificate_file(cls):
+        return misc.create_fake_certificate_file(
+            True,
+            "123456",
+            "EMISSOR A TESTE",
+            "BR",
+            "CERTIFICADO VALIDO TESTE",
+        )
+
+    @classmethod
+    def _ensure_company_certificate(cls, company=None):
+        company = company or cls.company
+        if company._dere_has_signing_certificate():
+            return
+        fake = cls._fake_certificate_file()
+        if "certificate_nfe_id" in company._fields:
+            certificate = cls.env["l10n_br_fiscal.certificate"].create(
+                {
+                    "type": "nf-e",
+                    "subtype": "a1",
+                    "password": "123456",
+                    "file": fake,
+                }
+            )
+            company.certificate_nfe_id = certificate
+            return
+        if "certificate_id" in company._fields:
+            certificate = cls.env["certificate.certificate"].create(
+                {
+                    "scope": "l10n_br",
+                    "pkcs12_password": "123456",
+                    "content": fake,
+                    "company_id": company.id,
+                }
+            )
+            company.certificate_id = certificate
+            return
+        raise AssertionError("res.company has no Brazilian certificate field")
+
+    def _company_certificate_vals(self, company=None):
+        company = company or self.company
+        if "certificate_nfe_id" in company._fields:
+            return {
+                "certificate_nfe_id": company.certificate_nfe_id.id,
+                "certificate_ecnpj_id": company.certificate_ecnpj_id.id,
+            }
+        if "certificate_id" in company._fields:
+            return {"certificate_id": company.certificate_id.id}
+        return {}
+
+    def _clear_company_certificate(self, company=None):
+        company = company or self.company
+        if "certificate_nfe_id" in company._fields:
+            company.write({"certificate_nfe_id": False, "certificate_ecnpj_id": False})
+        elif "certificate_id" in company._fields:
+            company.certificate_id = False
+
+    def _restore_company_certificate(self, vals, company=None):
+        company = company or self.company
+        if vals:
+            company.write(vals)
 
     def _map_d1106_codtrib(self, account=None):
         Tax = self.env["l10n_br_dere.tax.code"]
