@@ -8,7 +8,7 @@ from odoo.exceptions import ValidationError
 
 from odoo.addons.l10n_br_dere_spec.models.v1_2.types import COD_NAT, NAT_CTA
 
-# First digit of Brazilian CoA prefixes (ANS, XIPP, SPED-like).
+# First digit of Brazilian CoA prefixes (ANS, SPED-like).
 _PREFIX_NAT_CTA = {
     "1": "D",
     "2": "C",
