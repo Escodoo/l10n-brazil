@@ -196,7 +196,6 @@ class Document(models.Model):
                 "TributacaoRPS",
                 self._map_taxation_rps(dados_lote_rps["natureza_operacao"]),
             ),
-            # Schema v02-4: ValorInicialCobrado xor ValorFinalCobrado (xs:choice).
             ValorFinalCobrado=self.convert_type_nfselib(
                 tpRPS, "ValorFinalCobrado", dados_servico["valor_servicos"]
             ),
@@ -236,8 +235,6 @@ class Document(models.Model):
                 if reforma
                 else None
             ),
-            # Schema v02-4: cLocPrestacao xor cPaisPrestacao (xs:choice); services
-            # rendered in Brazil use cLocPrestacao.
             cLocPrestacao=(
                 self.convert_type_nfselib(
                     tpRPS, "cLocPrestacao", self.partner_id.city_id.ibge_code

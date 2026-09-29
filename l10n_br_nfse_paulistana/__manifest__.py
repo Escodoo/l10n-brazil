@@ -24,4 +24,7 @@
     "depends": [
         "l10n_br_nfse",
     ],
+    "data": [
+        "data/ir_config_parameter.xml",
+    ],
 }

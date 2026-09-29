@@ -14,7 +14,7 @@
     </Cabecalho>
     <RPS xmlns="">
         <Assinatura
-        >MDAwMzUxNzIwMDEgIDAwMDAwMDAwMDA1MDIwMjAwNjA0VE5OMDAwMDAwMDAwMDEwMDAwMDAwMDAwMDAwMDAwMDAwNjMxMTkwMDI4MTQ5Mzk3OTAwMDE4OQ==</Assinatura>
+        >MDAwMDAwMDM1MTcyMDAxICAwMDAwMDAwMDAwNTAyMDIwMDYwNFROTjAwMDAwMDAwMDAxMDAwMDAwMDAwMDAwMDAwMDAwMDYzMTE5MDAyODE0OTM5NzkwMDAxODk=</Assinatura>
         <ChaveRPS>
             <InscricaoPrestador>35172</InscricaoPrestador>
             <SerieRPS>001</SerieRPS>
@@ -49,6 +49,25 @@
         <EmailTomador>cliente1@cliente1.com.br</EmailTomador>
         <Discriminacao
         >[ODOO_DEV] Customized Odoo Development|Documento emitido por: Marc Demo|</Discriminacao>
+        <RetencaoPisCofins>0</RetencaoPisCofins>
         <ValorFinalCobrado>100</ValorFinalCobrado>
+        <ValorIPI>0</ValorIPI>
+        <ExigibilidadeSuspensa>0</ExigibilidadeSuspensa>
+        <PagamentoParceladoAntecipado>0</PagamentoParceladoAntecipado>
+        <NBS>114021100</NBS>
+        <cLocPrestacao>3550308</cLocPrestacao>
+        <IBSCBS>
+            <finNFSe>0</finNFSe>
+            <indFinal>0</indFinal>
+            <cIndOp>100301</cIndOp>
+            <indDest>1</indDest>
+            <valores>
+                <trib>
+                    <gIBSCBS>
+                        <cClassTrib>000001</cClassTrib>
+                    </gIBSCBS>
+                </trib>
+            </valores>
+        </IBSCBS>
     </RPS>
 </PedidoEnvioLoteRPS>
