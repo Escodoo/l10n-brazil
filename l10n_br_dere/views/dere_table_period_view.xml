@@ -43,6 +43,12 @@
                         class="btn-primary"
                         invisible="not can_consult_results"
                     />
+                    <button
+                        name="action_download_xlsx"
+                        type="object"
+                        string="Download XLSX"
+                        groups="l10n_br_dere.group_user"
+                    />
                     <field name="can_generate_tables" invisible="1" />
                     <field name="can_send_tables" invisible="1" />
                     <field name="can_consult_results" invisible="1" />

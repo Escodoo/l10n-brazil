@@ -46,7 +46,7 @@ OPERABLE_EVENT_TYPES = frozenset(
 class DereEvent(models.Model):
     _name = "l10n_br_dere.event"
     _description = "DeRE event"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "l10n_br_dere.xlsx.mixin"]
     _order = "id desc"
 
     name = fields.Char(compute="_compute_name", store=True)
@@ -378,6 +378,30 @@ class DereEvent(models.Model):
             }
         )
         return xml
+
+    def _dere_xlsx_period_label(self):
+        self.ensure_one()
+        if self.declaration_id:
+            return self.declaration_id.per_apur or ""
+        if self.table_period_id and self.table_period_id.ini_valid:
+            return fields.Date.to_string(self.table_period_id.ini_valid)
+        return ""
+
+    def _dere_xlsx_sheets(self):
+        self.ensure_one()
+        if self.event_type == EVENT_D1011:
+            return self._dere_xlsx_pgcc_sheets(self.table_period_id.pgcc_account_ids)
+        if self.event_type == EVENT_D1101:
+            sheets = self._dere_xlsx_trial_sheets(self.declaration_id.trial_line_ids)
+            sheets.extend(self._dere_xlsx_total_sheets(self.total_ids))
+            return sheets
+        if self.event_type == EVENT_D1106:
+            return self._dere_xlsx_reserve_sheets(self.declaration_id.reserve_line_ids)
+        if self.event_type == EVENT_D1121:
+            return self._dere_xlsx_deduction_sheets(
+                self.declaration_id.deduction_line_ids
+            )
+        return []
 
 
 class DereEventOccurrence(models.Model):

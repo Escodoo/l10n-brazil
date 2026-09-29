@@ -8,6 +8,7 @@ from . import dere_reserve_asset
 from . import dere_reserve_line
 from . import dere_deduction_line
 from . import dere_event_ops
+from . import dere_xlsx
 from . import dere_table_period
 from . import dere_declaration
 from . import dere_declaration_rfb

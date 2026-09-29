@@ -37,6 +37,7 @@ class DereTablePeriod(models.Model):
         "mail.thread",
         "mail.activity.mixin",
         "l10n_br_dere.event.parent.mixin",
+        "l10n_br_dere.xlsx.mixin",
     ]
     _order = "ini_valid desc, id desc"
 
@@ -950,3 +951,11 @@ class DereTablePeriod(models.Model):
         except etree.XMLSyntaxError:
             return False
         return parsed.get("protocoloLote") or parsed.get("protocolo") or False
+
+    def _dere_xlsx_period_label(self):
+        self.ensure_one()
+        return fields.Date.to_string(self.ini_valid) if self.ini_valid else ""
+
+    def _dere_xlsx_sheets(self):
+        self.ensure_one()
+        return self._dere_xlsx_pgcc_sheets(self.pgcc_account_ids)

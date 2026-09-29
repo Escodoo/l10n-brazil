@@ -48,6 +48,7 @@ class DereDeclaration(models.Model):
         "mail.thread",
         "mail.activity.mixin",
         "l10n_br_dere.event.parent.mixin",
+        "l10n_br_dere.xlsx.mixin",
     ]
     _order = "per_apur desc, id desc"
 
@@ -1868,3 +1869,21 @@ class DereDeclaration(models.Model):
         except etree.XMLSyntaxError:
             return False
         return parsed.get("protocoloLote") or parsed.get("protocolo") or False
+
+    def _dere_xlsx_period_label(self):
+        self.ensure_one()
+        return self.per_apur or ""
+
+    def _dere_xlsx_sheets(self):
+        self.ensure_one()
+        sheets = []
+        if self.table_period_id:
+            sheets.extend(self._dere_xlsx_pgcc_sheets(self.pgcc_account_ids))
+        sheets.extend(self._dere_xlsx_trial_sheets(self.trial_line_ids))
+        sheets.extend(self._dere_xlsx_reserve_sheets(self.reserve_line_ids))
+        sheets.extend(self._dere_xlsx_deduction_sheets(self.deduction_line_ids))
+        totals = self.event_ids.filtered(
+            lambda ev: ev.event_type == EVENT_D1101
+        ).total_ids
+        sheets.extend(self._dere_xlsx_total_sheets(totals))
+        return sheets

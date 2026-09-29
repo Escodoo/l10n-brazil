@@ -9,3 +9,4 @@ from . import test_dere_coverage
 from . import test_dere_tpoper
 from . import test_dere_returns
 from . import test_dere_gaps
+from . import test_dere_xlsx

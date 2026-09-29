@@ -148,6 +148,12 @@
                     <field name="can_send_periodics" invisible="1" />
                     <field name="primary_action" invisible="1" />
                     <button
+                        name="action_download_xlsx"
+                        type="object"
+                        string="Download XLSX"
+                        groups="l10n_br_dere.group_user"
+                    />
+                    <button
                         name="%(action_report_dere_rfb_assessment)d"
                         type="action"
                         string="Print RFB Assessment"

@@ -21,6 +21,11 @@
    o recibo D-9001. Depois gere o balancete (D-1101) a partir dos
    `account.move.line` lançados. O botão do balancete fica oculto até
    D-1001 e D-1011 serem aceitos.
+   **Download XLSX** no cabeçalho da declaração, do período de tabela
+   ou do evento exporta as grades oficiais (D-1011, D-1101, D-1106,
+   D-1121 e totais D-9101 quando existirem) com os mesmos campos do
+   XML. Eventos só de cabeçalho (D-1001, D-1198, D-1199) não têm
+   planilha.
 4. Gere o D-1199 com **Encerrar Período** (`tpOper` só inclusão). Isso
    só grava o XML; a declaração permanece em *Balancete pronto*. Use
    **Descartar Encerramento Local** para dropar um D-1199 que nunca foi

@@ -69,6 +69,12 @@
                         string="Rectify"
                         invisible="not can_rectify_event"
                     />
+                    <button
+                        name="action_download_xlsx"
+                        type="object"
+                        string="Download XLSX"
+                        groups="l10n_br_dere.group_user"
+                    />
                     <field name="can_replace_event" invisible="1" />
                     <field name="can_exclude_event" invisible="1" />
                     <field name="can_rectify_event" invisible="1" />
