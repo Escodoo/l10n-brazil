@@ -23,6 +23,21 @@ class TestFiscalDocumentNFSePaulistana(TestFiscalDocumentNFSeCommon):
     def setUp(self):
         super().setUp()
         self.company.provedor_nfse = "paulistana"
+        # The reform parameter is created turned on: the line needs the IBS/CBS
+        # classification (cClassTrib) and the NBS with its INDOP.
+        self.city_taxation_code = self.env.ref(
+            "l10n_br_fiscal.city_taxation_code_itajuba"
+        )
+        self.env["l10n_br_fiscal.city.taxation.ibs_cbs"].create(
+            {
+                "company_id": self.company.id,
+                "city_taxation_code_id": self.city_taxation_code.id,
+                "cst_id": self.env.ref("l10n_br_fiscal.ibs_cbs_cst_0").id,
+                "cclass_id": self.env.ref("l10n_br_fiscal.ibs_cbs_cclass_0_1").id,
+            }
+        )
+        self.nbs = self.env.ref("l10n_br_fiscal.nbs_114021100")
+        self.nbs.indop = "100301"
 
     def test_nfse_paulistana(self):
         """Test NFS-e same state."""
@@ -44,6 +59,8 @@ class TestFiscalDocumentNFSePaulistana(TestFiscalDocumentNFSeCommon):
             line._onchange_fiscal_operation_id()
             line._onchange_fiscal_operation_line_id()
             line._onchange_fiscal_taxes()
+            line.nbs_id = self.nbs
+            line.city_taxation_code_id = self.city_taxation_code
 
         self.nfse_same_state.action_document_confirm()
 

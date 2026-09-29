@@ -65,3 +65,20 @@ msgstr "Processado com Erro"
 #, python-format
 msgid "Procesado com Sucesso"
 msgstr "Processado com Sucesso"
+
+#. module: l10n_br_nfse_paulistana
+#: code:addons/l10n_br_nfse_paulistana/models/document.py:0
+#, python-format
+msgid ""
+"Line '%s': set the IBS/CBS tax classification (cClassTrib) in the IBS/CBS "
+"mapping of the city taxation code."
+msgstr ""
+"Linha '%s': configure a Classificação Tributária (cClassTrib) do IBS/CBS no "
+"mapa IBS/CBS do Código de Tributação do Município."
+
+#. module: l10n_br_nfse_paulistana
+#: code:addons/l10n_br_nfse_paulistana/models/document.py:0
+#, python-format
+msgid "Line '%s': set the operation indicator (INDOP/cIndOp) on the NBS."
+msgstr ""
+"Linha '%s': defina o Indicador de Operação (INDOP/cIndOp) no cadastro do NBS."
