@@ -1,20 +1,12 @@
 - Migrar o `xml_builder` para a [derelib](https://github.com/Escodoo/derelib)
-  (binding xsdata do DeRE 1.2.0, o mesmo papel da nfelib na NF-e /
-  CT-e / MDF-e): montar, assinar, lotear e ler retornos pela
-  biblioteca, mantendo as regras de negócio (`tpOper`, MS1135 /
-  MS1147, checagens de PGCC) neste módulo. Não introduzir
-  `spec_driven_model.StackedModel` antes dessa migração.
-- Não herdar mixins de evento (D-1001 / D-1011 / D-1101 / D-1199) em
-  `l10n_br_dere.declaration`, `l10n_br_dere.table.period` ou
-  `l10n_br_dere.event`: esses abstracts compartilham `dere12_id` e
-  `dere12_tpOper`.
-- O `tpOper` oficial 1/2/3 (e o `4` do D-1121 depois do primeiro
-  D-1199) está implementado. D-1198 / D-1199 permanecem só inclusão.
+  (binding xsdata do DeRE 1.2.0): montar, assinar, lotear e ler
+  retornos pela biblioteca, mantendo as regras de negócio neste módulo.
 - `infoImovel` do D-1121 e D-1021 (exigido antes de `motExcl` 1)
 - Réplica local da MS1155 (`perApur` futuro): a regra oficial não
   interrompe o processamento, e a suíte de testes usa meses futuros
 - Eventos transacionais (D-3201 e demais D-22xx / D-32xx) depois que
   o CGIBS publicar um leiaute transacional estável
+- D-2101 (operações com títulos públicos)
 - Conteúdo do D-9199 ainda não gravado: `gCoeficientes` (serviços
   financeiros e concursos de prognósticos) e o detalhe `infoBCN` /
   `detBCN` da base negativa acumulada por origem. Só os saldos
@@ -29,8 +21,6 @@
   12 oficial (`codBC` / `codBCNRaiz`) entra com essa funcionalidade,
   não como catálogo avulso agora: o D-9199 já devolve `xDetBC` em
   cada linha de apuração.
-- D-2101 (títulos públicos) fica fora do escopo de operadoras de
-  planos de saúde.
 - O backoff da consulta não tem número máximo de tentativas (manual
   Dev §3.3). O atraso é limitado a 60 minutos e o lote permanece
   `sent` até chegar um resultado.

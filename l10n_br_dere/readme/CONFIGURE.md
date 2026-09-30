@@ -23,25 +23,31 @@ No formulário da empresa, abra a aba **DeRE** e preencha:
    apagarem um mês ou um período de tabela. Isso não anula recibos na
    RFB e é ignorado em produção (`tpAmb` 1).
 5. Versão da aplicação (`verAplic`) enviada em `ideEvento`.
-6. Um certificado A1 ICP-Brasil na aba Fiscal (NF-e ou e-CNPJ). A
-   geração não precisa dele; o envio precisa.
+6. Certificado A1 ICP-Brasil: é o campo **Certificado** da página
+   **Certificados** da aba Fiscal (`l10n_br_fiscal_certificate`). Uma
+   filial sem certificado próprio usa o da matriz. A geração do XML não
+   precisa dele; o envio precisa.
 7. Deixe habilitada a ação agendada **DeRE: consultar resultados dos
    lotes enviados** (a cada 2 minutos). Ela só consulta lotes cuja
    janela de backoff já venceu.
-
 8. Se o contribuinte deve enviar D-1106, ligue **Sujeito ao D-1106**,
    mapeie ao menos uma conta do PGCC para um `codTrib` oficial de
-   D-1106, marque as contas de investimento como reserva técnica e
-   cadastre cada `idAtivo`. A flag só registra a intenção: geração,
-   encerramento e ordem de envio exigem esse mapeamento no PGCC
-   (MS1135 / MS1147). Mantenha um ativo por conta para **Gerar D-1106**
-   preencher valores a partir dos lançamentos. Opcionalmente defina
-   **Conta de rendimento de reserva DeRE** na `account.account` de
-   investimento, para cupons que nunca passam nessa conta.
+   D-1106, marque as contas de investimento como **Investimento de
+   reserva técnica DeRE** e cadastre cada `idAtivo`. A flag só registra
+   a intenção: geração, encerramento e ordem de envio exigem esse
+   mapeamento no PGCC (MS1135 / MS1147). Mantenha um ativo por conta
+   para **Gerar D-1106** preencher valores a partir dos lançamentos.
+   Opcionalmente defina **Conta de rendimento da reserva DeRE** na
+   conta de investimento, para cupons que nunca passam nessa conta.
 9. Se o contribuinte deve enviar D-1121, ligue **Sujeito ao D-1121** e
-   marque as operações fiscais de entrada como dedutíveis DeRE, com a
-   atividade de dedução (`tpAtiv`) na operação fiscal. Contas cujo
-   `codTrib` está na lista oficial do D-1121 também exigem o evento.
+   marque **Dedutível na DeRE** nas operações fiscais cujos documentos
+   entram no D-1121. A flag só vale para operações de entrada (compras,
+   serviços tomados); uma operação de saída não aceita a marcação. Ela
+   não tem relação com **Impostos dedutíveis**, da aba Conta da mesma
+   operação, que trata o crédito do imposto na contabilização. A
+   **Atividade da dedução DeRE** (`tpAtiv`) da operação sobrepõe o
+   padrão do regime. Contas cujo `codTrib` está na lista oficial do
+   D-1121 também exigem o evento.
 
 Os menus de catálogo ficam em **Fiscal → Configuração → DeRE**:
 Atividades, Códigos de Tributação e Ativos de Reserva Técnica.
@@ -55,17 +61,19 @@ mensal mostra as mesmas contas como contexto somente leitura do D-1101.
 Em cada **grupo de contas** usado como nó sintético DeRE, preencha a
 aba **DeRE** (`cCtaRef`, natureza) quando o código referencial oficial
 diferir do prefixo. Os grupos ancestrais das contas analíticas
-mapeadas são exportados automaticamente; um `cCtaRef` vazio usa o
-prefixo e a natureza do primeiro dígito. Nível e pai vêm da hierarquia
-de prefixos.
+mapeadas são exportados automaticamente; no grupo, um `cCtaRef` vazio
+usa o prefixo e a natureza do primeiro dígito. Nível e pai vêm da
+hierarquia de prefixos.
 
 Em cada **conta analítica** usada na declaração, preencha a aba
 **DeRE**:
 
 - código interno e quebra de 3 dígitos da conta mista (`cDbrMista`)
-- código referencial, natureza e `codTrib` **obrigatório** (valores
-  referenciais vazios herdam do grupo prefixo). O many2one mostra
-  `código - nome`.
+- código referencial, natureza e `codTrib` **obrigatório**. Natureza e
+  código de natureza vazios herdam do grupo. O `cCtaRef` vazio herda
+  só um `cCtaRef` preenchido explicitamente no grupo, nunca o prefixo:
+  uma conta sem código próprio nem no grupo fica fora do PGCC. O
+  many2one do `codTrib` mostra `código - nome`.
 - grupo pai só quando o plano não for baseado em prefixo
 
 Depois de remapear `codTrib` em uma conta que já pertence a um D-1011
