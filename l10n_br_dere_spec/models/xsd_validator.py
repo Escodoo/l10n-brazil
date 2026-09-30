@@ -54,11 +54,20 @@ def _to_bytes(xml_content):
     return (xml_content or "").encode("utf-8")
 
 
+def _safe_parser():
+    # lxml parser instances must not be shared across threads.
+    return etree.XMLParser(resolve_entities=False, no_network=True)
+
+
+def safe_fromstring(xml_content):
+    """Parse DeRE XML without expanding entities or reaching the network."""
+    return etree.fromstring(_to_bytes(xml_content), _safe_parser())
+
+
 @cache
 def _schema(filename):
     path = SCHEMA_DIR / filename
-    parser = etree.XMLParser(resolve_entities=False, no_network=True)
-    return etree.XMLSchema(etree.parse(str(path), parser))
+    return etree.XMLSchema(etree.parse(str(path), _safe_parser()))
 
 
 def _error_messages(error_log):
@@ -68,8 +77,8 @@ def _error_messages(error_log):
 def _with_placeholder_signature(root):
     if root.find(f"{{{DS_NS}}}Signature") is not None:
         return root
-    clone = etree.fromstring(etree.tostring(root))
-    clone.append(etree.fromstring(PLACEHOLDER_SIGNATURE))
+    clone = safe_fromstring(etree.tostring(root))
+    clone.append(safe_fromstring(PLACEHOLDER_SIGNATURE))
     return clone
 
 
@@ -77,7 +86,7 @@ def validate(xml_content, event_type, signed=False):
     filename = EVENT_SCHEMA.get(event_type)
     if not filename:
         raise ValueError(f"Unknown DeRE event type {event_type}")
-    root = etree.fromstring(_to_bytes(xml_content))
+    root = safe_fromstring(xml_content)
     if not signed:
         root = _with_placeholder_signature(root)
     schema = _schema(filename)
@@ -87,7 +96,7 @@ def validate(xml_content, event_type, signed=False):
 
 
 def validate_lote(xml_content):
-    root = etree.fromstring(_to_bytes(xml_content))
+    root = safe_fromstring(xml_content)
     schema = _schema(LOTE_SCHEMA)
     if schema.validate(root):
         return []
@@ -100,7 +109,7 @@ def validate_return(xml_content):
     Returns ``None`` when the payload is not a ``DeRE`` root in a known
     return namespace, otherwise the list of schema errors.
     """
-    root = etree.fromstring(_to_bytes(xml_content))
+    root = safe_fromstring(xml_content)
     qname = etree.QName(root)
     filename = RETURN_SCHEMA.get(qname.namespace)
     if qname.localname != "DeRE" or not filename:

@@ -1,6 +1,10 @@
 # Copyright 2026 - TODAY, Marcel Savegnago <marcel.savegnago@escodoo.com.br>
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0.en.html).
 
+import tempfile
+
+from lxml import etree
+
 from odoo.tests import TransactionCase, tagged
 
 from odoo.addons.l10n_br_dere_spec.models import xsd_validator
@@ -80,3 +84,19 @@ class TestDereXsdValidator(TransactionCase):
     def test_unknown_event_type_raises(self):
         with self.assertRaises(ValueError):
             xsd_validator.validate("<DeRE/>", "D-9999")
+
+    def test_entities_are_not_expanded(self):
+        with tempfile.NamedTemporaryFile("w", suffix=".txt") as secret:
+            secret.write("do-not-leak")
+            secret.flush()
+            xml = (
+                "<?xml version='1.0'?>"
+                f'<!DOCTYPE DeRE [<!ENTITY ext SYSTEM "file://{secret.name}">'
+                '<!ENTITY int "expanded">]>'
+                "<DeRE>&ext;&int;</DeRE>"
+            )
+            root = xsd_validator.safe_fromstring(xml)
+        content = etree.tostring(root, encoding="unicode")
+        self.assertNotIn("do-not-leak", content)
+        self.assertNotIn("expanded", content)
+        self.assertIn("&ext;", content)
