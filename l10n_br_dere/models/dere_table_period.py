@@ -842,7 +842,7 @@ class DereTablePeriod(models.Model):
     def _apply_nova_validade(self, event):
         if not event.xml_content:
             return
-        root = etree.fromstring(event.xml_content.encode("utf-8"))
+        root = xsd_validator.safe_fromstring(event.xml_content)
         nova = root.find(".//{*}novaValidade")
         if nova is None:
             return

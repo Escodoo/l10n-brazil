@@ -8,6 +8,8 @@ from decimal import ROUND_HALF_EVEN, Decimal
 from lxml import etree
 from signxml import XMLSigner, methods
 
+from odoo.addons.l10n_br_dere_spec.models.xsd_validator import safe_fromstring
+
 from ..constants import (
     EVENT_D1001,
     EVENT_D1011,
@@ -479,7 +481,7 @@ def _return_node(root):
 
 def _occurrence_vals(element):
     occurrence = {}
-    for child in element:
+    for child in element.iterchildren(tag=etree.Element):
         occurrence[_localname(child)] = (child.text or "").strip()
     return occurrence
 
@@ -540,7 +542,7 @@ def _parse_event_return(root):
         root = node
     if root.get("id"):
         data["id"] = root.get("id")
-    for element in root.iter():
+    for element in root.iter(tag=etree.Element):
         name = _localname(element)
         if name in (
             "cdRetorno",
@@ -565,21 +567,17 @@ def _parse_event_return(root):
 
 
 def parse_return(xml_content):
-    if isinstance(xml_content, bytes):
-        payload = xml_content
-    else:
-        payload = (xml_content or "").encode("utf-8")
-    root = etree.fromstring(payload)
+    root = safe_fromstring(xml_content)
     event = _parse_event_return(root)
     data = dict(event, cdResposta=False, descResposta=False, events=[])
-    for element in root.iter():
+    for element in root.iter(tag=etree.Element):
         name = _localname(element)
         if name in ("cdResposta", "descResposta") and element.text:
             data[name] = element.text.strip()
         elif name == "evento" and element.getparent() is not None:
             parent = _localname(element.getparent())
             if parent == "retornoEventos":
-                inner = next(iter(element), None)
+                inner = next(element.iterchildren(tag=etree.Element), None)
                 parsed = _parse_event_return(inner if inner is not None else element)
                 parsed["id"] = element.get("id") or parsed.get("id")
                 data["events"].append(parsed)
@@ -597,17 +595,12 @@ def build_lote(nr_insc, events):
     eventos = etree.SubElement(lote, "eventos")
     for event in events:
         node = etree.SubElement(eventos, "evento", id=event["id"])
-        inner = etree.fromstring(event["xml"].encode("utf-8"))
-        node.append(inner)
+        node.append(safe_fromstring(event["xml"]))
     return etree.tostring(root, encoding="unicode")
 
 
 def sign_event(xml_content, certificado, reference):
-    if isinstance(xml_content, bytes):
-        payload = xml_content
-    else:
-        payload = (xml_content or "").encode("utf-8")
-    root = etree.fromstring(payload)
+    root = safe_fromstring(xml_content)
     for element in root.iter("*"):
         if element.text is not None and not element.text.strip():
             element.text = None

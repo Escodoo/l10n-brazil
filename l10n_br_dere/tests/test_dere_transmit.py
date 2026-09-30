@@ -156,6 +156,18 @@ class TestDereTransmit(DereCommon):
         self.assertEqual(parsed["nrRecibo"], "REC-D1001-000000000000001")
         self.assertEqual(parsed["events"][0]["nrRecibo"], "REC-D1001-000000000000001")
 
+    def test_parse_return_does_not_expand_entities(self):
+        header = '<?xml version="1.0" encoding="utf-8"?>'
+        payload = RETURN_D9001.replace(
+            header, header + '<!DOCTYPE DeRE [<!ENTITY boom "expanded">]>'
+        ).replace(
+            "<descRetorno>Sucesso</descRetorno>",
+            "<descRetorno>&boom;</descRetorno><!-- gateway note -->",
+        )
+        parsed = xml_builder.parse_return(payload)
+        self.assertEqual(parsed["nrRecibo"], "REC-D1001-000000000000001")
+        self.assertNotIn("expanded", str(parsed))
+
     def test_send_tables_with_http_mock(self):
         declaration = self._create_declaration()
         declaration.action_generate_tables()
