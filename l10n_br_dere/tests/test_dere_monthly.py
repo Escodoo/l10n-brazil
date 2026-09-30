@@ -18,7 +18,7 @@ from .common import DereCommon
 class TestDereMonthly(DereCommon):
     def test_d1101_continuity_and_zero_vapur(self):
         declaration = self._create_declaration()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._post_entry(
             "2026-09-30",
             self.receivable,
@@ -90,7 +90,7 @@ class TestDereMonthly(DereCommon):
             }
         )
         declaration = self._create_declaration("2027-08")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self.env["account.move"].create(
             {
                 "move_type": "entry",
@@ -171,7 +171,7 @@ class TestDereMonthly(DereCommon):
             }
         )
         declaration = self._create_declaration("2027-11")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._accept_tables(declaration)
         self._post_entry("2027-11-10", variable, self.fee_account, 80.0)
         declaration.action_generate_d1101()
@@ -189,7 +189,7 @@ class TestDereMonthly(DereCommon):
         declaration = self._create_declaration()
         with self.assertRaises(UserError):
             declaration.action_generate_d1199()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._accept_tables(declaration)
         self._post_entry(
             "2026-10-20",
@@ -219,7 +219,7 @@ class TestDereMonthly(DereCommon):
 
     def test_d1101_pads_cnpj_root_in_event_id(self):
         declaration = self._create_declaration()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._post_entry(
             "2026-10-20",
             self.receivable,
@@ -234,7 +234,7 @@ class TestDereMonthly(DereCommon):
 
     def test_d1101_vapur_uses_adjustments_and_zero_keeps_opening_nature(self):
         declaration = self._create_declaration("2027-03")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         move = self._post_entry(
             "2027-03-10",
             self.receivable,
@@ -273,7 +273,7 @@ class TestDereMonthly(DereCommon):
     def test_d1101_result_opening_uses_closing_cycle(self):
         self.company.dere_freq_encerr = "A"
         declaration = self._create_declaration("2027-03")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._post_entry(
             "2026-12-15",
             self.receivable,
@@ -308,7 +308,7 @@ class TestDereMonthly(DereCommon):
             }
         )
         declaration = self._create_declaration("2027-04")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._post_entry(
             "2027-04-10",
             self.equity_account,

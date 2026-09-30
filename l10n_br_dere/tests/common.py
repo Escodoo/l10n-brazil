@@ -174,7 +174,7 @@ class DereCommon(TransactionCase):
 
     def _prepare_trial(self, period="2026-11"):
         declaration = self._create_declaration(period)
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._accept_tables(declaration)
         self._post_entry(
             f"{period}-10",

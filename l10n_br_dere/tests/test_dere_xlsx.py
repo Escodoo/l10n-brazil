@@ -56,7 +56,7 @@ class TestDereXlsx(DereCommon):
 
     def test_d1011_event_xlsx_has_only_pgcc_sheet(self):
         declaration = self._create_declaration()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         event = self._event(declaration, "D-1011")
         data = event._dere_xlsx_bytes()
         self.assertEqual(_xlsx_sheet_names(data), ["D-1011"])
@@ -73,7 +73,7 @@ class TestDereXlsx(DereCommon):
             declaration._dere_xlsx_bytes()
         with self.assertRaises(UserError):
             declaration.action_download_xlsx()
-        declaration.action_generate_d1001()
+        self._table_period(declaration).action_generate_d1001()
         event = self._event(declaration, "D-1001")
         with self.assertRaises(UserError):
             event._dere_xlsx_bytes()

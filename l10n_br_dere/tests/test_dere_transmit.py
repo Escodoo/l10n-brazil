@@ -102,7 +102,7 @@ class TestDereTransmit(DereCommon):
             "odoo.addons.l10n_br_dere.models.receita_integra.requests.post",
             side_effect=self._fake_post,
         ):
-            declaration.action_send_tables()
+            self._table_period(declaration).action_send_tables()
 
     def _consult_results(self, declaration, get_side_effect=None):
         with (
@@ -170,7 +170,7 @@ class TestDereTransmit(DereCommon):
 
     def test_send_tables_with_http_mock(self):
         declaration = self._create_declaration()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._send_tables(declaration)
         event = self._event(declaration, "D-1001")
         batch = self._table_batches(declaration)
@@ -191,7 +191,7 @@ class TestDereTransmit(DereCommon):
 
     def test_send_does_not_consult_immediately(self):
         declaration = self._create_declaration()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         with (
             patch(
                 "odoo.addons.l10n_br_dere.models.receita_integra.requests.post",
@@ -202,7 +202,7 @@ class TestDereTransmit(DereCommon):
                 side_effect=self._fake_get,
             ) as mocked_get,
         ):
-            declaration.action_send_tables()
+            self._table_period(declaration).action_send_tables()
         event = self._event(declaration, "D-1001")
         self.assertEqual(event.state, "sent")
         self.assertEqual(self._table_batches(declaration).state, "sent")
@@ -210,7 +210,7 @@ class TestDereTransmit(DereCommon):
 
     def test_send_timeout_keeps_unknown_batch(self):
         declaration = self._create_declaration()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         period = self._table_period(declaration)
         events = period._next_events(("D-1001",))
         self.assertTrue(events)
@@ -226,7 +226,7 @@ class TestDereTransmit(DereCommon):
 
     def test_send_without_protocol_keeps_unknown_batch(self):
         declaration = self._create_declaration("2025-03")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         period = self._table_period(declaration)
         events = period._next_events(("D-1001",))
         with patch.object(
@@ -242,7 +242,7 @@ class TestDereTransmit(DereCommon):
 
     def test_send_application_error_rejects_events(self):
         declaration = self._create_declaration("2025-05")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         period = self._table_period(declaration)
         events = period._next_events(("D-1001",))
         with patch.object(
@@ -261,7 +261,7 @@ class TestDereTransmit(DereCommon):
 
     def test_send_transient_http_keeps_generated_events(self):
         declaration = self._create_declaration("2025-04")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         period = self._table_period(declaration)
         events = period._next_events(("D-1001",))
         with patch.object(
@@ -280,7 +280,7 @@ class TestDereTransmit(DereCommon):
 
     def test_consult_keeps_sent_while_processing(self):
         declaration = self._create_declaration()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._send_tables(declaration)
         self._consult_results(
             declaration,
@@ -292,7 +292,7 @@ class TestDereTransmit(DereCommon):
 
     def test_cron_consult_applies_return(self):
         declaration = self._create_declaration()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._send_tables(declaration)
         self._make_batch_due(declaration)
         self._cron_consult()
@@ -303,7 +303,7 @@ class TestDereTransmit(DereCommon):
 
     def test_cron_consult_skips_batches_that_are_not_due(self):
         declaration = self._create_declaration()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._send_tables(declaration)
         self._cron_consult()
         event = self._event(declaration, "D-1001")
@@ -312,7 +312,7 @@ class TestDereTransmit(DereCommon):
 
     def test_cron_consult_keeps_sent_while_processing(self):
         declaration = self._create_declaration()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._send_tables(declaration)
         self._make_batch_due(declaration)
         self._cron_consult(
@@ -324,7 +324,7 @@ class TestDereTransmit(DereCommon):
 
     def test_cron_consult_http_error_does_not_fail(self):
         declaration = self._create_declaration()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._send_tables(declaration)
         self._make_batch_due(declaration)
         self._cron_consult(
@@ -341,7 +341,7 @@ class TestDereTransmit(DereCommon):
 
     def test_consult_notifies_when_cron_already_processed_batch(self):
         declaration = self._create_declaration()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._send_tables(declaration)
         self._make_batch_due(declaration)
         self._cron_consult()
@@ -352,7 +352,7 @@ class TestDereTransmit(DereCommon):
 
     def test_refuse_regenerate_after_accept(self):
         declaration = self._create_declaration()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._send_tables(declaration)
         self._consult_results(declaration)
         self._event(declaration, "D-1011").write(
@@ -362,11 +362,11 @@ class TestDereTransmit(DereCommon):
         self.assertFalse(tables.can_generate_tables)
         self.assertFalse(tables.can_send_tables)
         with self.assertRaises(UserError):
-            declaration.action_generate_tables()
+            self._table_period(declaration).action_generate_tables()
 
     def test_refuse_mixed_table_and_periodic_batch(self):
         declaration = self._create_declaration()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._post_entry("2026-10-10", self.receivable, self.fee_account, 50.0)
         declaration.action_generate_d1101()
         mixed = self._table_period(declaration).event_ids | declaration.event_ids
@@ -375,7 +375,7 @@ class TestDereTransmit(DereCommon):
 
     def test_send_d1198_after_accepted_closing(self):
         declaration = self._create_declaration()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._post_entry("2026-10-10", self.receivable, self.fee_account, 50.0)
         declaration.action_generate_d1101()
         declaration.action_generate_d1199()
@@ -406,7 +406,7 @@ class TestDereTransmit(DereCommon):
 
     def test_d1199_send_requires_d1101_receipt(self):
         declaration = self._create_declaration()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._post_entry("2026-10-10", self.receivable, self.fee_account, 50.0)
         declaration.action_generate_d1101()
         declaration.action_generate_d1199()
@@ -416,7 +416,7 @@ class TestDereTransmit(DereCommon):
 
     def test_apply_return_occurrences(self):
         declaration = self._create_declaration()
-        declaration.action_generate_d1001()
+        self._table_period(declaration).action_generate_d1001()
         event = self._event(declaration, "D-1001")
         declaration.apply_return(
             event,
@@ -438,18 +438,18 @@ class TestDereTransmit(DereCommon):
     def test_missing_credentials(self):
         self.company.dere_client_id = False
         declaration = self._create_declaration()
-        declaration.action_generate_d1001()
+        self._table_period(declaration).action_generate_d1001()
         with patch(
             "odoo.addons.l10n_br_dere.models.receita_integra.requests.post",
             return_value=Mock(),
         ) as mocked:
             with self.assertRaises(UserError):
-                declaration.action_send_tables()
+                self._table_period(declaration).action_send_tables()
             mocked.assert_not_called()
 
     def test_send_signs_event_with_sha256(self):
         declaration = self._create_declaration()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         event = self._event(declaration, "D-1001")
         self.assertNotIn("Signature", event.xml_content)
         self._send_tables(declaration)
@@ -462,7 +462,7 @@ class TestDereTransmit(DereCommon):
 
     def test_send_accepts_plain_text_protocol(self):
         declaration = self._create_declaration("2025-01")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
 
         def fake_post(url, **_kwargs):
             if "token" in url:
@@ -475,12 +475,12 @@ class TestDereTransmit(DereCommon):
             "odoo.addons.l10n_br_dere.models.receita_integra.requests.post",
             side_effect=fake_post,
         ):
-            declaration.action_send_tables()
+            self._table_period(declaration).action_send_tables()
         self.assertEqual(self._table_batches(declaration).protocol, "2.000001.123456")
 
     def test_consult_rejects_events_on_lot_error(self):
         declaration = self._create_declaration("2025-02")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._send_tables(declaration)
         rejected = """<?xml version="1.0" encoding="utf-8"?>
 <DeRE xmlns="http://www.dere.gov.br/schemas/retornoLoteDere/v1_0_1">

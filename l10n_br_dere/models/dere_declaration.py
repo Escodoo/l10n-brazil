@@ -558,59 +558,6 @@ class DereDeclaration(models.Model):
             event_type, tp_oper=tp_oper, parent_field="declaration_id"
         )
 
-    def action_generate_d1001(self):
-        for rec in self:
-            rec._generate_d1001()
-        return True
-
-    def _generate_d1001(self):
-        self.ensure_one()
-        return self._require_table_period()._generate_d1001()
-
-    def action_generate_d1011(self):
-        for rec in self:
-            rec._generate_d1011()
-        return True
-
-    def _account_name_for_xml(self, record):
-        """Return the account or group name in the company language for XML."""
-        self.ensure_one()
-        lang = self.company_id.partner_id.lang or "en_US"
-        name = record.with_context(lang=lang).name or record.name or ""
-        return name[:100]
-
-    def _pgcc_row_from_group(self, group, codes):
-        return self._require_table_period()._pgcc_row_from_group(group, codes)
-
-    def _sync_pgcc_from_accounts(self):
-        self.ensure_one()
-        return self._require_table_period()._sync_pgcc_from_accounts()
-
-    def _generate_d1011(self):
-        self.ensure_one()
-        return self._require_table_period()._generate_d1011()
-
-    def action_generate_tables(self):
-        for rec in self:
-            rec._require_table_period().action_generate_tables()
-        return True
-
-    def action_replace_tables(self):
-        self.ensure_one()
-        return self._require_table_period().action_replace_tables()
-
-    def action_exclude_tables(self):
-        self.ensure_one()
-        return self._require_table_period().action_exclude_tables()
-
-    def action_send_tables(self):
-        result = True
-        for rec in self:
-            action = rec._require_table_period().action_send_tables()
-            if isinstance(action, dict):
-                result = action
-        return result
-
     def _reset_months(self, freq):
         mapping = {
             "A": {1},
@@ -760,7 +707,7 @@ class DereDeclaration(models.Model):
             event._store_xml(xml_builder.build_d1101(vals, []))
             return event
         if not self.pgcc_account_ids:
-            self._sync_pgcc_from_accounts()
+            self._require_table_period()._sync_pgcc_from_accounts()
         opening, opening_cycle, period, prev_closing, _cycle_start = (
             self._account_balances()
         )
@@ -956,7 +903,7 @@ class DereDeclaration(models.Model):
             [("company_id", "=", self.company_id.id), ("active", "=", True)]
         )
         if not self.pgcc_account_ids:
-            self._sync_pgcc_from_accounts()
+            self._require_table_period()._sync_pgcc_from_accounts()
         pgcc_by_account = {line.account_id.id: line for line in self.pgcc_account_ids}
         previous = self._previous_declaration()
         prev_by_id = {line.dere12_idAtivo: line for line in previous.reserve_line_ids}

@@ -98,7 +98,7 @@ class TestDereTpOper(DereCommon):
 
     def test_cannot_include_active_trial_or_operate_when_closed(self):
         declaration = self._create_declaration("2027-05")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._accept_tables(declaration)
         self._post_entry("2027-05-10", self.receivable, self.fee_account, 20.0)
         declaration.action_generate_d1101()
@@ -125,7 +125,7 @@ class TestDereTpOper(DereCommon):
 
     def test_exclude_trial_then_include_again(self):
         declaration = self._create_declaration("2027-06")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._accept_tables(declaration)
         self._post_entry("2027-06-10", self.receivable, self.fee_account, 15.0)
         declaration.action_generate_d1101()

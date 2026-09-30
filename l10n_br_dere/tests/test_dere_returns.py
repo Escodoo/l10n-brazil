@@ -376,7 +376,7 @@ class TestDereReturns(DereCommon):
 
     def test_d9001_extract_cuts_the_period_and_reports_gaps(self):
         declaration = self._create_declaration()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         period = self._table_period(declaration)
         table = self.env["l10n_br_dere.table.period"]
         self.assertEqual(table._find_covering(self.company, date(2026, 10, 20)), period)
@@ -410,7 +410,7 @@ class TestDereReturns(DereCommon):
 
     def test_d9001_extract_replaces_only_the_photo_of_its_table(self):
         declaration = self._create_declaration()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         period = self._table_period(declaration)
         d1001 = self._event_receipt("D-1001", declaration.per_apur)
         d1011 = self._event_receipt("D-1011", declaration.per_apur)

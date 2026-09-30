@@ -46,7 +46,7 @@ REJECTED_LOTE = """<?xml version="1.0" encoding="utf-8"?>
 class TestDereCoverage(DereCommon):
     def _prepare_trial(self, period="2026-11"):
         declaration = self._create_declaration(period)
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._accept_tables(declaration)
         self._post_entry(
             f"{period}-10",
@@ -102,7 +102,7 @@ class TestDereCoverage(DereCommon):
             }
         )
         declaration = self._create_declaration("2025-03")
-        declaration.action_generate_d1001()
+        self._table_period(declaration).action_generate_d1001()
         xml = self._event(declaration, "D-1001").xml_content
         self.assertIn("<servFinanc>", xml)
         self.assertIn("<plAssistSaude>", xml)
@@ -110,7 +110,7 @@ class TestDereCoverage(DereCommon):
         self.company.dere_reg_trib_secund = False
         self.company.dere_activity_ids = [Command.set(prize.ids)]
         prize_declaration = self._create_declaration("2025-04")
-        prize_declaration.action_generate_d1001()
+        self._table_period(prize_declaration).action_generate_d1001()
         prize_xml = self._event(prize_declaration, "D-1001").xml_content
         self.assertIn("<prognosticos>", prize_xml)
         self.assertNotIn("<plAssistSaude>", prize_xml)
@@ -550,43 +550,45 @@ class TestDereCoverage(DereCommon):
         self.company.dere_subject_d1106 = True
         self.company.dere_subject_d1121 = True
         self._map_d1106_codtrib()
-        tables = self._create_declaration("2024-04")
-        tables.action_generate_tables()
+        declaration = self._create_declaration("2024-04")
+        self._table_period(declaration).action_generate_tables()
         with self.assertRaises(UserError):
-            tables._assert_send_order(["D-1011"])
+            declaration._assert_send_order(["D-1011"])
         with self.assertRaises(UserError):
-            tables._assert_send_order(["D-1198"])
+            declaration._assert_send_order(["D-1198"])
         empty = self._create_declaration("2023-01")
         with self.assertRaises(UserError):
             empty._assert_d1199_send_order()
-        self._accept_tables(tables)
+        self._accept_tables(declaration)
         self._post_entry("2024-04-10", self.receivable, self.fee_account, 100.0)
-        tables.action_generate_d1101()
-        self.env["l10n_br_dere.deduction.line"].create(self._deduction_vals(tables))
-        tables.action_generate_d1106()
-        tables.action_generate_d1121()
-        d1121 = tables.event_ids.filtered(lambda ev: ev.event_type == "D-1121")
+        declaration.action_generate_d1101()
+        self.env["l10n_br_dere.deduction.line"].create(
+            self._deduction_vals(declaration)
+        )
+        declaration.action_generate_d1106()
+        declaration.action_generate_d1121()
+        d1121 = declaration.event_ids.filtered(lambda ev: ev.event_type == "D-1121")
         with self.assertRaises(UserError):
-            tables._assert_send_order(["D-1121"])
-        self._accept_event(tables, "D-1101")
+            declaration._assert_send_order(["D-1121"])
+        self._accept_event(declaration, "D-1101")
         with self.assertRaises(UserError):
-            tables._assert_send_order(["D-1121"])
-        self._accept_event(tables, "D-1106")
-        tables._assert_send_order(["D-1121"])
-        tables.action_generate_d1199()
+            declaration._assert_send_order(["D-1121"])
+        self._accept_event(declaration, "D-1106")
+        declaration._assert_send_order(["D-1121"])
+        declaration.action_generate_d1199()
         with self.assertRaises(UserError):
-            tables._assert_d1199_send_order()
-        self._accept_event(tables, "D-1121")
-        tables._assert_d1199_send_order()
+            declaration._assert_d1199_send_order()
+        self._accept_event(declaration, "D-1121")
+        declaration._assert_d1199_send_order()
         self.assertTrue(d1121)
 
     def test_send_rejects_invalid_lote_xsd(self):
         declaration = self._create_declaration("2024-05")
-        declaration.action_generate_d1001()
+        self._table_period(declaration).action_generate_d1001()
         event = self._event(declaration, "D-1001")
         with (
             patch(
-                "odoo.addons.l10n_br_dere.models.dere_table_period."
+                "odoo.addons.l10n_br_dere.models.dere_event_ops."
                 "xsd_validator.validate_lote",
                 return_value=["lote broken"],
             ),
@@ -596,7 +598,7 @@ class TestDereCoverage(DereCommon):
 
     def test_consult_result_and_protocol_extraction_edge_cases(self):
         declaration = self._create_declaration("2024-06")
-        declaration.action_generate_d1001()
+        self._table_period(declaration).action_generate_d1001()
         batch = self.env["l10n_br_dere.batch"].create(
             {
                 "name": "edge",
@@ -825,7 +827,7 @@ class TestDereCoverage(DereCommon):
 
     def test_sent_event_rejects_non_consult_writes_and_builds_ids(self):
         declaration = self._create_declaration("2024-10")
-        declaration.action_generate_d1001()
+        self._table_period(declaration).action_generate_d1001()
         event = self._event(declaration, "D-1001")
         event.state = "sent"
         with self.assertRaises(UserError):
@@ -883,7 +885,7 @@ class TestDereCoverage(DereCommon):
 
     def test_consult_result_processing_and_done_states(self):
         declaration = self._create_declaration("2023-04")
-        declaration.action_generate_d1001()
+        self._table_period(declaration).action_generate_d1001()
         batch = self.env["l10n_br_dere.batch"].create(
             {
                 "name": "cd1",

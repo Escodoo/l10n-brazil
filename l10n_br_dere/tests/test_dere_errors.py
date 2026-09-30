@@ -19,36 +19,36 @@ class TestDereErrors(DereCommon):
         declaration = self._create_declaration("2026-08")
         self.company.dere_reg_trib_princ = False
         with self.assertRaises(UserError):
-            declaration.action_generate_d1001()
+            self._table_period(declaration).action_generate_d1001()
         self.company.dere_reg_trib_princ = "2"
         self.company.dere_reg_trib_secund = "2"
         with self.assertRaises(UserError):
-            declaration.action_generate_d1001()
+            self._table_period(declaration).action_generate_d1001()
         self.company.dere_reg_trib_secund = False
         self.company.dere_activity_ids = [Command.clear()]
         self.company.dere_reg_trib_princ = "1"
         with self.assertRaises(UserError):
-            declaration.action_generate_d1001()
+            self._table_period(declaration).action_generate_d1001()
         self.company.dere_reg_trib_princ = "3"
         with self.assertRaises(UserError):
-            declaration.action_generate_d1001()
+            self._table_period(declaration).action_generate_d1001()
 
     def test_invalid_cnpj_root(self):
         declaration = self._create_declaration("2026-07")
         with patch.object(type(self.company), "_dere_cnpj_root", return_value="12"):
             with self.assertRaises(UserError):
-                declaration.action_generate_d1001()
+                self._table_period(declaration).action_generate_d1001()
 
     def test_pgcc_requires_chart_and_accounts(self):
         declaration = self._create_declaration("2026-06")
-        declaration.action_generate_d1001()
+        self._table_period(declaration).action_generate_d1001()
         self.company.dere_plano_cta_ref = False
         with self.assertRaises(UserError):
-            declaration.action_generate_d1011()
+            self._table_period(declaration).action_generate_d1011()
         self.company.dere_plano_cta_ref = "4"
         self.company.dere_freq_encerr = False
         with self.assertRaises(UserError):
-            declaration.action_generate_d1011()
+            self._table_period(declaration).action_generate_d1011()
         self.company.dere_freq_encerr = "M"
         self.env["account.account"].search(
             [
@@ -63,7 +63,7 @@ class TestDereErrors(DereCommon):
             ]
         ).l10n_br_dere_cta_ref = False
         with self.assertRaises(UserError):
-            declaration.action_generate_d1011()
+            self._table_period(declaration).action_generate_d1011()
 
     def test_missing_parent_account_is_rejected(self):
         declaration = self._create_declaration("2026-05")
@@ -80,17 +80,17 @@ class TestDereErrors(DereCommon):
             skip_parent,
         ):
             with self.assertRaises(UserError):
-                declaration.action_generate_d1011()
+                self._table_period(declaration).action_generate_d1011()
 
     def test_trial_requires_movement(self):
         declaration = self._create_declaration("2026-04")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         with self.assertRaises(UserError):
             declaration.action_generate_d1101()
 
     def test_d1199_no_deductions_when_subject(self):
         declaration = self._create_declaration("2026-03")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._post_entry("2026-03-10", self.receivable, self.fee_account, 10.0)
         declaration.action_generate_d1101()
         self.company.dere_subject_d1121 = True
@@ -103,7 +103,7 @@ class TestDereErrors(DereCommon):
 
     def test_reopen_closed_period(self):
         declaration = self._create_declaration("2026-02")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._accept_tables(declaration)
         self._post_entry("2026-02-10", self.receivable, self.fee_account, 10.0)
         declaration.action_generate_d1101()
@@ -166,7 +166,7 @@ class TestDereErrors(DereCommon):
 
     def test_accepted_tables_lock_pgcc_snapshot(self):
         declaration = self._create_declaration("2026-02")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         line = declaration.pgcc_account_ids[:1]
         line.write({"dere12_nomeCta": "Draft edit"})
         self.assertEqual(line.dere12_nomeCta, "Draft edit")
@@ -179,7 +179,7 @@ class TestDereErrors(DereCommon):
     def test_closed_declaration_cannot_change_company_or_period(self):
         declaration = self._create_declaration("2026-03")
         self._post_entry("2026-03-10", self.receivable, self.fee_account, 50.0)
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._accept_tables(declaration)
         declaration.action_generate_d1101()
         with self.assertRaises(UserError):
@@ -201,7 +201,7 @@ class TestDereErrors(DereCommon):
 
     def test_processed_event_cannot_be_edited_or_deleted(self):
         declaration = self._create_declaration("2026-04")
-        declaration.action_generate_d1001()
+        self._table_period(declaration).action_generate_d1001()
         event = self._event(declaration, "D-1001")
         event.write({"state": "accepted", "cd_retorno": "1"})
         with self.assertRaises(UserError):
@@ -211,7 +211,7 @@ class TestDereErrors(DereCommon):
 
     def test_generated_event_can_be_deleted(self):
         declaration = self._create_declaration("2026-05")
-        declaration.action_generate_d1001()
+        self._table_period(declaration).action_generate_d1001()
         event = self._event(declaration, "D-1001")
         self.assertEqual(event.state, "generated")
         event.unlink()
@@ -219,7 +219,7 @@ class TestDereErrors(DereCommon):
 
     def test_discard_local_closing_unlocks_generated_d1199(self):
         declaration = self._create_declaration("2026-07")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._post_entry("2026-07-10", self.receivable, self.fee_account, 10.0)
         declaration.action_generate_d1101()
         declaration.action_generate_d1199()
@@ -237,7 +237,7 @@ class TestDereErrors(DereCommon):
 
     def test_discard_local_closing_heals_stale_closed_state(self):
         declaration = self._create_declaration("2026-08")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._post_entry("2026-08-10", self.receivable, self.fee_account, 10.0)
         declaration.action_generate_d1101()
         declaration.action_generate_d1199()
@@ -254,7 +254,7 @@ class TestDereErrors(DereCommon):
 
     def test_local_closing_blocks_input_regeneration(self):
         declaration = self._create_declaration("2026-06")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._accept_tables(declaration)
         self._post_entry("2026-06-10", self.receivable, self.fee_account, 10.0)
         declaration.action_generate_d1101()
@@ -265,7 +265,7 @@ class TestDereErrors(DereCommon):
 
     def test_discard_local_reopening_restores_closed_state(self):
         declaration = self._create_declaration("2026-12")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._post_entry("2026-12-10", self.receivable, self.fee_account, 10.0)
         declaration.action_generate_d1101()
         declaration.action_generate_d1199()
@@ -283,7 +283,7 @@ class TestDereErrors(DereCommon):
 
     def test_discard_local_reopening_heals_stale_reopened_state(self):
         declaration = self._create_declaration("2025-09")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._post_entry("2025-09-10", self.receivable, self.fee_account, 10.0)
         declaration.action_generate_d1101()
         declaration.action_generate_d1199()
@@ -296,7 +296,7 @@ class TestDereErrors(DereCommon):
 
     def test_discard_official_d1198_is_blocked(self):
         declaration = self._create_declaration("2025-08")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._post_entry("2025-08-10", self.receivable, self.fee_account, 10.0)
         declaration.action_generate_d1101()
         declaration.action_generate_d1199()
@@ -314,7 +314,7 @@ class TestDereErrors(DereCommon):
 
     def test_discard_official_d1199_is_blocked(self):
         declaration = self._create_declaration("2026-09")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._post_entry("2026-09-10", self.receivable, self.fee_account, 10.0)
         declaration.action_generate_d1101()
         declaration.action_generate_d1199()
@@ -327,14 +327,14 @@ class TestDereErrors(DereCommon):
     def test_send_without_events_or_token_error(self):
         declaration = self._create_declaration("2026-01")
         with self.assertRaises(UserError):
-            declaration.action_send_tables()
-        declaration.action_generate_d1001()
+            self._table_period(declaration).action_send_tables()
+        self._table_period(declaration).action_generate_d1001()
         with patch(
             "odoo.addons.l10n_br_dere.models.receita_integra.requests.post",
             return_value=_FakeResponse(status_code=401, text="unauthorized"),
         ):
             with self.assertRaises(UserError):
-                declaration.action_send_tables()
+                self._table_period(declaration).action_send_tables()
 
     def test_signing_certificate_required(self):
         self.assertTrue(self.company._dere_has_signing_certificate())
@@ -349,20 +349,20 @@ class TestDereErrors(DereCommon):
 
     def test_send_without_certificate(self):
         declaration = self._create_declaration("2026-03")
-        declaration.action_generate_d1001()
+        self._table_period(declaration).action_generate_d1001()
         self._clear_company_certificate()
         with patch(
             "odoo.addons.l10n_br_dere.models.receita_integra.requests.post",
             return_value=_FakeResponse(),
         ) as mocked:
             with self.assertRaises(UserError) as error:
-                declaration.action_send_tables()
+                self._table_period(declaration).action_send_tables()
             self.assertIn("A1", str(error.exception))
             mocked.assert_not_called()
 
     def test_send_batch_http_error(self):
         declaration = self._create_declaration("2025-12")
-        declaration.action_generate_d1001()
+        self._table_period(declaration).action_generate_d1001()
 
         def fake_post(url, **_kwargs):
             if "token" in url:
@@ -376,7 +376,7 @@ class TestDereErrors(DereCommon):
             side_effect=fake_post,
         ):
             try:
-                action = declaration.action_send_tables()
+                action = self._table_period(declaration).action_send_tables()
             except UserError:
                 return
         self.assertEqual(action["tag"], "display_notification")
@@ -384,11 +384,11 @@ class TestDereErrors(DereCommon):
 
     def test_regenerate_after_reject_creates_new_event(self):
         declaration = self._create_declaration("2025-10")
-        declaration.action_generate_d1001()
+        self._table_period(declaration).action_generate_d1001()
         event = self._event(declaration, "D-1001")
         declaration.apply_return(event, "0", desc_retorno="Erro")
         self.assertTrue(self._table_period(declaration).can_generate_tables)
-        declaration.action_generate_d1001()
+        self._table_period(declaration).action_generate_d1001()
         events = self._table_period(declaration).event_ids.filtered(
             lambda ev: ev.event_type == "D-1001"
         )
@@ -398,7 +398,7 @@ class TestDereErrors(DereCommon):
 
     def test_apply_return_xml_and_builder_errors(self):
         declaration = self._create_declaration("2025-11")
-        declaration.action_generate_d1001()
+        self._table_period(declaration).action_generate_d1001()
         declaration.action_apply_return_xml(RETURN_D9001.encode())
         event = self._event(declaration, "D-1001")
         self.assertEqual(event.state, "accepted")

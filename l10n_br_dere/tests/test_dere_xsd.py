@@ -28,7 +28,7 @@ class TestDereXsd(DereCommon):
         self.company.dere_subject_d1121 = True
         self._map_d1106_codtrib()
         declaration = self._create_declaration()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._post_billing_split("2026-10-15", 12500.0, 1000.0)
         declaration.action_generate_d1101()
         declaration.action_generate_d1106()
@@ -42,7 +42,7 @@ class TestDereXsd(DereCommon):
 
     def test_send_validates_signed_event_and_lote(self):
         declaration = self._create_declaration("2026-09")
-        declaration.action_generate_d1001()
+        self._table_period(declaration).action_generate_d1001()
 
         def fake_post(url, **_kwargs):
             if "token" in url:

@@ -27,7 +27,7 @@ class TestDereTablePeriod(DereCommon):
 
     def test_generate_tables_creates_period_events(self):
         declaration = self._create_declaration()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         period = declaration.table_period_id
         self.assertTrue(period)
         self.assertEqual(period.state, "generated")
@@ -57,7 +57,7 @@ class TestDereTablePeriod(DereCommon):
         self.equity_account.l10n_br_dere_cod_trib = False
         declaration = self._create_declaration("2026-05")
         with self.assertRaises(UserError) as error:
-            declaration.action_generate_d1011()
+            self._table_period(declaration).action_generate_d1011()
         self.assertIn("DERE21", str(error.exception))
 
     def test_nbr5891_rounds_half_to_even(self):
@@ -67,7 +67,7 @@ class TestDereTablePeriod(DereCommon):
 
     def test_accepting_tables_unlocks_trial_generation(self):
         declaration = self._create_declaration()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self.assertFalse(declaration.can_generate_trial)
         self._accept_tables(declaration)
         self.assertTrue(declaration.can_generate_trial)
@@ -75,7 +75,7 @@ class TestDereTablePeriod(DereCommon):
 
     def test_d1199_blocks_when_pgcc_receipt_changed(self):
         declaration = self._create_declaration()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._accept_tables(declaration)
         self._post_entry("2026-10-10", self.receivable, self.fee_account, 10.0)
         declaration.action_generate_d1101()

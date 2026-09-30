@@ -107,7 +107,7 @@ class TestDereCoverageGaps(DereCommon):
         with self.assertRaises(UserError):
             missing_start.action_confirm()
         fresh = self._create_declaration("2028-12")
-        fresh.action_generate_tables()
+        self._table_period(fresh).action_generate_tables()
         changed = self.env["l10n_br_dere.event.operation.wizard"].create(
             {
                 "table_period_id": self._table_period(fresh).id,
@@ -140,7 +140,7 @@ class TestDereCoverageGaps(DereCommon):
         with self.assertRaises(UserError):
             unsupported.action_confirm()
 
-    def test_declaration_helpers_and_wrappers(self):
+    def test_declaration_helpers(self):
         declaration = self._create_declaration("2028-03")
         declaration.table_period_id = False
         self.assertFalse(declaration._event_records("D-1001"))
@@ -153,12 +153,11 @@ class TestDereCoverageGaps(DereCommon):
             with self.assertRaises(UserError):
                 declaration._header_vals(event_type="D-1101")
         self.assertEqual(declaration._activity_codes("31"), ["02A"])
-        self.assertEqual(
-            declaration._account_name_for_xml(self.env["account.account"]), ""
-        )
-        group = declaration._pgcc_row_from_group(self.parent_group, set())
+        tables = self._table_period(declaration)
+        self.assertEqual(tables._account_name_for_xml(self.env["account.account"]), "")
+        group = tables._pgcc_row_from_group(self.parent_group, set())
         self.assertTrue(group is None or isinstance(group, dict))
-        declaration.action_generate_tables()
+        tables.action_generate_tables()
         self._accept_tables(declaration)
         pgcc_account = declaration.pgcc_account_ids.filtered("account_id")[
             :1
@@ -202,20 +201,6 @@ class TestDereCoverageGaps(DereCommon):
             declaration.action_rectify_d1121()["res_model"],
             "l10n_br_dere.event.operation.wizard",
         )
-        action = declaration.action_replace_tables()
-        self.assertEqual(action["res_model"], "l10n_br_dere.event.operation.wizard")
-        self.assertEqual(
-            declaration.action_exclude_tables()["res_model"],
-            "l10n_br_dere.event.operation.wizard",
-        )
-        with patch.object(
-            type(declaration.table_period_id),
-            "action_send_tables",
-            lambda self: {"type": "ir.actions.client"},
-        ):
-            self.assertEqual(
-                declaration.action_send_tables()["type"], "ir.actions.client"
-            )
         with patch.object(
             type(declaration),
             "_send_events",

@@ -35,7 +35,7 @@ class TestDereAuxiliaryEvents(DereCommon):
 
     def _prepare_trial(self, period="2026-11"):
         declaration = self._create_declaration(period)
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._accept_tables(declaration)
         self._post_entry(
             f"{period}-10",
@@ -451,7 +451,7 @@ class TestDereAuxiliaryEvents(DereCommon):
         self._map_d1106_codtrib()
         self._create_reserve_asset(self.equity_account, "CDBUNLINK02")
         declaration = self._create_declaration("2029-09")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         self._post_entry("2029-09-10", self.receivable, self.fee_account, 100.0)
         declaration.action_generate_d1101()
         declaration.action_generate_d1106()

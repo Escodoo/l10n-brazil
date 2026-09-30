@@ -19,7 +19,7 @@ class TestDereTables(DereCommon):
 
     def test_d1001_benefit_administrator(self):
         declaration = self._create_declaration()
-        declaration.action_generate_d1001()
+        self._table_period(declaration).action_generate_d1001()
         root = self._event_xml(declaration, "D-1001")
         event = root.find(".//{*}evtInfoContrib")
         self.assertEqual(len(event.get("id") or ""), 42)
@@ -32,7 +32,7 @@ class TestDereTables(DereCommon):
     def test_d1001_health_operator(self):
         self.company.dere_activity_ids = [Command.set(self.activity_operator.ids)]
         declaration = self._create_declaration("2026-11")
-        declaration.action_generate_d1001()
+        self._table_period(declaration).action_generate_d1001()
         root = self._event_xml(declaration, "D-1001")
         self.assertEqual(root.findtext(".//{*}tpAtividade"), "05A")
 
@@ -40,7 +40,7 @@ class TestDereTables(DereCommon):
         self.company.dere_activity_ids = [Command.clear()]
         declaration = self._create_declaration("2026-12")
         with self.assertRaises(UserError):
-            declaration.action_generate_d1001()
+            self._table_period(declaration).action_generate_d1001()
 
     def test_d1001_rejects_financial_group_on_health_regime(self):
         financial = self.env.ref("l10n_br_dere.activity_21_01a")
@@ -48,14 +48,14 @@ class TestDereTables(DereCommon):
             Command.set((self.activity_admin | financial).ids)
         ]
         declaration = self._create_declaration("2026-09")
-        declaration.action_generate_d1001()
+        self._table_period(declaration).action_generate_d1001()
         root = self._event_xml(declaration, "D-1001")
         self.assertIsNone(root.find(".//{*}servFinanc"))
         self.assertEqual(root.findtext(".//{*}tpAtividade"), "02A")
 
     def test_d1011_exports_parent_and_child(self):
         declaration = self._create_declaration()
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         root = self._event_xml(declaration, "D-1011")
         self.assertEqual(root.findtext(".//{*}planoCtaRef"), "4")
         self.assertEqual(root.findtext(".//{*}freqEncerr"), "M")
@@ -101,7 +101,7 @@ class TestDereTables(DereCommon):
         self.assertEqual(inherited._dere_nat_cta(), "C")
         self.assertEqual(inherited._dere_cod_nat(), "4")
         declaration = self._create_declaration("2026-01")
-        declaration.action_generate_d1011()
+        self._table_period(declaration).action_generate_d1011()
         line = declaration.pgcc_account_ids.filtered(
             lambda rec: rec.account_id == inherited
         )
@@ -116,7 +116,7 @@ class TestDereTables(DereCommon):
         self.parent_group.l10n_br_dere_nat_cta = False
         self.parent_group.l10n_br_dere_cod_nat = False
         declaration = self._create_declaration("2026-02")
-        declaration.action_generate_d1011()
+        self._table_period(declaration).action_generate_d1011()
         parent = declaration.pgcc_account_ids.filtered(
             lambda rec: rec.group_id == self.parent_group
         )
@@ -138,7 +138,7 @@ class TestDereTables(DereCommon):
             "name", {"pt_BR": "Administration fees PT"}
         )
         declaration = self._create_declaration("2026-08")
-        declaration.action_generate_tables()
+        self._table_period(declaration).action_generate_tables()
         fee_pgcc = declaration.pgcc_account_ids.filtered(
             lambda rec: rec.account_id == self.fee_account
         )
