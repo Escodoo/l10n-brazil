@@ -387,7 +387,7 @@ class TestDereErrors(DereCommon):
         declaration.action_generate_d1001()
         event = self._event(declaration, "D-1001")
         declaration.apply_return(event, "0", desc_retorno="Erro")
-        self.assertTrue(declaration.can_generate_tables)
+        self.assertTrue(self._table_period(declaration).can_generate_tables)
         declaration.action_generate_d1001()
         events = self._table_period(declaration).event_ids.filtered(
             lambda ev: ev.event_type == "D-1001"

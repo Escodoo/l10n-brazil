@@ -146,14 +146,6 @@ class DereDeclaration(models.Model):
         string="Can consult results",
         compute="_compute_closing_actions",
     )
-    can_generate_tables = fields.Boolean(
-        string="Can generate tables",
-        compute="_compute_closing_actions",
-    )
-    can_send_tables = fields.Boolean(
-        string="Can send tables",
-        compute="_compute_closing_actions",
-    )
     can_generate_trial = fields.Boolean(
         string="Can generate trial balance",
         compute="_compute_closing_actions",
@@ -178,14 +170,9 @@ class DereDeclaration(models.Model):
         string="Can send periodics",
         compute="_compute_closing_actions",
     )
-    can_replace_tables = fields.Boolean(compute="_compute_closing_actions")
-    can_exclude_tables = fields.Boolean(compute="_compute_closing_actions")
     can_replace_trial = fields.Boolean(compute="_compute_closing_actions")
-    can_exclude_trial = fields.Boolean(compute="_compute_closing_actions")
     can_replace_d1106 = fields.Boolean(compute="_compute_closing_actions")
-    can_exclude_d1106 = fields.Boolean(compute="_compute_closing_actions")
     can_replace_d1121 = fields.Boolean(compute="_compute_closing_actions")
-    can_exclude_d1121 = fields.Boolean(compute="_compute_closing_actions")
     can_rectify_d1121 = fields.Boolean(compute="_compute_closing_actions")
     primary_action = fields.Selection(
         selection=PRIMARY_ACTIONS,
@@ -368,10 +355,6 @@ class DereDeclaration(models.Model):
         "event_ids.tp_oper",
         "batch_ids.state",
         "batch_ids.protocol",
-        "table_period_id.can_generate_tables",
-        "table_period_id.can_send_tables",
-        "table_period_id.can_replace_tables",
-        "table_period_id.can_exclude_tables",
         "table_period_id.can_consult_results",
         "table_period_id.event_ids.state",
         "subject_d1106",
@@ -403,18 +386,6 @@ class DereDeclaration(models.Model):
                 or rec.table_period_id.can_consult_results
             )
             tables = rec.table_period_id
-            rec.can_generate_tables = rec.state != "closed" and (
-                not tables or tables.can_generate_tables
-            )
-            rec.can_send_tables = rec.state != "closed" and bool(
-                tables and tables.can_send_tables
-            )
-            rec.can_replace_tables = rec.state != "closed" and bool(
-                tables and tables.can_replace_tables
-            )
-            rec.can_exclude_tables = rec.state != "closed" and bool(
-                tables and tables.can_exclude_tables
-            )
             rec.can_generate_trial = (
                 rec.state
                 in (
@@ -431,7 +402,6 @@ class DereDeclaration(models.Model):
                 and not closing_pending
                 and rec._can_replace_or_exclude(EVENT_D1101)
             )
-            rec.can_exclude_trial = rec.can_replace_trial
             rec.can_generate_d1106 = (
                 rec.state in ("trial_ok", "reopened")
                 and not closing_pending
@@ -446,7 +416,6 @@ class DereDeclaration(models.Model):
                 and rec._has_d1106_codtrib()
                 and rec._can_replace_or_exclude(EVENT_D1106)
             )
-            rec.can_exclude_d1106 = rec.can_replace_d1106
             rec.can_load_deductions = (
                 rec.state in ("trial_ok", "reopened")
                 and not closing_pending
@@ -471,7 +440,6 @@ class DereDeclaration(models.Model):
                 and bool(rec.deduction_line_ids)
                 and rec._can_replace_or_exclude(EVENT_D1121)
             )
-            rec.can_exclude_d1121 = rec.can_replace_d1121
             rec.can_rectify_d1121 = (
                 rec.state == "reopened"
                 and not closing_pending

@@ -79,8 +79,9 @@ class TestDereTables(DereCommon):
         splits = {node.text for node in root.findall(".//{*}cDbrMista")}
         self.assertTrue(all(len(code) == 3 for code in splits))
         self.assertEqual(declaration.state, "draft")
-        self.assertTrue(declaration.can_generate_tables)
-        self.assertTrue(declaration.can_send_tables)
+        tables = self._table_period(declaration)
+        self.assertTrue(tables.can_generate_tables)
+        self.assertTrue(tables.can_send_tables)
         self.assertFalse(declaration.can_generate_trial)
         self.assertFalse(declaration.primary_action)
 

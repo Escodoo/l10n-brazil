@@ -358,8 +358,9 @@ class TestDereTransmit(DereCommon):
         self._event(declaration, "D-1011").write(
             {"state": "accepted", "cd_retorno": "1"}
         )
-        self.assertFalse(declaration.can_generate_tables)
-        self.assertFalse(declaration.can_send_tables)
+        tables = self._table_period(declaration)
+        self.assertFalse(tables.can_generate_tables)
+        self.assertFalse(tables.can_send_tables)
         with self.assertRaises(UserError):
             declaration.action_generate_tables()
 
