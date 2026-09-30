@@ -9,7 +9,7 @@ class DereTaxCode(models.Model):
     _description = "DeRE taxation code (codTrib)"
     _rec_names_search = ["code", "name"]
 
-    name = fields.Char(required=True, translate=True)
+    name = fields.Char(required=True)
     code = fields.Char(required=True, size=9)
     description = fields.Text(
         help="Official table 11 text that explains what to classify under this code.",
