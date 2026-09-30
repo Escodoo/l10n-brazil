@@ -139,53 +139,24 @@ class DereCommon(TransactionCase):
         company = company or cls.company
         if company._dere_has_signing_certificate():
             return
-        fake = cls._fake_certificate_file()
-        if "certificate_nfe_id" in company._fields:
-            certificate = cls.env["l10n_br_fiscal.certificate"].create(
-                {
-                    "type": "nf-e",
-                    "subtype": "a1",
-                    "password": "123456",
-                    "file": fake,
-                }
-            )
-            company.certificate_nfe_id = certificate
-            return
-        if "certificate_id" in company._fields:
-            certificate = cls.env["certificate.certificate"].create(
-                {
-                    "scope": "l10n_br",
-                    "pkcs12_password": "123456",
-                    "content": fake,
-                    "company_id": company.id,
-                }
-            )
-            company.certificate_id = certificate
-            return
-        raise AssertionError("res.company has no Brazilian certificate field")
+        company.certificate_id = cls.env["certificate.certificate"].create(
+            {
+                "scope": "l10n_br",
+                "pkcs12_password": "123456",
+                "content": cls._fake_certificate_file(),
+                "company_id": company.id,
+            }
+        )
 
     def _company_certificate_vals(self, company=None):
         company = company or self.company
-        if "certificate_nfe_id" in company._fields:
-            return {
-                "certificate_nfe_id": company.certificate_nfe_id.id,
-                "certificate_ecnpj_id": company.certificate_ecnpj_id.id,
-            }
-        if "certificate_id" in company._fields:
-            return {"certificate_id": company.certificate_id.id}
-        return {}
+        return {"certificate_id": company.certificate_id.id}
 
     def _clear_company_certificate(self, company=None):
-        company = company or self.company
-        if "certificate_nfe_id" in company._fields:
-            company.write({"certificate_nfe_id": False, "certificate_ecnpj_id": False})
-        elif "certificate_id" in company._fields:
-            company.certificate_id = False
+        (company or self.company).certificate_id = False
 
     def _restore_company_certificate(self, vals, company=None):
-        company = company or self.company
-        if vals:
-            company.write(vals)
+        (company or self.company).write(vals)
 
     def _map_d1106_codtrib(self, account=None):
         Tax = self.env["l10n_br_dere.tax.code"]
