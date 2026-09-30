@@ -1,5 +1,3 @@
-Instale este módulo só como dependência de `l10n_br_dere`.
-
 Os nomes de campo usam o prefixo `dere12_` (leiaute 1.2.x). Um leiaute
 major posterior introduziria um prefixo novo, na mesma convenção de
 `l10n_br_nfe_spec`.
@@ -15,3 +13,7 @@ evento (veja o ROADMAP).
 `validate_return()` escolhe o XSD pelo namespace do retorno
 (`RETURN_SCHEMA`), para o XML D-9xxx ser validado sem adivinhar o
 tipo do evento.
+
+`safe_fromstring()` lê o XML sem expandir entidades nem acessar a
+rede. Os validadores já a usam; use-a também para ler qualquer
+retorno do gateway.

@@ -57,10 +57,8 @@ Installation
 Instale este módulo como dependência de ``l10n_br_dere``. Ele não tem
 interface própria.
 
-Usage
-=====
-
-Instale este módulo só como dependência de ``l10n_br_dere``.
+Development
+===========
 
 Os nomes de campo usam o prefixo ``dere12_`` (leiaute 1.2.x). Um leiaute
 major posterior introduziria um prefixo novo, na mesma convenção de
@@ -77,6 +75,10 @@ namespaced por evento (veja o ROADMAP).
 ``validate_return()`` escolhe o XSD pelo namespace do retorno
 (``RETURN_SCHEMA``), para o XML D-9xxx ser validado sem adivinhar o tipo
 do evento.
+
+``safe_fromstring()`` lê o XML sem expandir entidades nem acessar a
+rede. Os validadores já a usam; use-a também para ler qualquer retorno
+do gateway.
 
 Known issues / Roadmap
 ======================
@@ -122,7 +124,8 @@ Contributors
 Other credits
 -------------
 
-Official XSD and layout documents: CGIBS / Receita Federal do Brasil.
+Os XSD oficiais e os documentos de leiaute são publicados pelo CGIBS e
+pela Receita Federal do Brasil:
 
 https://cgibs.gov.br/declaracao-de-regimes-especificos-dere
 

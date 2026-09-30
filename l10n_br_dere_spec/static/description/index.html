@@ -387,7 +387,7 @@ de fora desta primeira versão porque os leiautes ainda são preliminares.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
 <li><a class="reference internal" href="#installation" id="toc-entry-1">Installation</a></li>
-<li><a class="reference internal" href="#usage" id="toc-entry-2">Usage</a></li>
+<li><a class="reference internal" href="#development" id="toc-entry-2">Development</a></li>
 <li><a class="reference internal" href="#known-issues-roadmap" id="toc-entry-3">Known issues / Roadmap</a></li>
 <li><a class="reference internal" href="#bug-tracker" id="toc-entry-4">Bug Tracker</a></li>
 <li><a class="reference internal" href="#credits" id="toc-entry-5">Credits</a><ul>
@@ -404,9 +404,8 @@ de fora desta primeira versão porque os leiautes ainda são preliminares.</p>
 <p>Instale este módulo como dependência de <tt class="docutils literal">l10n_br_dere</tt>. Ele não tem
 interface própria.</p>
 </div>
-<div class="section" id="usage">
-<h1><a class="toc-backref" href="#toc-entry-2">Usage</a></h1>
-<p>Instale este módulo só como dependência de <tt class="docutils literal">l10n_br_dere</tt>.</p>
+<div class="section" id="development">
+<h1><a class="toc-backref" href="#toc-entry-2">Development</a></h1>
 <p>Os nomes de campo usam o prefixo <tt class="docutils literal">dere12_</tt> (leiaute 1.2.x). Um leiaute
 major posterior introduziria um prefixo novo, na mesma convenção de
 <tt class="docutils literal">l10n_br_nfe_spec</tt>.</p>
@@ -420,6 +419,9 @@ namespaced por evento (veja o ROADMAP).</p>
 <tt class="docutils literal">validate_return()</tt> escolhe o XSD pelo namespace do retorno
 (<tt class="docutils literal">RETURN_SCHEMA</tt>), para o XML D-9xxx ser validado sem adivinhar o tipo
 do evento.</p>
+<p><tt class="docutils literal">safe_fromstring()</tt> lê o XML sem expandir entidades nem acessar a
+rede. Os validadores já a usam; use-a também para ler qualquer retorno
+do gateway.</p>
 </div>
 <div class="section" id="known-issues-roadmap">
 <h1><a class="toc-backref" href="#toc-entry-3">Known issues / Roadmap</a></h1>
@@ -465,7 +467,8 @@ If you spotted it first, help us to smash it by providing a detailed and welcome
 </div>
 <div class="section" id="other-credits">
 <h2><a class="toc-backref" href="#toc-entry-8">Other credits</a></h2>
-<p>Official XSD and layout documents: CGIBS / Receita Federal do Brasil.</p>
+<p>Os XSD oficiais e os documentos de leiaute são publicados pelo CGIBS e
+pela Receita Federal do Brasil:</p>
 <p><a class="reference external" href="https://cgibs.gov.br/declaracao-de-regimes-especificos-dere">https://cgibs.gov.br/declaracao-de-regimes-especificos-dere</a></p>
 </div>
 <div class="section" id="maintainers">
