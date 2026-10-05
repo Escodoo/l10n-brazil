@@ -139,23 +139,70 @@ class DocumentImportWizard(models.TransientModel):
             "issqn_value": binding.issqn_value,
             "issqn_wh_percent": binding.issqn_wh_percent,
             "issqn_wh_value": binding.issqn_wh_value,
+            "issqn_fg_city_id": self._nfse_incidence_city(binding.issqn_city_ibge).id,
         }
         vals.update(self._nfse_tax_vals(binding))
         return vals
 
+    def _nfse_incidence_city(self, ibge_code):
+        digits = re.sub(r"\D", "", ibge_code or "")
+        if not digits:
+            return self.env["res.city"].browse()
+        return self.env["res.city"].search([("ibge_code", "=", digits)], limit=1)
+
     def _nfse_tax_vals(self, binding):
-        """Copy IBS, CBS and federal taxes from the national XML.
+        """Copy ISS, IBS, CBS and federal taxes from the national XML.
 
         The document is imported, so the fiscal computes do not replace these
         amounts. The service liquid value stays the one parsed as price.
         """
         vals = {}
         tax_ids = []
+        vals.update(self._nfse_issqn_vals(binding, tax_ids))
         vals.update(self._nfse_ibs_cbs_vals(binding, tax_ids))
         vals.update(self._nfse_pis_cofins_vals(binding, tax_ids))
         vals.update(self._nfse_withholding_vals(binding, tax_ids))
         if tax_ids:
             vals["fiscal_tax_ids"] = [Command.set(tax_ids)]
+        return vals
+
+    def _nfse_issqn_vals(self, binding, tax_ids):
+        """Match the chart ISS by rate. Withholding uses the retained group."""
+        base = binding.issqn_base or binding.service_value
+        issqn_tax = self._nfse_match_tax(
+            "l10n_br_fiscal.tax_group_issqn",
+            binding.issqn_percent,
+        )
+        vals = self._nfse_amount_vals(
+            "issqn",
+            base,
+            binding.issqn_percent,
+            binding.issqn_value,
+            0.0,
+            False,
+            issqn_tax,
+        )
+        if issqn_tax:
+            tax_ids.append(issqn_tax.id)
+        if not binding.issqn_wh_value:
+            return vals
+        wh_tax = self._nfse_match_tax(
+            "l10n_br_fiscal.tax_group_issqn_wh",
+            binding.issqn_wh_percent or binding.issqn_percent,
+        )
+        vals.update(
+            self._nfse_amount_vals(
+                "issqn_wh",
+                base,
+                binding.issqn_wh_percent or binding.issqn_percent,
+                binding.issqn_wh_value,
+                0.0,
+                False,
+                wh_tax,
+            )
+        )
+        if wh_tax:
+            tax_ids.append(wh_tax.id)
         return vals
 
     def _nfse_ibs_cbs_vals(self, binding, tax_ids):

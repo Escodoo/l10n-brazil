@@ -77,6 +77,10 @@ class TestNfseImport(TransactionCase):
         self.assertEqual(line.name, "Consulting")
         self.assertAlmostEqual(line.price_unit, 20.0)
         self.assertAlmostEqual(line.issqn_value, 0.4)
+        self.assertEqual(line.issqn_tax_id, self.env.ref("l10n_br_fiscal.tax_issqn_2"))
+        self.assertIn(line.issqn_tax_id, line.fiscal_tax_ids)
+        self.assertFalse(line.issqn_wh_tax_id)
+        self.assertEqual(line.issqn_fg_city_id.ibge_code, "3550308")
         self.assertEqual(line.service_type_id, self.service_type)
         self.assertEqual(line.nbs_id, self.nbs)
         self.assertAlmostEqual(line.issqn_wh_value, 0.0)
@@ -98,6 +102,14 @@ class TestNfseImport(TransactionCase):
         self.assertEqual(withheld["issqn_wh_value"], 0.4)
         not_withheld = parse_nfse_xml(nfse_xml(retention="1"))
         self.assertEqual(not_withheld["issqn_wh_value"], 0.0)
+        wizard = self._wizard(retention="2")
+        _binding, document = wizard._create_edoc_from_file()
+        line = document.fiscal_line_ids
+        self.assertEqual(line.issqn_tax_id, self.env.ref("l10n_br_fiscal.tax_issqn_2"))
+        self.assertEqual(
+            line.issqn_wh_tax_id, self.env.ref("l10n_br_fiscal.tax_issqn_wh_2")
+        )
+        self.assertIn(line.issqn_wh_tax_id, line.fiscal_tax_ids)
 
     def test_import_keeps_ibs_cbs_and_federal_withholdings(self):
         parsed = parse_nfse_xml(_reform_nfse_xml())
@@ -117,6 +129,7 @@ class TestNfseImport(TransactionCase):
         self.assertEqual(parsed["irpj_wh_value"], 58.71)
         self.assertEqual(parsed["csll_wh_value"], 182.00)
         self.assertEqual(parsed["issqn_wh_value"], 0.0)
+        self.assertEqual(parsed["issqn_city_ibge"], "3205200")
 
         wizard = self.env["l10n_br_fiscal.document.import.wizard"].create(
             {
@@ -129,6 +142,10 @@ class TestNfseImport(TransactionCase):
         line = document.fiscal_line_ids
         self.assertAlmostEqual(line.price_unit, 3914.0)
         self.assertAlmostEqual(line.issqn_value, 195.70)
+        self.assertEqual(line.issqn_tax_id, self.env.ref("l10n_br_fiscal.tax_issqn_5"))
+        self.assertIn(line.issqn_tax_id, line.fiscal_tax_ids)
+        self.assertFalse(line.issqn_wh_tax_id)
+        self.assertEqual(line.issqn_fg_city_id.ibge_code, "3205200")
         self.assertAlmostEqual(line.ibs_base, 3575.44)
         self.assertAlmostEqual(line.ibs_percent, 0.10)
         self.assertAlmostEqual(line.ibs_reduction, 30.0)
