@@ -29,7 +29,7 @@ class L10nBrFiscalDfeDocument(models.Model):
         ),
     ]
 
-    access_key = fields.Char(size=44, required=True, index=True)
+    access_key = fields.Char(size=50, required=True, index=True)
 
     fiscal_type = fields.Selection(
         selection=[("nfe", "NF-e"), ("cte", "CT-e")],
