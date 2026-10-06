@@ -68,7 +68,8 @@ class L10nBrFiscalDfeDocument(models.Model):
 
     document_emission_date = fields.Datetime(string="Emission Date")
 
-    serie = fields.Char(size=3)
+    # A national NFS-e DPS series has up to 5 characters (TSSerieDPS).
+    serie = fields.Char(size=5)
 
     color_status = fields.Selection(
         [
