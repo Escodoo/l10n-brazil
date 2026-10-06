@@ -409,7 +409,10 @@ class ResCompany(models.Model):
                 return self._nfse_process_item(item)
         except Exception as error:
             nsu = item.get("NSU")
-            _logger.warning("Skipping NFS-e DF-e item NSU %s", nsu, exc_info=True)
+            # The message stays on one line. A traceback here is an expected
+            # skip, and the OCA checklog turns any traceback in the test log
+            # into a failure.
+            _logger.warning("Skipping NFS-e DF-e item NSU %s: %s", nsu, error)
             self._dfe_log(
                 _(
                     "NFS-e item NSU %(nsu)s was skipped: %(error)s",
