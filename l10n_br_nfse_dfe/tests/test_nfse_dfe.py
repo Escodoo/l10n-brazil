@@ -10,6 +10,7 @@ from unittest import mock
 from odoo import fields
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests.common import TransactionCase
+from odoo.tools import mute_logger
 
 from odoo.addons.l10n_br_fiscal_dfe.constants.dfe import DFE_INTERVAL_NO_DOCS
 from odoo.addons.l10n_br_nfse_dfe.services.adn_dfe import AdnDfeClient, AdnDfeResponse
@@ -428,7 +429,10 @@ class TestNfseDfe(TransactionCase):
         def side_effect(_company, path, params=None):
             return response(200, {"LoteDFe": [bad, good]})
 
-        with mock.patch.object(type(self.company), "_nfse_create_note", explode):
+        with (
+            mock.patch.object(type(self.company), "_nfse_create_note", explode),
+            mute_logger("odoo.addons.l10n_br_nfse_dfe.models.res_company"),
+        ):
             self._distribute(side_effect)
         self.assertTrue(self.company.nfse_last_nsu.endswith("12"))
         stored = self._documents().mapped("access_key")

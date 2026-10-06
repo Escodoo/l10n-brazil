@@ -409,9 +409,8 @@ class ResCompany(models.Model):
                 return self._nfse_process_item(item)
         except Exception as error:
             nsu = item.get("NSU")
-            # The message stays on one line. A traceback here is an expected
-            # skip, and the OCA checklog turns any traceback in the test log
-            # into a failure.
+            # One line, without a traceback. The test that forces this path
+            # mutes the logger: the OCA checklog fails on a warning from here.
             _logger.warning("Skipping NFS-e DF-e item NSU %s: %s", nsu, error)
             self._dfe_log(
                 _(
