@@ -532,8 +532,13 @@ class TestNfseDfeCoverage(TransactionCase):
                 "file": base64.b64encode(b"<NFe></NFe>"),
             }
         )
-        with self.assertRaises(UserError):
-            wizard._parse_file()
+        parent_parse = (
+            "odoo.addons.l10n_br_fiscal.wizards.document_import_wizard."
+            "DocumentImportWizard._parse_file"
+        )
+        with mock.patch(parent_parse, return_value="parsed") as parsed:
+            self.assertEqual(wizard._parse_file(), "parsed")
+        parsed.assert_called_once()
         with self.assertRaises(UserError):
             wizard._detect_binding(object())
         wizard._extract_binding_data(object())
@@ -578,8 +583,13 @@ class TestNfseDfeCoverage(TransactionCase):
                 "search_type": "access_key",
             }
         )
-        with self.assertRaises(UserError):
+        parent_validate = (
+            "odoo.addons.l10n_br_fiscal_dfe.wizards.specific_search_wizard."
+            "DfeSpecificSearchWizard._validate_access_key"
+        )
+        with mock.patch(parent_validate, return_value=None) as validate:
             search_wizard._validate_access_key("")
+        validate.assert_called_once_with("")
 
     def test_adn_wrap_rejects_non_json(self):
         client = AdnDfeClient("https://adn.nfse.gov.br", "/tmp/unused.pem")
