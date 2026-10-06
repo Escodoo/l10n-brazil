@@ -225,3 +225,77 @@ msgstr "XML"
 #: code:addons/l10n_br_nfse_dfe/models/dfe_document.py:0
 msgid "You can only import the NFS-e when the DF-e is completed."
 msgstr "Só é possível importar a NFS-e quando o DF-e está completo."
+
+#. module: l10n_br_nfse_dfe
+#: model:ir.model.fields,field_description:l10n_br_nfse_dfe.field_res_company__nfse_import_product_id
+msgid "Default NFS-e Import Product"
+msgstr "Produto padrão de importação de NFS-e"
+
+#. module: l10n_br_nfse_dfe
+#: model:ir.model.fields,help:l10n_br_nfse_dfe.field_res_company__nfse_import_product_id
+msgid ""
+"Service product applied when a national NFS-e is imported and the wizard "
+"has no product yet."
+msgstr ""
+"Produto de serviço aplicado quando uma NFS-e nacional é importada e o "
+"assistente ainda não tem produto."
+
+#. module: l10n_br_nfse_dfe
+#. odoo-python
+#: code:addons/l10n_br_nfse_dfe/models/res_company.py:0
+msgid "NFS-e item NSU %(nsu)s was skipped: %(error)s"
+msgstr "Item de NFS-e NSU %(nsu)s foi ignorado: %(error)s"
+
+#. module: l10n_br_nfse_dfe
+#. odoo-python
+#: code:addons/l10n_br_nfse_dfe/models/res_company.py:0
+msgid "This NFS-e was not found."
+msgstr "Esta NFS-e não foi encontrada."
+
+#. module: l10n_br_nfse_dfe
+#. odoo-python
+#: code:addons/l10n_br_nfse_dfe/models/res_company.py:0
+msgid "The service rate limit is active. Try again later."
+msgstr "O limite de requisições do serviço está ativo. Tente novamente mais tarde."
+
+#. module: l10n_br_nfse_dfe
+#. odoo-python
+#: code:addons/l10n_br_nfse_dfe/models/res_company.py:0
+msgid "The Sefin Nacional response does not contain an NFS-e."
+msgstr "A resposta da Sefin Nacional não contém uma NFS-e."
+
+#. module: l10n_br_nfse_dfe
+#. odoo-python
+#: code:addons/l10n_br_nfse_dfe/models/dfe.py:0
+msgid "NFS-e Cancellation"
+msgstr "Cancelamento de NFS-e"
+
+#. module: l10n_br_nfse_dfe
+#. odoo-python
+#: code:addons/l10n_br_nfse_dfe/models/dfe.py:0
+msgid "NFS-e Cancellation Request"
+msgstr "Solicitação de cancelamento de NFS-e"
+
+#. module: l10n_br_nfse_dfe
+#. odoo-python
+#: code:addons/l10n_br_nfse_dfe/models/dfe.py:0
+msgid "NFS-e Cancellation by Substitution"
+msgstr "Cancelamento de NFS-e por substituição"
+
+#. module: l10n_br_nfse_dfe
+#. odoo-python
+#: code:addons/l10n_br_nfse_dfe/models/dfe.py:0
+msgid "NFS-e Cancellation Accepted by the Tax Authority"
+msgstr "Cancelamento de NFS-e deferido pela análise fiscal"
+
+#. module: l10n_br_nfse_dfe
+#. odoo-python
+#: code:addons/l10n_br_nfse_dfe/models/dfe.py:0
+msgid "NFS-e Cancellation Rejected by the Tax Authority"
+msgstr "Cancelamento de NFS-e indeferido pela análise fiscal"
+
+#. module: l10n_br_nfse_dfe
+#. odoo-python
+#: code:addons/l10n_br_nfse_dfe/models/dfe.py:0
+msgid "NFS-e Cancellation by the Tax Authority"
+msgstr "Cancelamento de NFS-e por ofício"

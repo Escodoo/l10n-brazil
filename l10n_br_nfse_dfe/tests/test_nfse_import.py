@@ -172,6 +172,81 @@ class TestNfseImport(TransactionCase):
         self.assertIn(line.pis_tax_id, line.fiscal_tax_ids)
         self.assertIn(line.cofins_tax_id, line.fiscal_tax_ids)
 
+    def test_import_creates_unknown_provider(self):
+        cnpj = "12345678000195"
+        self.assertFalse(
+            self.env["res.partner"].search([("cnpj_cpf_stripped", "=", cnpj)], limit=1)
+        )
+        key = "1" * 50
+        xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<NFSe xmlns="http://www.sped.fazenda.gov.br/nfse">
+  <infNFSe Id="NFS{key}">
+    <nNFSe>9</nNFSe>
+    <dhProc>2023-09-09T12:42:06-03:00</dhProc>
+    <cLocIncid>3550308</cLocIncid>
+    <emit>
+      <CNPJ>{cnpj}</CNPJ>
+      <xNome>Created Provider LTDA</xNome>
+      <xFant>Created Provider</xFant>
+    </emit>
+    <valores><vLiq>20.00</vLiq></valores>
+    <DPS><infDPS>
+      <serie>1</serie><nDPS>9</nDPS>
+      <prest>
+        <CNPJ>{cnpj}</CNPJ>
+        <IM>12345</IM>
+        <fone>1133334444</fone>
+        <email>provider@example.com</email>
+        <end>
+          <endNac><cMun>3550308</cMun><CEP>01310100</CEP></endNac>
+          <xLgr>Paulista</xLgr>
+          <nro>1000</nro>
+          <xBairro>Bela Vista</xBairro>
+        </end>
+      </prest>
+      <serv><cServ><xDescServ>Consulting</xDescServ></cServ></serv>
+      <valores><vServPrest><vServ>20.00</vServ></vServPrest></valores>
+    </infDPS></DPS>
+  </infNFSe>
+</NFSe>
+""".encode()
+        wizard = self.env["l10n_br_fiscal.document.import.wizard"].create(
+            {"company_id": self.company.id, "file": base64.b64encode(xml)}
+        )
+        wizard._onchange_file()
+        self.assertFalse(wizard.partner_id)
+        self.assertFalse(
+            self.env["res.partner"].search([("cnpj_cpf_stripped", "=", cnpj)], limit=1)
+        )
+        _binding, document = wizard._create_edoc_from_file()
+        partner = self.env["res.partner"].search(
+            [("cnpj_cpf_stripped", "=", cnpj)], limit=1
+        )
+        self.assertEqual(document.partner_id, partner)
+        self.assertEqual(partner.legal_name, "Created Provider LTDA")
+        self.assertEqual(partner.name, "Created Provider")
+        self.assertEqual(partner.cnpj_cpf_stripped, cnpj)
+        self.assertTrue(partner.is_company)
+        self.assertEqual(partner.l10n_br_im_code, "12345")
+        self.assertEqual(partner.street_name, "Paulista")
+        self.assertEqual(partner.street_number, "1000")
+        self.assertEqual(partner.district, "Bela Vista")
+        self.assertEqual(partner.zip, "01310100")
+        self.assertEqual(partner.city_id.ibge_code, "3550308")
+        self.assertEqual(partner.country_id.code, "BR")
+        self.assertEqual(partner.phone, "1133334444")
+        self.assertEqual(partner.email, "provider@example.com")
+
+    def test_default_import_product_fills_the_wizard(self):
+        product = self.env["product.product"].create(
+            {"name": "Imported NFS-e service", "type": "service"}
+        )
+        self.company.nfse_import_product_id = product
+        wizard = self._wizard()
+        self.assertEqual(wizard.product_id, product)
+        _binding, document = wizard._create_edoc_from_file()
+        self.assertEqual(document.fiscal_line_ids.product_id, product)
+
 
 def _reform_nfse_xml():
     """Minimal national NFS-e with the IBS/CBS layout of a real inbound note."""

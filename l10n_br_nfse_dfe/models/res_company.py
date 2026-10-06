@@ -29,9 +29,13 @@ from ..constants.nfse_dfe import (
     NFSE_ADN_BASE_URLS,
     NFSE_ADN_DFE_PATH,
     NFSE_ADN_NFSE_PATH,
+    NFSE_EVENT_DOCUMENT_TYPES,
     NFSE_LOTE_SIZE,
     NFSE_MAX_PAGES,
     NFSE_NOTE_TYPES,
+    NFSE_SEFIN_BASE_URLS,
+    NFSE_SEFIN_NFSE_PATH,
+    NFSE_SKIP_DOCUMENT_TYPES,
     NFSE_STATE_AUTHORIZED,
     NFSE_STATE_CANCELLED,
 )
@@ -40,14 +44,13 @@ from ..services.nfse_xml import (
     decode_arquivo_xml,
     is_cancel_event,
     normalize_access_key,
+    normalize_event_code,
     parse_nfse_event_xml,
     parse_nfse_xml,
     xml_root_is_nfse,
 )
 
 _logger = logging.getLogger(__name__)
-
-NFSE_EVENT_TYPES = {"EVENTO", "EVENT", "PEDREGISTROEVENTO"}
 
 
 class ResCompany(models.Model):
@@ -78,6 +81,13 @@ class ResCompany(models.Model):
     nfse_auto_fetch = fields.Boolean(
         string="Auto-fetch NFS-e",
         help="Periodically query the ADN for NFS-e documents issued to this company.",
+    )
+    nfse_import_product_id = fields.Many2one(
+        comodel_name="product.product",
+        string="Default NFS-e Import Product",
+        domain="[('type', '=', 'service')]",
+        help="Service product applied when a national NFS-e is imported "
+        "and the wizard has no product yet.",
     )
 
     def _dfe_document_distribution(self, fiscal_type):
@@ -153,21 +163,35 @@ class ResCompany(models.Model):
         pem += cert.public_bytes(Encoding.PEM)
         return pem
 
-    def _nfse_adn_request(self, path, params=None):
-        """GET one ADN distribution resource with the company e-CNPJ."""
+    def _nfse_sefin_base_url(self):
+        self.ensure_one()
+        return NFSE_SEFIN_BASE_URLS.get(
+            self.nfse_dfe_environment, NFSE_SEFIN_BASE_URLS["producao_restrita"]
+        )
+
+    def _nfse_http_get(self, base_url, path, params=None):
+        """GET one mTLS resource with the company e-CNPJ."""
         self.ensure_one()
         pem = self._nfse_certificate_pem()
         fd, pem_path = tempfile.mkstemp(suffix=".pem")
         try:
             with os.fdopen(fd, "wb") as handle:
                 handle.write(pem)
-            client = AdnDfeClient(self._nfse_adn_base_url(), pem_path)
+            client = AdnDfeClient(base_url, pem_path)
             return client.get(path, params=params)
         finally:
             try:
                 os.unlink(pem_path)
             except OSError:
                 _logger.debug("Temporary NFS-e certificate file was already removed")
+
+    def _nfse_adn_request(self, path, params=None):
+        """GET one ADN distribution resource with the company e-CNPJ."""
+        return self._nfse_http_get(self._nfse_adn_base_url(), path, params=params)
+
+    def _nfse_sefin_request(self, path):
+        """GET one Sefin Nacional resource with the company e-CNPJ."""
+        return self._nfse_http_get(self._nfse_sefin_base_url(), path)
 
     def _nfse_current_nsu(self):
         raw = str(self._dfe_get_typed_value("nfse", "last_nsu") or "0")
@@ -359,25 +383,50 @@ class ResCompany(models.Model):
         return 0
 
     def _nfse_process_items(self, items):
+        skipped = []
         notes = []
         events = []
         for item in items:
-            if self._nfse_item_is_event(item):
+            tipo = str(item.get("TipoDocumento") or "").strip().upper()
+            if tipo in NFSE_SKIP_DOCUMENT_TYPES:
+                skipped.append(item)
+            elif self._nfse_item_is_event(item):
                 events.append(item)
             else:
                 notes.append(item)
         highest = 0
-        for item in notes + events:
-            nsu = self._nfse_process_item(item)
+        # Notes first, then events, so a cancellation can see its document.
+        # A bad item must not abort the page or freeze the NSU cursor.
+        for item in skipped + notes + events:
+            nsu = self._nfse_process_item_safe(item)
             if nsu > highest:
                 highest = nsu
         return utils.format_nsu(highest) if highest else False
 
+    def _nfse_process_item_safe(self, item):
+        try:
+            with self.env.cr.savepoint():
+                return self._nfse_process_item(item)
+        except Exception as error:
+            nsu = item.get("NSU")
+            _logger.warning("Skipping NFS-e DF-e item NSU %s", nsu, exc_info=True)
+            self._dfe_log(
+                _(
+                    "NFS-e item NSU %(nsu)s was skipped: %(error)s",
+                    nsu=nsu,
+                    error=error,
+                ),
+                log_type="warning",
+                fiscal_type="nfse",
+            )
+            digits = re.sub(r"\D", "", str(nsu or ""))
+            return int(digits or "0")
+
     def _nfse_item_is_event(self, item):
         tipo = str(item.get("TipoDocumento") or "").strip().upper()
-        if tipo in NFSE_NOTE_TYPES:
+        if tipo in NFSE_NOTE_TYPES or tipo in NFSE_SKIP_DOCUMENT_TYPES:
             return False
-        if item.get("TipoEvento") or tipo in NFSE_EVENT_TYPES:
+        if tipo in NFSE_EVENT_DOCUMENT_TYPES or item.get("TipoEvento"):
             return True
         xml_bytes = decode_arquivo_xml(item.get("ArquivoXml"))
         if xml_root_is_nfse(xml_bytes):
@@ -386,8 +435,12 @@ class ResCompany(models.Model):
         return bool(event.get("event_type") or event.get("access_key"))
 
     def _nfse_process_item(self, item):
-        xml_bytes = decode_arquivo_xml(item.get("ArquivoXml"))
+        tipo = str(item.get("TipoDocumento") or "").strip().upper()
         nsu = utils.format_nsu(item.get("NSU"))
+        if tipo in NFSE_SKIP_DOCUMENT_TYPES:
+            digits = re.sub(r"\D", "", nsu or "")
+            return int(digits or "0")
+        xml_bytes = decode_arquivo_xml(item.get("ArquivoXml"))
         if self._nfse_item_is_event(item):
             self._nfse_create_event(item, xml_bytes, nsu)
         else:
@@ -410,12 +463,16 @@ class ResCompany(models.Model):
                 return found
         if not access_key:
             return dfe_model.browse()
+        schemas = {schema}
+        if str(schema or "").upper() == "EVENTO":
+            # Older rows stored the event schema in lower case.
+            schemas.add("evento")
         return dfe_model.search(
             [
                 ("access_key", "=", access_key),
                 ("company_id", "=", self.id),
                 ("fiscal_type", "=", "nfse"),
-                ("schema_type", "=", schema),
+                ("schema_type", "in", list(schemas)),
             ],
             limit=1,
         )
@@ -453,9 +510,12 @@ class ResCompany(models.Model):
         document._update_metadata(self._nfse_note_metadata(parsed), is_complete=True)
         if xml_bytes:
             dfe_record.create_xml_attachment(xml_bytes)
+        # A cancellation may already be in the inbox. Do not put the note
+        # back to authorized in that case.
+        self._nfse_sync_document_state(document)
 
     def _nfse_note_metadata(self, parsed):
-        serie = (parsed.get("serie") or "").lstrip("0")[:3]
+        serie = (parsed.get("serie") or "").lstrip("0")[:5]
         emitter = (parsed.get("provider_name") or "")[:60]
         provider_cnpj = parsed.get("provider_cnpj")
         metadata = {"document_state": NFSE_STATE_AUTHORIZED}
@@ -485,9 +545,13 @@ class ResCompany(models.Model):
                 fiscal_type="nfse",
             )
             return
-        if self._nfse_find_existing_dfe(nsu, access_key, "evento"):
+        schema = str(item.get("TipoDocumento") or "EVENTO").strip().upper()
+        if schema not in NFSE_EVENT_DOCUMENT_TYPES:
+            schema = "EVENTO"
+        if self._nfse_find_existing_dfe(nsu, access_key, schema):
             return
-        event_type = str(item.get("TipoEvento") or parsed.get("event_type") or "")
+        raw_type = item.get("TipoEvento") or parsed.get("event_type") or ""
+        event_type = normalize_event_code(raw_type) or str(raw_type)
         document = self._dfe_get_or_create_document(access_key, "nfse")
         dfe_record = (
             self.env["l10n_br_fiscal_dfe.dfe"]
@@ -499,25 +563,36 @@ class ResCompany(models.Model):
                     "company_id": self.id,
                     "fiscal_type": "nfse",
                     "document_type_dfe": "event",
-                    "schema_type": "evento",
+                    "schema_type": schema,
                     "event_type_dfe": event_type,
                 }
             )
         )
         document.sudo().dfe_ids = [(4, dfe_record.id)]
-        if is_cancel_event(event_type) or parsed.get("is_cancel"):
-            document.sudo().write({"document_state": NFSE_STATE_CANCELLED})
         if xml_bytes:
             dfe_record.create_xml_attachment(xml_bytes)
+        self._nfse_sync_document_state(document)
+
+    def _nfse_sync_document_state(self, document):
+        """Set the note state from registered cancellation events.
+
+        A request (``PEDIDO_REGISTRO_EVENTO``) and a denied request do not
+        change the note. Called after the note and after the event, so the
+        arrival order does not matter.
+        """
+        cancelled = document.dfe_ids.filtered(
+            lambda rec: rec.document_type_dfe == "event"
+            and (rec.schema_type or "").upper() == "EVENTO"
+            and is_cancel_event(rec.event_type_dfe)
+        )
+        state = NFSE_STATE_CANCELLED if cancelled else NFSE_STATE_AUTHORIZED
+        if document.document_state != state:
+            document.sudo().write({"document_state": state})
 
     def _nfse_search_specific(self, access_key=None, nsu=None):
         self.ensure_one()
         if access_key:
-            response = self._nfse_adn_request(f"{NFSE_ADN_NFSE_PATH}/{access_key}")
-            self._nfse_raise_for_status(response)
-            self._nfse_process_item(
-                self._nfse_item_from_key_response(response, access_key)
-            )
+            self._nfse_fetch_by_access_key(access_key)
             return
         nsu_int = int(re.sub(r"\D", "", nsu or "0") or "0")
         response = self._nfse_adn_request(
@@ -540,30 +615,41 @@ class ResCompany(models.Model):
             )
         self._nfse_process_item(match[0])
 
+    def _nfse_fetch_by_access_key(self, access_key):
+        """Load one NFS-e from Sefin Nacional and its events from the ADN.
+
+        ``GET /contribuintes/NFSe/{chave}`` is not a documented ADN route and
+        answers 404. The note lives on Sefin ``GET /nfse/{chave}``.
+        """
+        response = self._nfse_sefin_request(f"{NFSE_SEFIN_NFSE_PATH}/{access_key}")
+        self._nfse_raise_for_status(response)
+        self._nfse_process_item(self._nfse_item_from_sefin(response, access_key))
+        events = self._nfse_adn_request(f"{NFSE_ADN_NFSE_PATH}/{access_key}/Eventos")
+        if events.status_code == 404:
+            return
+        self._nfse_raise_for_status(events)
+        for item in self._nfse_lote(events):
+            tipo = str(item.get("TipoDocumento") or "").strip().upper()
+            if tipo in NFSE_NOTE_TYPES:
+                continue
+            self._nfse_process_item(item)
+
+    def _nfse_item_from_sefin(self, response, access_key):
+        body = response.body or {}
+        packed = body.get("nfseXmlGZipB64")
+        if not packed:
+            raise UserError(_("The Sefin Nacional response does not contain an NFS-e."))
+        return {
+            "NSU": "0",
+            "ChaveAcesso": body.get("chaveAcesso") or access_key,
+            "TipoDocumento": "NFSE",
+            "ArquivoXml": packed,
+        }
+
     def _nfse_raise_for_status(self, response):
         if response.status_code == 404:
-            raise UserError(_("The ADN did not find this NFS-e."))
+            raise UserError(_("This NFS-e was not found."))
         if response.status_code == 429:
-            raise UserError(_("The ADN rate limit is active. Try again later."))
+            raise UserError(_("The service rate limit is active. Try again later."))
         if not response.ok:
             raise UserError(self._nfse_error_detail(response))
-
-    def _nfse_item_from_key_response(self, response, access_key):
-        body = response.body or {}
-        if body.get("LoteDFe"):
-            return body["LoteDFe"][0]
-        if body.get("ArquivoXml") or body.get("ChaveAcesso"):
-            body.setdefault("ChaveAcesso", access_key)
-            body.setdefault("TipoDocumento", "NFSE")
-            body.setdefault("NSU", "0")
-            return body
-        content = response.content or b""
-        stripped = content.lstrip()
-        if stripped.startswith(b"<") or stripped.startswith(b"<?xml"):
-            return {
-                "NSU": "0",
-                "ChaveAcesso": access_key,
-                "TipoDocumento": "NFSE",
-                "ArquivoXml": base64.b64encode(content).decode("ascii"),
-            }
-        raise UserError(_("The ADN response does not contain an NFS-e XML."))

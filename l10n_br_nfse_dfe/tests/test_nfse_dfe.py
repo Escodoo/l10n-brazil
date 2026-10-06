@@ -8,7 +8,7 @@ from io import BytesIO
 from unittest import mock
 
 from odoo import fields
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests.common import TransactionCase
 
 from odoo.addons.l10n_br_fiscal_dfe.constants.dfe import DFE_INTERVAL_NO_DOCS
@@ -21,7 +21,14 @@ ACCESS_KEY = "8" * 50
 NS = "http://www.sped.fazenda.gov.br/nfse"
 
 
-def nfse_xml(access_key=ACCESS_KEY, retention="1"):
+def nfse_xml(
+    access_key=ACCESS_KEY,
+    retention="1",
+    serie="00007",
+    provider_cnpj=PROVIDER_CNPJ,
+    provider_name="Provider Test",
+    prest_extra="",
+):
     """National NFS-e with a decoy CNPJ before the provider."""
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <NFSe xmlns="{NS}">
@@ -42,11 +49,12 @@ def nfse_xml(access_key=ACCESS_KEY, retention="1"):
     <DPS>
       <infDPS>
         <dhEmi>2023-09-09T09:42:06-03:00</dhEmi>
-        <serie>00007</serie>
+        <serie>{serie}</serie>
         <nDPS>2</nDPS>
         <prest>
-          <CNPJ>{PROVIDER_CNPJ}</CNPJ>
-          <xNome>Provider Test</xNome>
+          <CNPJ>{provider_cnpj}</CNPJ>
+          <xNome>{provider_name}</xNome>
+          {prest_extra}
         </prest>
         <toma>
           <CNPJ>{TAKER_CNPJ}</CNPJ>
@@ -70,12 +78,20 @@ def nfse_xml(access_key=ACCESS_KEY, retention="1"):
 """.encode()
 
 
-def event_xml(access_key=ACCESS_KEY, event_type="101101"):
+def event_xml(access_key=ACCESS_KEY, event_code="101101"):
+    """National event: the code is the ``eNNNNNN`` child, not ``tpEvento``."""
+    ident = f"PRE{access_key}{event_code}001"
     return f"""<?xml version="1.0" encoding="UTF-8"?>
-<evento xmlns="{NS}">
+<evento xmlns="{NS}" versao="1.00">
   <infEvento>
-    <chNFSe>{access_key}</chNFSe>
-    <tpEvento>{event_type}</tpEvento>
+    <pedRegEvento versao="1.00">
+      <infPedReg Id="{ident}">
+        <chNFSe>{access_key}</chNFSe>
+        <e{event_code}>
+          <xDesc>Cancellation</xDesc>
+        </e{event_code}>
+      </infPedReg>
+    </pedRegEvento>
   </infEvento>
 </evento>
 """.encode()
@@ -147,7 +163,7 @@ class TestNfseDfe(TransactionCase):
             "NSU": 11,
             "ChaveAcesso": ACCESS_KEY,
             "TipoDocumento": "EVENTO",
-            "TipoEvento": "101101",
+            "TipoEvento": "CANCELAMENTO",
             "ArquivoXml": base64.b64encode(event_xml()).decode("ascii"),
         }
         calls = []
@@ -338,3 +354,137 @@ class TestNfseDfe(TransactionCase):
         with mock.patch.object(client._session, "get", return_value=mocked) as get:
             client.get("/contribuintes/DFe/0", params={"lote": "true"})
         self.assertTrue(get.call_args.args[0].endswith("/contribuintes/DFe/0"))
+
+    def test_event_before_note_stays_cancelled(self):
+        key = "3" * 50
+        event = {
+            "NSU": 2,
+            "ChaveAcesso": key,
+            "TipoDocumento": "EVENTO",
+            "TipoEvento": "CANCELAMENTO",
+            "ArquivoXml": base64.b64encode(event_xml(access_key=key)).decode(),
+        }
+        note = {
+            "NSU": 1,
+            "ChaveAcesso": key,
+            "TipoDocumento": "NFSE",
+            "ArquivoXml": gzip_base64(nfse_xml(access_key=key)),
+        }
+        self.company._nfse_process_item(event)
+        self.company._nfse_process_item(note)
+        document = self._documents().filtered(lambda rec: rec.access_key == key)
+        self.assertEqual(document.document_state, "3")
+
+    def test_registration_request_does_not_cancel(self):
+        key = "4" * 50
+        note = {
+            "NSU": 3,
+            "ChaveAcesso": key,
+            "TipoDocumento": "NFSE",
+            "ArquivoXml": gzip_base64(nfse_xml(access_key=key)),
+        }
+        request = {
+            "NSU": 4,
+            "ChaveAcesso": key,
+            "TipoDocumento": "PEDIDO_REGISTRO_EVENTO",
+            "TipoEvento": "CANCELAMENTO",
+            "ArquivoXml": base64.b64encode(event_xml(access_key=key)).decode(),
+        }
+        self.company._nfse_process_items([note, request])
+        document = self._documents().filtered(lambda rec: rec.access_key == key)
+        self.assertEqual(document.document_state, "1")
+
+    def test_dps_item_is_skipped(self):
+        key = "5" * 50
+        item = {
+            "NSU": 21,
+            "ChaveAcesso": key,
+            "TipoDocumento": "DPS",
+            "ArquivoXml": gzip_base64(nfse_xml(access_key=key)),
+        }
+        self.company._nfse_process_items([item])
+        self.assertFalse(self._documents().filtered(lambda rec: rec.access_key == key))
+
+    def test_bad_item_does_not_freeze_the_nsu(self):
+        bad = {
+            "NSU": 11,
+            "ChaveAcesso": "6" * 50,
+            "TipoDocumento": "NFSE",
+            "ArquivoXml": gzip_base64(nfse_xml(access_key="6" * 50)),
+        }
+        good = {
+            "NSU": 12,
+            "ChaveAcesso": "7" * 50,
+            "TipoDocumento": "NFSE",
+            "ArquivoXml": gzip_base64(nfse_xml(access_key="7" * 50)),
+        }
+        original = type(self.company)._nfse_create_note
+
+        def explode(company, item, xml_bytes, nsu):
+            if str(item.get("NSU")) == "11":
+                raise RuntimeError("broken item")
+            return original(company, item, xml_bytes, nsu)
+
+        def side_effect(_company, path, params=None):
+            return response(200, {"LoteDFe": [bad, good]})
+
+        with mock.patch.object(type(self.company), "_nfse_create_note", explode):
+            self._distribute(side_effect)
+        self.assertTrue(self.company.nfse_last_nsu.endswith("12"))
+        stored = self._documents().mapped("access_key")
+        self.assertIn("7" * 50, stored)
+        self.assertNotIn("6" * 50, stored)
+
+    def test_series_keeps_five_characters(self):
+        key = "9" * 50
+        item = {
+            "NSU": 30,
+            "ChaveAcesso": key,
+            "TipoDocumento": "NFSE",
+            "ArquivoXml": gzip_base64(nfse_xml(access_key=key, serie="49999")),
+        }
+        self.company._nfse_process_item(item)
+        document = self._documents().filtered(lambda rec: rec.access_key == key)
+        self.assertEqual(document.serie, "49999")
+
+    def test_key_constraint_stays_active(self):
+        document_model = self.env["l10n_br_fiscal.document"]
+        names = [method.__name__ for method in document_model._constraint_methods]
+        self.assertIn("_check_key", names)
+        operation = self.env.ref("l10n_br_fiscal.fo_compras")
+        nfse_vals = {
+            "company_id": self.company.id,
+            "partner_id": self.provider.id,
+            "document_type_id": self.env.ref("l10n_br_fiscal.document_SE").id,
+            "fiscal_operation_id": operation.id,
+            "document_key": "2" * 50,
+            "issuer": "partner",
+            "document_number": "1",
+        }
+        document_model.create(nfse_vals)
+        with self.assertRaises(ValidationError):
+            document_model.create(dict(nfse_vals, document_number="2"))
+        nfe_key = _nfe_access_key("3524015959431500015755001000000001112345678")
+        nfe_vals = {
+            "company_id": self.company.id,
+            "partner_id": self.provider.id,
+            "document_type_id": self.env.ref("l10n_br_fiscal.document_55").id,
+            "fiscal_operation_id": operation.id,
+            "document_key": nfe_key,
+            "issuer": "partner",
+            "document_number": "1",
+        }
+        document_model.create(nfe_vals)
+        with self.assertRaises(ValidationError):
+            document_model.create(dict(nfe_vals, document_number="2"))
+
+
+def _nfe_access_key(body):
+    """43-digit NF-e key body plus the mod-11 check digit."""
+    weights = [2, 3, 4, 5, 6, 7, 8, 9]
+    total = 0
+    for index, digit in enumerate(reversed(body)):
+        total += int(digit) * weights[index % 8]
+    rest = total % 11
+    check = 0 if rest < 2 else 11 - rest
+    return body + str(check)

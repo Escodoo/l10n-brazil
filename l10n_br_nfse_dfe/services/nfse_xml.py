@@ -4,11 +4,17 @@
 import base64
 import gzip
 import re
+import zlib
 from datetime import datetime, timezone
 
 from lxml import etree
 
-from ..constants.nfse_dfe import NFSE_ACCESS_KEY_SIZE, NFSE_CANCEL_EVENT_CODES
+from ..constants.nfse_dfe import (
+    NFSE_ACCESS_KEY_SIZE,
+    NFSE_CANCEL_EVENT_CODES,
+    NFSE_CANCEL_EVENT_NAMES,
+    NFSE_EVENT_CODE_BY_NAME,
+)
 
 
 class NfseNacionalBinding:
@@ -27,6 +33,7 @@ class NfseNacionalBinding:
         self.emission_date = values.get("emission_date")
         self.provider_cnpj = values.get("provider_cnpj")
         self.provider_name = values.get("provider_name")
+        self.provider = values.get("provider") or {}
         self.service_value = values.get("service_value") or 0.0
         self.description = values.get("description")
         self.issqn_base = values.get("issqn_base") or 0.0
@@ -83,7 +90,7 @@ def decode_arquivo_xml(value):
     if raw[:2] == b"\x1f\x8b":
         try:
             raw = gzip.decompress(raw)
-        except OSError:
+        except (OSError, EOFError, zlib.error):
             return None
     return raw
 
@@ -246,6 +253,59 @@ def _federal_tax_values(inf_dps):
     }
 
 
+def _party_address(node):
+    """Read a national address (``end`` or the emitter ``enderNac``)."""
+    if node is None:
+        return {}
+    national = _step(node, "endNac")
+    if national is None:
+        national = node
+    return {
+        "street_name": _path_text(node, "xLgr"),
+        "street_number": _path_text(node, "nro"),
+        "street2": _path_text(node, "xCpl"),
+        "district": _path_text(node, "xBairro"),
+        "zip": _digits(_path_text(national, "CEP")),
+        "city_ibge": _digits(_path_text(national, "cMun")),
+    }
+
+
+def _party(node):
+    if node is None:
+        return {}
+    values = {
+        "cnpj": _digits(_path_text(node, "CNPJ")),
+        "cpf": _digits(_path_text(node, "CPF")),
+        "legal_name": _path_text(node, "xNome"),
+        "name": _path_text(node, "xFant") or _path_text(node, "xNome"),
+        "im": _path_text(node, "IM"),
+        "phone": _path_text(node, "fone"),
+        "email": _path_text(node, "email"),
+    }
+    address = _step(node, "end")
+    if address is None:
+        address = _step(node, "enderNac")
+    values.update(_party_address(address))
+    return {key: value for key, value in values.items() if value}
+
+
+def _provider_party(inf_nfse, inf_dps):
+    """Provider from ``infDPS/prest``. Emitter data fills gaps only.
+
+    ``tpEmit`` can be the taker, so ``infNFSe/emit`` is used only when its
+    CNPJ is the same as the provider.
+    """
+    provider = _party(_path(inf_dps, "prest"))
+    emitter = _party(_step(inf_nfse, "emit"))
+    same_company = (
+        emitter.get("cnpj") and emitter.get("cnpj") == provider.get("cnpj")
+    ) or (emitter.get("cpf") and emitter.get("cpf") == provider.get("cpf"))
+    if same_company:
+        for key, value in emitter.items():
+            provider.setdefault(key, value)
+    return provider
+
+
 def _access_key_from_root(root):
     nodes = root.xpath("./*[local-name()='infNFSe']")
     if not nodes:
@@ -267,19 +327,9 @@ def parse_nfse_xml(xml_bytes):
         return None
     inf_nfse = _inf_nfse(root)
     inf_dps = _path(inf_nfse, "DPS", "infDPS")
-
-    provider_cnpj = _digits(
-        _text(
-            root,
-            ".//*[local-name()='infDPS']/*[local-name()='prest']/*[local-name()='CNPJ']",
-            "./*[local-name()='infNFSe']/*[local-name()='emit']/*[local-name()='CNPJ']",
-        )
-    )
-    provider_name = _text(
-        root,
-        ".//*[local-name()='infDPS']/*[local-name()='prest']/*[local-name()='xNome']",
-        "./*[local-name()='infNFSe']/*[local-name()='emit']/*[local-name()='xNome']",
-    )
+    provider = _provider_party(inf_nfse, inf_dps)
+    provider_cnpj = provider.get("cnpj") or provider.get("cpf") or ""
+    provider_name = provider.get("legal_name") or provider.get("name")
     service_value = _amount(
         _text(
             root,
@@ -327,6 +377,7 @@ def parse_nfse_xml(xml_bytes):
         "emission_date": emission,
         "provider_cnpj": provider_cnpj or False,
         "provider_name": provider_name,
+        "provider": provider,
         "service_value": service_value,
         "description": _text(
             root,
@@ -362,13 +413,45 @@ def parse_nfse_file(file_data):
     return NfseNacionalBinding(values)
 
 
-def is_cancel_event(code):
+def normalize_event_code(code):
+    """Return the 6-digit national event code, or False."""
     if not code:
         return False
-    normalized = str(code).strip()
-    if normalized[:1] in {"e", "E"} and normalized[1:].isdigit():
-        normalized = normalized[1:]
-    return normalized in NFSE_CANCEL_EVENT_CODES
+    text = str(code).strip()
+    mapped = NFSE_EVENT_CODE_BY_NAME.get(text.upper())
+    if mapped:
+        return mapped
+    if text[:1] in {"e", "E"} and text[1:].isdigit():
+        text = text[1:]
+    if text.isdigit() and len(text) == 6:
+        return text
+    return False
+
+
+def is_cancel_event(code):
+    """True only for a cancellation that was actually registered."""
+    if not code:
+        return False
+    if str(code).strip().upper() in NFSE_CANCEL_EVENT_NAMES:
+        return True
+    return normalize_event_code(code) in NFSE_CANCEL_EVENT_CODES
+
+
+def _event_code_from_root(root):
+    """The national event has no ``tpEvento`` tag.
+
+    The code is the ``eNNNNNN`` child of ``infPedReg``, and it is also the
+    6 digits before the sequence in ``infPedReg/@Id``.
+    """
+    for node in root.xpath(".//*[local-name()='infPedReg']"):
+        for child in node:
+            name = _local_name(child.tag)
+            if re.fullmatch(r"[eE]\d{6}", name):
+                return name[1:]
+        digits = re.sub(r"\D", "", node.get("Id") or "")
+        if len(digits) >= 9:
+            return digits[-9:-3]
+    return False
 
 
 def parse_nfse_event_xml(xml_bytes):
@@ -379,7 +462,7 @@ def parse_nfse_event_xml(xml_bytes):
         root = etree.fromstring(xml_bytes)
     except etree.XMLSyntaxError:
         return None
-    event_type = _text(
+    event_type = _event_code_from_root(root) or _text(
         root,
         ".//*[local-name()='infEvento']/*[local-name()='tpEvento']",
         ".//*[local-name()='infPedReg']/*[local-name()='tpEvento']",
@@ -387,15 +470,15 @@ def parse_nfse_event_xml(xml_bytes):
     access_key = normalize_access_key(
         _text(
             root,
-            ".//*[local-name()='infEvento']/*[local-name()='chNFSe']",
             ".//*[local-name()='infPedReg']/*[local-name()='chNFSe']",
+            ".//*[local-name()='infEvento']/*[local-name()='chNFSe']",
         )
     )
     if not event_type and not access_key and _local_name(root.tag) != "evento":
         return None
     return {
         "access_key": access_key,
-        "event_type": event_type,
+        "event_type": normalize_event_code(event_type) or event_type,
         "is_cancel": is_cancel_event(event_type),
     }
 

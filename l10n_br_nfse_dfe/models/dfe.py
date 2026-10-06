@@ -25,5 +25,5 @@ class DFe(models.Model):
             if not label and code[:1] in "eE":
                 label = NFSE_EVENT_LABELS.get(code[1:])
             if label:
-                record.event_type_dfe_label = label
+                record.event_type_dfe_label = self.env._(label)
         return

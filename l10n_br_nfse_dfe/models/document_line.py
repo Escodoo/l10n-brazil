@@ -17,6 +17,6 @@ class DocumentLine(models.Model):
         """
         imported = self.filtered(
             lambda line: line.document_id.imported_document
-            and line.document_id._is_national_nfse_key(line.document_id)
+            and line.document_id._is_national_nfse_key()
         )
         return super(DocumentLine, self - imported)._compute_issqn_fg_city_id()

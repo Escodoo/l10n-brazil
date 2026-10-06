@@ -36,6 +36,7 @@ from odoo.addons.l10n_br_nfse_dfe.services.nfse_xml import (
 from odoo.addons.l10n_br_nfse_dfe.tests.test_nfse_dfe import (
     ACCESS_KEY,
     event_xml,
+    gzip_base64,
     nfse_xml,
     response,
 )
@@ -359,57 +360,56 @@ class TestNfseDfeCoverage(TransactionCase):
     def test_specific_search_responses(self):
         company = self.company
         key = "2" * 50
-        xml = nfse_xml(access_key=key)
-        encoded = base64.b64encode(xml).decode()
 
-        def by_body(_company, path, params=None):
-            return response(200, {"ArquivoXml": encoded, "ChaveAcesso": key})
-
-        with mock.patch.object(type(company), "_nfse_adn_request", by_body):
-            company._nfse_search_specific(access_key=key)
-        self.assertTrue(
-            self.env["l10n_br_fiscal_dfe.document"].search(
-                [("access_key", "=", key)], limit=1
+        def sefin(_company, path):
+            self.assertTrue(path.endswith(f"/nfse/{key}"))
+            return response(
+                200,
+                {
+                    "chaveAcesso": key,
+                    "nfseXmlGZipB64": gzip_base64(nfse_xml(access_key=key)),
+                },
             )
-        )
 
-        def by_lote(_company, path, params=None):
+        def events(_company, path, params=None):
+            self.assertTrue(path.endswith("/Eventos"))
             return response(
                 200,
                 {
                     "LoteDFe": [
                         {
                             "NSU": 8,
-                            "ChaveAcesso": "3" * 50,
+                            "ChaveAcesso": key,
                             "TipoDocumento": "NFSE",
+                            "ArquivoXml": gzip_base64(nfse_xml(access_key=key)),
+                        },
+                        {
+                            "NSU": 9,
+                            "ChaveAcesso": key,
+                            "TipoDocumento": "EVENTO",
+                            "TipoEvento": "CANCELAMENTO",
                             "ArquivoXml": base64.b64encode(
-                                nfse_xml(access_key="3" * 50)
+                                event_xml(access_key=key)
                             ).decode(),
-                        }
+                        },
                     ]
                 },
             )
 
-        with mock.patch.object(type(company), "_nfse_adn_request", by_lote):
-            company._nfse_search_specific(access_key="3" * 50)
-
-        def raw_xml(_company, path, params=None):
-            return AdnDfeClient._wrap(
-                mock.Mock(
-                    status_code=200,
-                    content=nfse_xml(access_key="1" * 50),
-                    headers={},
-                    text="",
-                    json=mock.Mock(side_effect=ValueError("xml")),
-                )
-            )
-
-        with mock.patch.object(type(company), "_nfse_adn_request", raw_xml):
-            company._nfse_search_specific(access_key="1" * 50)
+        with (
+            mock.patch.object(type(company), "_nfse_sefin_request", sefin),
+            mock.patch.object(type(company), "_nfse_adn_request", events),
+        ):
+            company._nfse_search_specific(access_key=key)
+        document = self.env["l10n_br_fiscal_dfe.document"].search(
+            [("access_key", "=", key)], limit=1
+        )
+        self.assertTrue(document)
+        self.assertEqual(document.document_state, "3")
 
         with mock.patch.object(
             type(company),
-            "_nfse_adn_request",
+            "_nfse_sefin_request",
             return_value=response(200, {"mensagem": "empty"}),
         ):
             with self.assertRaises(UserError):
@@ -417,7 +417,7 @@ class TestNfseDfeCoverage(TransactionCase):
         for status in (404, 429, 500):
             with mock.patch.object(
                 type(company),
-                "_nfse_adn_request",
+                "_nfse_sefin_request",
                 return_value=response(status, {"message": "fail"}),
             ):
                 with self.assertRaises(UserError):

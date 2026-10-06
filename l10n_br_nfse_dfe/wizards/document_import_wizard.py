@@ -3,6 +3,8 @@
 
 import re
 
+from erpbrasil.base.fiscal.cnpj_cpf import formata
+
 from odoo import Command, _, fields, models
 from odoo.exceptions import UserError
 
@@ -43,19 +45,21 @@ class DocumentImportWizard(models.TransientModel):
     def _extract_binding_data(self, binding):
         if not getattr(binding, "is_national_nfse", False):
             return super()._extract_binding_data(binding)
+        provider = binding.provider or {}
+        provider_digits = (
+            provider.get("cnpj") or provider.get("cpf") or binding.provider_cnpj
+        )
         self.document_key = binding.access_key
         self.document_number = (binding.number or "").lstrip("0") or binding.number
         self.document_serie = binding.serie
-        self.issuer_legal_name = binding.provider_name
-        self.issuer_cnpj = (
-            utils.mask_cnpj(binding.provider_cnpj) if binding.provider_cnpj else False
-        )
+        self.issuer_legal_name = provider.get("legal_name") or binding.provider_name
+        self.issuer_cnpj = formata(provider_digits) if provider_digits else False
         self.issuer_partner_id = (
-            self._search_partner(cnpj=binding.provider_cnpj)
-            if binding.provider_cnpj
-            else False
+            self._search_partner(cnpj=provider_digits) if provider_digits else False
         )
         self.partner_id = self.issuer_partner_id
+        if not self.product_id and self.company_id.nfse_import_product_id:
+            self.product_id = self.company_id.nfse_import_product_id
         self.issuer_type_in_out = FISCAL_OUT
         self.rps_number = binding.rps_number
         company_digits = re.sub(r"\D", "", self.company_id.vat or "")
@@ -82,8 +86,14 @@ class DocumentImportWizard(models.TransientModel):
         if not binding.access_key or len(binding.access_key) != NFSE_ACCESS_KEY_SIZE:
             raise UserError(_("The NFS-e XML does not contain a 50-digit access key."))
         partner = self.partner_id or self.issuer_partner_id
-        if not partner and binding.provider_cnpj:
-            partner = self._search_partner(cnpj=binding.provider_cnpj)
+        provider = binding.provider or {}
+        provider_digits = (
+            provider.get("cnpj") or provider.get("cpf") or binding.provider_cnpj
+        )
+        if not partner and provider_digits:
+            partner = self._search_partner(cnpj=provider_digits)
+        if not partner:
+            partner = self._nfse_create_provider_partner(binding)
         document = self.env["l10n_br_fiscal.document"].create(
             self._nfse_document_vals(binding, partner)
         )
@@ -108,6 +118,51 @@ class DocumentImportWizard(models.TransientModel):
             self.partner_id = document.partner_id
         self.document_id = document
         return binding, document
+
+    def _nfse_create_provider_partner(self, binding):
+        """Create the provider partner. Never called from the onchange."""
+        provider = binding.provider or {}
+        digits = re.sub(
+            r"\D",
+            "",
+            provider.get("cnpj") or provider.get("cpf") or binding.provider_cnpj or "",
+        )
+        if len(digits) not in (11, 14):
+            return self.env["res.partner"]
+        city = self.env["res.city"]
+        if provider.get("city_ibge"):
+            city = self.env["res.city"].search(
+                [("ibge_code", "=", provider["city_ibge"])], limit=1
+            )
+        name = provider.get("name") or provider.get("legal_name") or formata(digits)
+        vals = {
+            "name": name,
+            "legal_name": provider.get("legal_name") or name,
+            "vat": formata(digits),
+            "is_company": len(digits) == 14,
+            "company_type": "company" if len(digits) == 14 else "person",
+            "country_id": self.env.ref("base.br").id,
+        }
+        if provider.get("im"):
+            vals["l10n_br_im_code"] = provider["im"]
+        if provider.get("phone"):
+            vals["phone"] = provider["phone"]
+        if provider.get("email"):
+            vals["email"] = provider["email"]
+        if provider.get("street_name"):
+            vals["street_name"] = provider["street_name"]
+        if provider.get("street_number"):
+            vals["street_number"] = provider["street_number"]
+        if provider.get("street2"):
+            vals["street2"] = provider["street2"]
+        if provider.get("district"):
+            vals["district"] = provider["district"]
+        if provider.get("zip"):
+            vals["zip"] = provider["zip"]
+        if city:
+            vals["city_id"] = city.id
+            vals["state_id"] = city.state_id.id
+        return self.env["res.partner"].create(vals)
 
     def _nfse_document_vals(self, binding, partner):
         number = (binding.number or "").lstrip("0") or binding.number

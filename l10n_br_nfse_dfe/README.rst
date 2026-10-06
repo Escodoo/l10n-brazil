@@ -1,7 +1,3 @@
-.. image:: https://odoo-community.org/readme-banner-image
-   :target: https://odoo-community.org/get-involved?utm_source=readme
-   :alt: Odoo Community Association
-
 ================
 Monitor de NFS-e
 ================
@@ -17,7 +13,7 @@ Monitor de NFS-e
 .. |badge1| image:: https://img.shields.io/badge/maturity-Alpha-red.png
     :target: https://odoo-community.org/page/development-status
     :alt: Alpha
-.. |badge2| image:: https://img.shields.io/badge/license-AGPL--3-blue.png
+.. |badge2| image:: https://img.shields.io/badge/licence-AGPL--3-blue.png
     :target: http://www.gnu.org/licenses/agpl-3.0-standalone.html
     :alt: License: AGPL-3
 .. |badge3| image:: https://img.shields.io/badge/github-OCA%2Fl10n--brazil-lightgray.png?logo=github
@@ -109,6 +105,8 @@ DF-e**:
   municipal.
 - **Busca automática**: liga o cron que chama
   ``_cron_dfe_search_documents('nfse')``.
+- **Produto padrão de importação**: produto de serviço preenchido no
+  assistente quando a NFS-e é importada.
 - **Último NSU**: cursor da próxima consulta. Pode ser ajustado para
   reprocessar a partir de um ponto.
 
@@ -122,23 +120,26 @@ Caixa de entrada
 
 Acesse **Faturamento > Fiscal > Consultas DF-e > Third-party NFS-e**.
 
-A listagem mostra as NFS-e em que a empresa é tomadora. O painel
-superior usa os campos ``nfse_*`` da empresa (último NSU, próxima
-consulta e ambiente).
+A listagem mostra as NFS-e em que a empresa é tomadora. O último NSU, a
+próxima consulta e o ambiente ficam na empresa, na aba **Fiscal > NFS-e
+DF-e**.
 
 Em cada documento:
 
 1. **XML**: baixa o arquivo nacional recebido do ADN.
 2. **Importar**: abre o assistente de importação com o XML completo. O
    assistente cria um ``l10n_br_fiscal.document`` do tipo ``SE``
-   (entrada), com o prestador como emitente e uma linha de serviço. O
-   produto e a operação fiscal podem ser ajustados antes de confirmar.
-   Se ``l10n_br_account`` estiver instalado, a confirmação existente do
-   assistente gera a fatura de fornecedor.
+   (entrada), com o prestador como emitente e uma linha de serviço. Se o
+   prestador ainda não existe, ele é criado na confirmação a partir do
+   ``prest`` da DPS (o ``emit`` só completa dados quando o CNPJ é o
+   mesmo). O produto e a operação fiscal podem ser ajustados antes de
+   confirmar. Se ``l10n_br_account`` estiver instalado, a confirmação
+   existente do assistente gera a fatura de fornecedor.
 
 A pesquisa específica aceita a chave de acesso de 50 dígitos ou um NSU.
-Não há manifestação do destinatário neste fluxo: a NFS-e nacional já
-chega com o XML da nota.
+A nota é consultada na Sefin Nacional e os eventos no ADN. Não há
+manifestação do destinatário neste fluxo: a NFS-e nacional já chega com
+o XML da nota.
 
 Bug Tracker
 ===========

@@ -66,5 +66,6 @@ class L10nBrFiscalDfeDocument(models.Model):
                     bin_size=False
                 ).datas,
                 "default_company_id": self.company_id.id,
+                "default_product_id": self.company_id.nfse_import_product_id.id,
             },
         }
