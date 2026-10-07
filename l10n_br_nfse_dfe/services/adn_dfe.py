@@ -69,3 +69,6 @@ class AdnDfeClient:
             headers=dict(resp.headers or {}),
             text=resp.text or "",
         )
+
+    def close(self):
+        self._session.close()

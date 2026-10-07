@@ -2,10 +2,12 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 
 import base64
+import contextlib
 import logging
 import os
 import re
 import tempfile
+import threading
 from datetime import timedelta
 
 import psycopg2
@@ -52,6 +54,9 @@ from ..services.nfse_xml import (
 )
 
 _logger = logging.getLogger(__name__)
+
+# One mTLS client per company while a distribution run is in progress.
+_NFSE_RUN = threading.local()
 
 
 class ResCompany(models.Model):
@@ -170,9 +175,56 @@ class ResCompany(models.Model):
             self.nfse_dfe_environment, NFSE_SEFIN_BASE_URLS["producao_restrita"]
         )
 
+    def _nfse_run_key(self):
+        return (self.env.cr.dbname, self.id)
+
+    @contextlib.contextmanager
+    def _nfse_mtls_run(self):
+        """Share one decrypted key file and one TLS session per base URL.
+
+        A distribution run reads up to NFSE_MAX_PAGES pages: converting the
+        PKCS#12 and opening a new mTLS session for each page repeats the work
+        and writes the unencrypted key to disk once per page. The key file is
+        created on the first request and removed when the run ends.
+        """
+        self.ensure_one()
+        runs = _NFSE_RUN.__dict__.setdefault("runs", {})
+        key = self._nfse_run_key()
+        if key in runs:
+            yield
+            return
+        run = runs[key] = {"pem_path": None, "clients": {}}
+        try:
+            yield
+        finally:
+            runs.pop(key, None)
+            for client in run["clients"].values():
+                client.close()
+            if run["pem_path"]:
+                try:
+                    os.unlink(run["pem_path"])
+                except OSError:
+                    _logger.debug(
+                        "Temporary NFS-e certificate file was already removed"
+                    )
+
+    def _nfse_run_client(self, run, base_url):
+        client = run["clients"].get(base_url)
+        if client is None:
+            if run["pem_path"] is None:
+                pem = self._nfse_certificate_pem()
+                fd, run["pem_path"] = tempfile.mkstemp(suffix=".pem")
+                with os.fdopen(fd, "wb") as handle:
+                    handle.write(pem)
+            client = run["clients"][base_url] = AdnDfeClient(base_url, run["pem_path"])
+        return client
+
     def _nfse_http_get(self, base_url, path, params=None):
         """GET one mTLS resource with the company e-CNPJ."""
         self.ensure_one()
+        run = getattr(_NFSE_RUN, "runs", {}).get(self._nfse_run_key())
+        if run is not None:
+            return self._nfse_run_client(run, base_url).get(path, params=params)
         pem = self._nfse_certificate_pem()
         fd, pem_path = tempfile.mkstemp(suffix=".pem")
         try:
@@ -223,22 +275,23 @@ class ResCompany(models.Model):
         caught_up = False
         had_exception = False
         try:
-            for _page in range(NFSE_MAX_PAGES):
-                response = self._nfse_adn_request(
-                    f"{NFSE_ADN_DFE_PATH}/{int(last_nsu)}",
-                    params=self._nfse_query_params(),
-                )
-                outcome = self._nfse_handle_page(response, last_nsu)
-                last_nsu = outcome["last_nsu"]
-                status = outcome["status"]
-                message = outcome["message"]
-                caught_up = outcome["caught_up"]
-                if outcome.get("retry_after") is not None:
-                    self._nfse_schedule_retry(last_nsu, status, message, outcome)
-                    self._nfse_notify_new(existing_ids)
-                    return
-                if not outcome["continue"]:
-                    break
+            with self._nfse_mtls_run():
+                for _page in range(NFSE_MAX_PAGES):
+                    response = self._nfse_adn_request(
+                        f"{NFSE_ADN_DFE_PATH}/{int(last_nsu)}",
+                        params=self._nfse_query_params(),
+                    )
+                    outcome = self._nfse_handle_page(response, last_nsu)
+                    last_nsu = outcome["last_nsu"]
+                    status = outcome["status"]
+                    message = outcome["message"]
+                    caught_up = outcome["caught_up"]
+                    if outcome.get("retry_after") is not None:
+                        self._nfse_schedule_retry(last_nsu, status, message, outcome)
+                        self._nfse_notify_new(existing_ids)
+                        return
+                    if not outcome["continue"]:
+                        break
         except Exception as error:
             had_exception = True
             status = ""
@@ -630,18 +683,21 @@ class ResCompany(models.Model):
         ``GET /contribuintes/NFSe/{chave}`` is not a documented ADN route and
         answers 404. The note lives on Sefin ``GET /nfse/{chave}``.
         """
-        response = self._nfse_sefin_request(f"{NFSE_SEFIN_NFSE_PATH}/{access_key}")
-        self._nfse_raise_for_status(response)
-        self._nfse_process_item(self._nfse_item_from_sefin(response, access_key))
-        events = self._nfse_adn_request(f"{NFSE_ADN_NFSE_PATH}/{access_key}/Eventos")
-        if events.status_code == 404:
-            return
-        self._nfse_raise_for_status(events)
-        for item in self._nfse_lote(events):
-            tipo = str(item.get("TipoDocumento") or "").strip().upper()
-            if tipo in NFSE_NOTE_TYPES:
-                continue
-            self._nfse_process_item(item)
+        with self._nfse_mtls_run():
+            response = self._nfse_sefin_request(f"{NFSE_SEFIN_NFSE_PATH}/{access_key}")
+            self._nfse_raise_for_status(response)
+            self._nfse_process_item(self._nfse_item_from_sefin(response, access_key))
+            events = self._nfse_adn_request(
+                f"{NFSE_ADN_NFSE_PATH}/{access_key}/Eventos"
+            )
+            if events.status_code == 404:
+                return
+            self._nfse_raise_for_status(events)
+            for item in self._nfse_lote(events):
+                tipo = str(item.get("TipoDocumento") or "").strip().upper()
+                if tipo in NFSE_NOTE_TYPES:
+                    continue
+                self._nfse_process_item(item)
 
     def _nfse_item_from_sefin(self, response, access_key):
         body = response.body or {}
