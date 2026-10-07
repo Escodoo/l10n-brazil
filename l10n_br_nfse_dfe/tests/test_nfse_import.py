@@ -127,7 +127,8 @@ class TestNfseImport(TransactionCase):
         self.assertTrue(parsed["pis_withheld"])
         self.assertTrue(parsed["cofins_withheld"])
         self.assertEqual(parsed["irpj_wh_value"], 58.71)
-        self.assertEqual(parsed["csll_wh_value"], 182.00)
+        # vRetCSLL (182.00) is PIS + COFINS + CSLL retained: CSLL alone is 39.14.
+        self.assertEqual(parsed["csll_wh_value"], 39.14)
         self.assertEqual(parsed["issqn_wh_value"], 0.0)
         self.assertEqual(parsed["issqn_city_ibge"], "3205200")
 
@@ -166,7 +167,8 @@ class TestNfseImport(TransactionCase):
         self.assertEqual(line.cofins_cst_id.code, "01")
         self.assertAlmostEqual(line.irpj_wh_value, 58.71)
         self.assertAlmostEqual(line.irpj_wh_percent, 1.5)
-        self.assertAlmostEqual(line.csll_wh_value, 182.00)
+        self.assertAlmostEqual(line.csll_wh_value, 39.14)
+        self.assertAlmostEqual(line.csll_wh_percent, 1.0)
         self.assertIn(line.ibs_tax_id, line.fiscal_tax_ids)
         self.assertIn(line.cbs_tax_id, line.fiscal_tax_ids)
         self.assertIn(line.pis_tax_id, line.fiscal_tax_ids)

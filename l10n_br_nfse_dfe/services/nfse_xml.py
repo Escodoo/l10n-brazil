@@ -2,7 +2,6 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 
 import base64
-import gzip
 import re
 import zlib
 from datetime import datetime, timezone
@@ -14,6 +13,7 @@ from ..constants.nfse_dfe import (
     NFSE_CANCEL_EVENT_CODES,
     NFSE_CANCEL_EVENT_NAMES,
     NFSE_EVENT_CODE_BY_NAME,
+    NFSE_MAX_XML_BYTES,
 )
 
 
@@ -89,8 +89,11 @@ def decode_arquivo_xml(value):
             return None
     if raw[:2] == b"\x1f\x8b":
         try:
-            raw = gzip.decompress(raw)
+            decompressor = zlib.decompressobj(16 + zlib.MAX_WBITS)
+            raw = decompressor.decompress(raw, NFSE_MAX_XML_BYTES + 1)
         except (OSError, EOFError, zlib.error):
+            return None
+        if len(raw) > NFSE_MAX_XML_BYTES:
             return None
     return raw
 
@@ -239,17 +242,31 @@ def _federal_tax_values(inf_dps):
     pis_cofins = _path(inf_dps, "valores", "trib", "tribFed", "piscofins")
     retention = _path_text(pis_cofins, "tpRetPisCofins") or ""
     federal = _path(inf_dps, "valores", "trib", "tribFed")
+    pis_value = _amount(_path_text(pis_cofins, "vPis"))
+    cofins_value = _amount(_path_text(pis_cofins, "vCofins"))
+    pis_withheld = retention in _PIS_RETAINED
+    cofins_withheld = retention in _COFINS_RETAINED
+    # vRetCSLL is the total retained PIS + COFINS + CSLL: keep only the CSLL.
+    csll_retained = round(
+        max(
+            _amount(_path_text(federal, "vRetCSLL"))
+            - (pis_value if pis_withheld else 0.0)
+            - (cofins_value if cofins_withheld else 0.0),
+            0.0,
+        ),
+        2,
+    )
     return {
         "pis_cofins_cst": _path_text(pis_cofins, "CST"),
         "pis_cofins_base": _amount(_path_text(pis_cofins, "vBCPisCofins")),
         "pis_percent": _amount(_path_text(pis_cofins, "pAliqPis")),
-        "pis_value": _amount(_path_text(pis_cofins, "vPis")),
+        "pis_value": pis_value,
         "cofins_percent": _amount(_path_text(pis_cofins, "pAliqCofins")),
-        "cofins_value": _amount(_path_text(pis_cofins, "vCofins")),
-        "pis_withheld": retention in _PIS_RETAINED,
-        "cofins_withheld": retention in _COFINS_RETAINED,
+        "cofins_value": cofins_value,
+        "pis_withheld": pis_withheld,
+        "cofins_withheld": cofins_withheld,
         "irpj_wh_value": _amount(_path_text(federal, "vRetIRRF")),
-        "csll_wh_value": _amount(_path_text(federal, "vRetCSLL")),
+        "csll_wh_value": csll_retained,
     }
 
 

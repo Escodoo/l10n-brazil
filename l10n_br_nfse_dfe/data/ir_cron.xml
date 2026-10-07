@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<odoo noupdate="0">
+<odoo noupdate="1">
     <record forcecreate="True" id="ir_cron_search_nfse_dfe_documents" model="ir.cron">
         <field name="name">DF-e - Search NFS-e Documents</field>
         <field name="model_id" ref="base.model_res_company" />
