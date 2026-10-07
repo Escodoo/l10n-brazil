@@ -21,6 +21,8 @@ NFSE_SEFIN_NFSE_PATH = "/nfse"
 NFSE_LOTE_SIZE = 50
 NFSE_MAX_PAGES = 20
 NFSE_ACCESS_KEY_SIZE = 50
+# Largest XML accepted after gzip decompression (a real NFS-e is a few KB).
+NFSE_MAX_XML_BYTES = 20 * 1024 * 1024
 
 NFSE_NOTE_TYPES = {"NFSE", "NFS-E"}
 # Distributed, but not a service invoice and not an event of one.
