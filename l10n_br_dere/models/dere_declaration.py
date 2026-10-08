@@ -1503,7 +1503,12 @@ class DereDeclaration(models.Model):
     def _apply_parsed_return(self, events, parsed, protocol=None):
         target = events
         if parsed.get("tpEv"):
-            target = events.filtered(lambda ev: ev.event_type == parsed["tpEv"])
+            tp_ev = parsed["tpEv"]
+            target = events.filtered(
+                lambda ev, current=tp_ev: self._dere_same_event_type(
+                    ev.event_type, current
+                )
+            )
         if not target:
             return False
         return self.apply_return(

@@ -451,3 +451,54 @@ class TestDereReturns(DereCommon):
     def test_return_types_are_not_event_types(self):
         selection = dict(self.env["l10n_br_dere.event"]._fields["event_type"].selection)
         self.assertFalse([code for code in selection if code.startswith("D-9")])
+
+    def test_consult_matches_tpev_without_hyphen(self):
+        declaration = self._create_declaration("2026-03")
+        period = self._table_period(declaration)
+        period.action_generate_d1001()
+        event = self._event(declaration, "D-1001")
+        event.state = "sent"
+        receipt = self._event_receipt("D-1001", declaration.per_apur)
+        xml = self._event_return("evtRetornoTabela", event, receipt).replace(
+            "<tpEv>D-1001</tpEv>", "<tpEv>D1001</tpEv>"
+        )
+        parsed = xml_builder.parse_return(self._lot((event, xml)))
+        self.assertEqual(parsed["events"][0]["tpEv"], "D1001")
+        batch = self._consult(period, (event, xml))
+        self.assertEqual(event.state, "accepted")
+        self.assertEqual(event.nr_recibo, receipt)
+        self.assertEqual(batch.state, "done")
+        self.assertIn("<tpEv>D1001</tpEv>", event.return_xml)
+
+    def test_consult_keeps_batch_sent_when_tpev_does_not_match(self):
+        declaration = self._create_declaration("2026-04")
+        period = self._table_period(declaration)
+        period.action_generate_d1001()
+        event = self._event(declaration, "D-1001")
+        event.state = "sent"
+        receipt = self._event_receipt("D-1001", declaration.per_apur)
+        xml = self._event_return("evtRetornoTabela", event, receipt).replace(
+            "<tpEv>D-1001</tpEv>", "<tpEv>D-9999</tpEv>"
+        )
+        batch = self._consult(period, (event, xml))
+        self.assertEqual(event.state, "sent")
+        self.assertFalse(event.nr_recibo)
+        self.assertEqual(batch.state, "sent")
+
+    def test_apply_return_xml_matches_tpev_without_hyphen(self):
+        declaration = self._create_declaration("2026-05")
+        period = self._table_period(declaration)
+        period.action_generate_d1001()
+        event = self._event(declaration, "D-1001")
+        event.state = "sent"
+        receipt = self._event_receipt("D-1001", declaration.per_apur)
+        xml = self._event_return("evtRetornoTabela", event, receipt).replace(
+            "<tpEv>D-1001</tpEv>", "<tpEv>D1011</tpEv>"
+        )
+        self.assertFalse(declaration.action_apply_return_xml(xml.encode()))
+        self.assertEqual(event.state, "sent")
+        xml = xml.replace("<tpEv>D1011</tpEv>", "<tpEv>D1001</tpEv>")
+        self.assertTrue(declaration.action_apply_return_xml(xml.encode()))
+        self.assertEqual(event.state, "accepted")
+        self.assertEqual(event.nr_recibo, receipt)
+        self.assertIn("<tpEv>D1001</tpEv>", event.return_xml)

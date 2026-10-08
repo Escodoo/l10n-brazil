@@ -443,6 +443,10 @@ class DereEventParentMixin(models.AbstractModel):
         if occurrences:
             self._replace_occurrences(events, occurrences)
 
+    def _dere_same_event_type(self, event_type, tp_ev):
+        """Match a return tpEv that may omit the hyphen of the stored type."""
+        return (event_type or "").replace("-", "") == (tp_ev or "").replace("-", "")
+
     def _apply_consult_result(self, batch, xml_content):
         self.ensure_one()
         if not xml_content or "<" not in xml_content:
@@ -474,7 +478,9 @@ class DereEventParentMixin(models.AbstractModel):
             if item.get("tpEv"):
                 event_type = item["tpEv"]
                 target = target.filtered(
-                    lambda ev, current=event_type: ev.event_type == current
+                    lambda ev, current=event_type: self._dere_same_event_type(
+                        ev.event_type, current
+                    )
                 )
             if not target:
                 continue
@@ -489,7 +495,9 @@ class DereEventParentMixin(models.AbstractModel):
             )
             applied = True
         pending = batch.event_ids.filtered(lambda ev: ev.state == "sent")
-        if cd_resposta in ("2", "3") or (batch.event_ids and not pending):
+        if pending:
+            return applied
+        if cd_resposta in ("2", "3") or batch.event_ids:
             batch.state = "done"
             return True
         return applied
