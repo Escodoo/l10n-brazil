@@ -70,8 +70,16 @@ class DereReceitaIntegra(models.AbstractModel):
                 _("Receita Integra token error %(code)s: %(body)s")
                 % {"code": response.status_code, "body": response.text}
             )
-        payload = response.json()
+        try:
+            payload = response.json()
+        except ValueError:
+            payload = {}
         token = payload.get("access_token")
+        if not token:
+            raise UserError(
+                _("Receita Integra token response has no access_token: %s")
+                % response.text
+            )
         expires_in = int(payload.get("expires_in") or 3600)
         expires = now + timedelta(seconds=max(expires_in - 60, 30))
         record.write(

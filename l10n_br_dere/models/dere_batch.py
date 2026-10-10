@@ -4,6 +4,8 @@
 import logging
 from datetime import timedelta
 
+import requests
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
@@ -110,7 +112,15 @@ class DereBatch(models.Model):
             result = self.env["l10n_br_dere.receita.integra"].consult_batch(
                 self.company_id, self.protocol
             )
-        except UserError:
+        except (UserError, requests.RequestException) as exc:
+            if not isinstance(exc, UserError):
+                # Gateway unreachable or timed out: keep the batch "sent" and
+                # back off, so the cron neither hammers it every tick nor
+                # starves the batches queued behind it.
+                exc = UserError(
+                    _("Receita Integra is unreachable for batch %(name)s: %(err)s")
+                    % {"name": self.name, "err": exc}
+                )
             _logger.info(
                 "DeRE consult skipped for batch %s (%s)",
                 self.id,
@@ -118,7 +128,7 @@ class DereBatch(models.Model):
                 exc_info=True,
             )
             if raise_error:
-                raise
+                raise exc
             self._schedule_next_consult()
             return False
         self.response_text = result["text"]
