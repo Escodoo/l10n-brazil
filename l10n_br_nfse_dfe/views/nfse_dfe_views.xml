@@ -4,12 +4,15 @@
     License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 -->
 <odoo>
+    <!-- NFS-e list: the dfe_document_list js_class renders the DF-e banner,
+         using the default_fiscal_type of the action context. -->
     <record model="ir.ui.view" id="nfse_dfe_document_tree">
         <field name="name">l10n_br_fiscal_dfe.document.tree.nfse</field>
         <field name="model">l10n_br_fiscal_dfe.document</field>
         <field name="priority">20</field>
         <field name="arch" type="xml">
             <list
+                js_class="dfe_document_list"
                 create="false"
                 edit="false"
                 delete="false"

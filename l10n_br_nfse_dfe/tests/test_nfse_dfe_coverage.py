@@ -146,19 +146,19 @@ class TestNfseDfeCoverage(TransactionCase):
         company._dfe_document_action_xmlid("nfe")
         search = company.action_nfse_search_specific()
         self.assertEqual(search["context"]["default_fiscal_type"], "nfse")
-        banner = self.env["res.company"].action_banner_specific_search_nfse()
+        company_model = self.env["res.company"].with_company(company)
+        banner = company_model.dfe_action_specific_search("nfse")
         self.assertEqual(banner["res_model"], "dfe.specific.search.wizard")
-        company_model = self.env["res.company"]
+        self.assertEqual(banner["context"]["default_fiscal_type"], "nfse")
         with mock.patch.object(
             type(company), "action_document_distribution", return_value=None
         ):
-            reloaded = company_model.action_banner_search_all_nfse()
-        self.assertEqual(reloaded["tag"], "reload")
+            self.assertFalse(company_model.dfe_action_search_all("nfse"))
         window = {"type": "ir.actions.act_window"}
         with mock.patch.object(
             type(company), "action_document_distribution", return_value=window
         ):
-            self.assertEqual(company_model.action_banner_search_all_nfse(), window)
+            self.assertEqual(company_model.dfe_action_search_all("nfse"), window)
         with mock.patch.object(
             type(company), "_nfse_document_distribution", return_value=None
         ) as nfse_loop:
