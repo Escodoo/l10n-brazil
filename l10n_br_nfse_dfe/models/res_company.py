@@ -8,6 +8,7 @@ import re
 import tempfile
 from datetime import timedelta
 
+import psycopg2
 from cryptography.hazmat.primitives.serialization import (
     Encoding,
     NoEncryption,
@@ -397,6 +398,10 @@ class ResCompany(models.Model):
         try:
             with self.env.cr.savepoint():
                 return self._nfse_process_item(item)
+        except (psycopg2.OperationalError, psycopg2.InterfaceError, MemoryError):
+            # Database or resource trouble is not a bad item: do not move the
+            # cursor past it, so the next cycle fetches it again.
+            raise
         except Exception as error:
             nsu = item.get("NSU")
             # One line, without a traceback. The test that forces this path
