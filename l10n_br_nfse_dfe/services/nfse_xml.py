@@ -6,8 +6,12 @@ import gzip
 import re
 import zlib
 from datetime import datetime, timezone
+from enum import Enum
 
 from lxml import etree
+from nfelib.nfse.bindings.v1_0.nfse_v1_01 import Nfse
+from xsdata.exceptions import ParserError
+from xsdata.formats.dataclass.parsers.config import ParserConfig
 
 from ..constants.nfse_dfe import (
     NFSE_ACCESS_KEY_SIZE,
@@ -18,10 +22,10 @@ from ..constants.nfse_dfe import (
 
 
 class NfseNacionalBinding:
-    """Plain view of a national NFS-e XML, used by the import wizard.
+    """Plain view of a national NFS-e, used by the import wizard.
 
-    ``l10n_br_nfse_spec`` exposes Odoo mixins, not an xsdata binding, so the
-    wizard detects this object before the generic XML parser runs.
+    The authorized note is read with the nfelib 1.01 binding. The wizard
+    receives this flat object, not the xsdata tree.
     """
 
     is_national_nfse = True
@@ -161,36 +165,34 @@ _PIS_RETAINED = {"1", "3", "4", "5", "9"}
 _COFINS_RETAINED = {"1", "3", "4", "6", "7"}
 
 
-def _step(node, name):
-    if node is None:
+_NFSE_PARSER_CONFIG = ParserConfig(fail_on_unknown_properties=False)
+
+
+def _node(parent, name):
+    if parent is None:
         return None
-    found = node.xpath(f"./*[local-name()='{name}']")
-    return found[0] if found else None
+    return getattr(parent, name, None)
 
 
-def _path(node, *names):
-    current = node
+def _walk(parent, *names):
+    current = parent
     for name in names:
-        current = _step(current, name)
-        if current is None:
-            return None
+        current = _node(current, name)
     return current
 
 
-def _path_text(node, *names):
-    current = _path(node, *names)
-    if current is None or not current.text or not current.text.strip():
+def _xsd_text(value):
+    """Return the XML text of a binding value, unwrapping xsdata enums."""
+    if value is None:
         return None
-    return current.text.strip()
+    if isinstance(value, Enum):
+        value = value.value
+    text = str(value).strip()
+    return text or None
 
 
-def _inf_nfse(root):
-    if _local_name(root.tag) == "infNFSe":
-        return root
-    found = _step(root, "infNFSe")
-    if found is not None:
-        return found
-    return _path(root, "NFSe", "infNFSe")
+def _node_text(parent, *names):
+    return _xsd_text(_walk(parent, *names))
 
 
 def _ibs_cbs_values(inf_nfse, inf_dps):
@@ -200,37 +202,25 @@ def _ibs_cbs_values(inf_nfse, inf_dps):
     ``infDPS/IBSCBS``. The fiscal line has one IBS rate, so the UF nominal
     rate is kept and the value is the IBS total (UF + municipal).
     """
-    base = _amount(_path_text(inf_nfse, "IBSCBS", "valores", "vBC"))
-    ibs_value = _amount(_path_text(inf_nfse, "IBSCBS", "totCIBS", "gIBS", "vIBSTot"))
+    ibscbs = _node(inf_nfse, "IBSCBS")
+    base = _amount(_node_text(ibscbs, "valores", "vBC"))
+    ibs_value = _amount(_node_text(ibscbs, "totCIBS", "gIBS", "vIBSTot"))
     if not ibs_value:
         ibs_value = _amount(
-            _path_text(inf_nfse, "IBSCBS", "totCIBS", "gIBS", "gIBSUFTot", "vIBSUF")
-        ) + _amount(
-            _path_text(inf_nfse, "IBSCBS", "totCIBS", "gIBS", "gIBSMunTot", "vIBSMun")
-        )
+            _node_text(ibscbs, "totCIBS", "gIBS", "gIBSUFTot", "vIBSUF")
+        ) + _amount(_node_text(ibscbs, "totCIBS", "gIBS", "gIBSMunTot", "vIBSMun"))
+    classification = _walk(inf_dps, "IBSCBS", "valores", "trib", "gIBSCBS")
     return {
         "ibs_base": base,
-        "ibs_percent": _amount(
-            _path_text(inf_nfse, "IBSCBS", "valores", "uf", "pIBSUF")
-        ),
-        "ibs_reduction": _amount(
-            _path_text(inf_nfse, "IBSCBS", "valores", "uf", "pRedAliqUF")
-        ),
+        "ibs_percent": _amount(_node_text(ibscbs, "valores", "uf", "pIBSUF")),
+        "ibs_reduction": _amount(_node_text(ibscbs, "valores", "uf", "pRedAliqUF")),
         "ibs_value": ibs_value,
         "cbs_base": base,
-        "cbs_percent": _amount(
-            _path_text(inf_nfse, "IBSCBS", "valores", "fed", "pCBS")
-        ),
-        "cbs_reduction": _amount(
-            _path_text(inf_nfse, "IBSCBS", "valores", "fed", "pRedAliqCBS")
-        ),
-        "cbs_value": _amount(_path_text(inf_nfse, "IBSCBS", "totCIBS", "gCBS", "vCBS")),
-        "ibs_cbs_cst": _path_text(
-            inf_dps, "IBSCBS", "valores", "trib", "gIBSCBS", "CST"
-        ),
-        "tax_classification_code": _path_text(
-            inf_dps, "IBSCBS", "valores", "trib", "gIBSCBS", "cClassTrib"
-        ),
+        "cbs_percent": _amount(_node_text(ibscbs, "valores", "fed", "pCBS")),
+        "cbs_reduction": _amount(_node_text(ibscbs, "valores", "fed", "pRedAliqCBS")),
+        "cbs_value": _amount(_node_text(ibscbs, "totCIBS", "gCBS", "vCBS")),
+        "ibs_cbs_cst": _node_text(classification, "CST"),
+        "tax_classification_code": _node_text(classification, "cClassTrib"),
     }
 
 
@@ -253,25 +243,25 @@ def _csll_withholding(bundle, pis_withheld, pis_value, cofins_withheld, cofins_v
 
 def _federal_tax_values(inf_dps):
     """Read PIS/COFINS and the federal withholdings from the DPS."""
-    pis_cofins = _path(inf_dps, "valores", "trib", "tribFed", "piscofins")
-    retention = _path_text(pis_cofins, "tpRetPisCofins") or ""
-    federal = _path(inf_dps, "valores", "trib", "tribFed")
+    federal = _walk(inf_dps, "valores", "trib", "tribFed")
+    pis_cofins = _node(federal, "piscofins")
+    retention = _node_text(pis_cofins, "tpRetPisCofins") or ""
     pis_withheld = retention in _PIS_RETAINED
     cofins_withheld = retention in _COFINS_RETAINED
-    pis_value = _amount(_path_text(pis_cofins, "vPis"))
-    cofins_value = _amount(_path_text(pis_cofins, "vCofins"))
+    pis_value = _amount(_node_text(pis_cofins, "vPis"))
+    cofins_value = _amount(_node_text(pis_cofins, "vCofins"))
     return {
-        "pis_cofins_cst": _path_text(pis_cofins, "CST"),
-        "pis_cofins_base": _amount(_path_text(pis_cofins, "vBCPisCofins")),
-        "pis_percent": _amount(_path_text(pis_cofins, "pAliqPis")),
+        "pis_cofins_cst": _node_text(pis_cofins, "CST"),
+        "pis_cofins_base": _amount(_node_text(pis_cofins, "vBCPisCofins")),
+        "pis_percent": _amount(_node_text(pis_cofins, "pAliqPis")),
         "pis_value": pis_value,
-        "cofins_percent": _amount(_path_text(pis_cofins, "pAliqCofins")),
+        "cofins_percent": _amount(_node_text(pis_cofins, "pAliqCofins")),
         "cofins_value": cofins_value,
         "pis_withheld": pis_withheld,
         "cofins_withheld": cofins_withheld,
-        "irpj_wh_value": _amount(_path_text(federal, "vRetIRRF")),
+        "irpj_wh_value": _amount(_node_text(federal, "vRetIRRF")),
         "csll_wh_value": _csll_withholding(
-            _amount(_path_text(federal, "vRetCSLL")),
+            _amount(_node_text(federal, "vRetCSLL")),
             pis_withheld,
             pis_value,
             cofins_withheld,
@@ -284,34 +274,31 @@ def _party_address(node):
     """Read a national address (``end`` or the emitter ``enderNac``)."""
     if node is None:
         return {}
-    national = _step(node, "endNac")
-    if national is None:
-        national = node
+    national = _node(node, "endNac") or node
     return {
-        "street_name": _path_text(node, "xLgr"),
-        "street_number": _path_text(node, "nro"),
-        "street2": _path_text(node, "xCpl"),
-        "district": _path_text(node, "xBairro"),
-        "zip": _digits(_path_text(national, "CEP")),
-        "city_ibge": _digits(_path_text(national, "cMun")),
+        "street_name": _node_text(node, "xLgr"),
+        "street_number": _node_text(node, "nro"),
+        "street2": _node_text(node, "xCpl"),
+        "district": _node_text(node, "xBairro"),
+        "zip": _digits(_node_text(national, "CEP")),
+        "city_ibge": _digits(_node_text(national, "cMun")),
     }
 
 
 def _party(node):
     if node is None:
         return {}
+    legal_name = _node_text(node, "xNome")
     values = {
-        "cnpj": _digits(_path_text(node, "CNPJ")),
-        "cpf": _digits(_path_text(node, "CPF")),
-        "legal_name": _path_text(node, "xNome"),
-        "name": _path_text(node, "xFant") or _path_text(node, "xNome"),
-        "im": _path_text(node, "IM"),
-        "phone": _path_text(node, "fone"),
-        "email": _path_text(node, "email"),
+        "cnpj": _digits(_node_text(node, "CNPJ")),
+        "cpf": _digits(_node_text(node, "CPF")),
+        "legal_name": legal_name,
+        "name": _node_text(node, "xFant") or legal_name,
+        "im": _node_text(node, "IM"),
+        "phone": _node_text(node, "fone"),
+        "email": _node_text(node, "email"),
     }
-    address = _step(node, "end")
-    if address is None:
-        address = _step(node, "enderNac")
+    address = _node(node, "end") or _node(node, "enderNac")
     values.update(_party_address(address))
     return {key: value for key, value in values.items() if value}
 
@@ -322,8 +309,8 @@ def _provider_party(inf_nfse, inf_dps):
     ``tpEmit`` can be the taker, so ``infNFSe/emit`` is used only when its
     CNPJ is the same as the provider.
     """
-    provider = _party(_path(inf_dps, "prest"))
-    emitter = _party(_step(inf_nfse, "emit"))
+    provider = _party(_node(inf_dps, "prest"))
+    emitter = _party(_node(inf_nfse, "emit"))
     same_company = (
         emitter.get("cnpj") and emitter.get("cnpj") == provider.get("cnpj")
     ) or (emitter.get("cpf") and emitter.get("cpf") == provider.get("cpf"))
@@ -333,99 +320,68 @@ def _provider_party(inf_nfse, inf_dps):
     return provider
 
 
-def _access_key_from_root(root):
-    nodes = root.xpath("./*[local-name()='infNFSe']")
-    if not nodes:
-        nodes = root.xpath(".//*[local-name()='infNFSe']")
-    if nodes:
-        return normalize_access_key(nodes[0].get("Id"))
-    return False
+def _service_value(inf_nfse, inf_dps):
+    """Service amount from the DPS, with the net value as fallback."""
+    service = _node_text(inf_dps, "valores", "vServPrest", "vServ")
+    if service:
+        return _amount(service)
+    return _amount(_node_text(inf_nfse, "valores", "vLiq"))
+
+
+def _parse_nfse_binding(xml_bytes):
+    """Return ``infNFSe`` from the nfelib 1.01 binding, or None."""
+    if isinstance(xml_bytes, bytes):
+        try:
+            xml_text = xml_bytes.decode()
+        except UnicodeDecodeError:
+            return None
+    else:
+        xml_text = xml_bytes
+    try:
+        document = Nfse.from_xml(xml_text, config=_NFSE_PARSER_CONFIG)
+    except (ParserError, ValueError):
+        return None
+    return document.infNFSe or None
 
 
 def parse_nfse_xml(xml_bytes):
     """Map a national NFS-e XML to a dict. Returns None for other documents."""
     if not xml_bytes:
         return None
-    try:
-        root = etree.fromstring(xml_bytes)
-    except etree.XMLSyntaxError:
+    inf_nfse = _parse_nfse_binding(xml_bytes)
+    if inf_nfse is None:
         return None
-    if not _is_nfse_document(root):
-        return None
-    inf_nfse = _inf_nfse(root)
-    inf_dps = _path(inf_nfse, "DPS", "infDPS")
+    inf_dps = _walk(inf_nfse, "DPS", "infDPS")
     provider = _provider_party(inf_nfse, inf_dps)
     provider_cnpj = provider.get("cnpj") or provider.get("cpf") or ""
     provider_name = provider.get("legal_name") or provider.get("name")
-    service_value = _amount(
-        _text(
-            root,
-            ".//*[local-name()='vServPrest']/*[local-name()='vServ']",
-            "./*[local-name()='infNFSe']/*[local-name()='valores']"
-            "/*[local-name()='vLiq']",
-        )
-    )
-    issqn_base = _amount(
-        _text(
-            root,
-            "./*[local-name()='infNFSe']/*[local-name()='valores']/*[local-name()='vBC']",
-        )
-    )
-    issqn_percent = _amount(
-        _text(
-            root,
-            "./*[local-name()='infNFSe']/*[local-name()='valores']"
-            "/*[local-name()='pAliqAplic']",
-        )
-    )
-    issqn_value = _amount(
-        _text(
-            root,
-            "./*[local-name()='infNFSe']/*[local-name()='valores']"
-            "/*[local-name()='vISSQN']",
-        )
-    )
-    retention = _text(
-        root,
-        ".//*[local-name()='tribMun']/*[local-name()='tpRetISSQN']",
-    )
+    note_values = _node(inf_nfse, "valores")
+    retention = _node_text(inf_dps, "valores", "trib", "tribMun", "tpRetISSQN")
     withheld = retention in {"2", "3"}
-    emission = parse_nfse_datetime(
-        _text(
-            root,
-            ".//*[local-name()='infDPS']/*[local-name()='dhEmi']",
-            "./*[local-name()='infNFSe']/*[local-name()='dhProc']",
-        )
-    )
+    issqn_percent = _amount(_node_text(note_values, "pAliqAplic"))
+    issqn_value = _amount(_node_text(note_values, "vISSQN"))
+    service = _walk(inf_dps, "serv", "cServ")
     return {
-        "access_key": _access_key_from_root(root),
-        "number": _text(root, "./*[local-name()='infNFSe']/*[local-name()='nNFSe']"),
-        "serie": _text(root, ".//*[local-name()='infDPS']/*[local-name()='serie']"),
-        "emission_date": emission,
+        "access_key": normalize_access_key(_node_text(inf_nfse, "Id")),
+        "number": _node_text(inf_nfse, "nNFSe"),
+        "serie": _node_text(inf_dps, "serie"),
+        "emission_date": parse_nfse_datetime(
+            _node_text(inf_dps, "dhEmi") or _node_text(inf_nfse, "dhProc")
+        ),
         "provider_cnpj": provider_cnpj or False,
         "provider_name": provider_name,
         "provider": provider,
-        "service_value": service_value,
-        "description": _text(
-            root,
-            ".//*[local-name()='cServ']/*[local-name()='xDescServ']",
-        ),
-        "issqn_base": issqn_base,
+        "service_value": _service_value(inf_nfse, inf_dps),
+        "description": _node_text(service, "xDescServ"),
+        "issqn_base": _amount(_node_text(note_values, "vBC")),
         "issqn_percent": issqn_percent,
         "issqn_value": issqn_value,
         "issqn_wh_percent": issqn_percent if withheld else 0.0,
         "issqn_wh_value": issqn_value if withheld else 0.0,
-        "service_lc116_code": _text(
-            root,
-            ".//*[local-name()='cServ']/*[local-name()='cTribNac']",
-        ),
-        "service_nbs_code": _digits(
-            _text(root, ".//*[local-name()='cServ']/*[local-name()='cNBS']")
-        ),
-        "issqn_city_ibge": _digits(
-            _text(root, "./*[local-name()='infNFSe']/*[local-name()='cLocIncid']")
-        ),
-        "rps_number": _text(root, ".//*[local-name()='infDPS']/*[local-name()='nDPS']"),
+        "service_lc116_code": _node_text(service, "cTribNac"),
+        "service_nbs_code": _digits(_node_text(service, "cNBS")),
+        "issqn_city_ibge": _digits(_node_text(inf_nfse, "cLocIncid")),
+        "rps_number": _node_text(inf_dps, "nDPS"),
         **_ibs_cbs_values(inf_nfse, inf_dps),
         **_federal_tax_values(inf_dps),
     }
