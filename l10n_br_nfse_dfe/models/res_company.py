@@ -15,7 +15,7 @@ from cryptography.hazmat.primitives.serialization import (
     pkcs12,
 )
 
-from odoo import _, api, fields, models
+from odoo import _, fields, models
 from odoo.exceptions import UserError
 
 from odoo.addons.l10n_br_fiscal_dfe.constants.dfe import (
@@ -119,16 +119,6 @@ class ResCompany(models.Model):
     def action_nfse_search_specific(self):
         self.ensure_one()
         return self.action_search_specific("nfse")
-
-    @api.model
-    def action_banner_search_all_nfse(self):
-        company = self.env.company
-        result = company.action_document_distribution("nfse")
-        return result or {"type": "ir.actions.client", "tag": "reload"}
-
-    @api.model
-    def action_banner_specific_search_nfse(self):
-        return self.env.company.action_search_specific("nfse")
 
     def _nfse_adn_base_url(self):
         self.ensure_one()
