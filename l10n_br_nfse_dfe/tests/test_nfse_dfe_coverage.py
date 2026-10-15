@@ -35,6 +35,7 @@ from odoo.addons.l10n_br_nfse_dfe.services.nfse_xml import (
 )
 from odoo.addons.l10n_br_nfse_dfe.tests.test_nfse_dfe import (
     ACCESS_KEY,
+    NS,
     event_xml,
     gzip_base64,
     nfse_xml,
@@ -102,19 +103,20 @@ class TestNfseXmlEdges(TransactionCase):
 
     def test_parse_wrapped_note_and_split_ibs_value(self):
         key = "4" * 50
-        split = f"""<NFSe><infNFSe Id="NFS{key}">
+        split = f"""<NFSe xmlns="{NS}"><infNFSe Id="NFS{key}">
           <IBSCBS><totCIBS><gIBS>
             <gIBSUFTot><vIBSUF>1.00</vIBSUF></gIBSUFTot>
             <gIBSMunTot><vIBSMun>0.25</vIBSMun></gIBSMunTot>
           </gIBS></totCIBS></IBSCBS>
         </infNFSe></NFSe>""".encode()
         self.assertEqual(parse_nfse_xml(split)["ibs_value"], 1.25)
-        nested = f"""<NFSe><wrap><infNFSe Id="NFS{key}"/></wrap></NFSe>""".encode()
-        self.assertEqual(parse_nfse_xml(nested)["access_key"], key)
-        bare = parse_nfse_xml(b"<NFSe></NFSe>")
-        self.assertFalse(bare["access_key"])
+        nested = (
+            f'<NFSe xmlns="{NS}"><wrap><infNFSe Id="NFS{key}"/></wrap></NFSe>'
+        ).encode()
+        self.assertIsNone(parse_nfse_xml(nested))
+        self.assertIsNone(parse_nfse_xml(b"<NFSe></NFSe>"))
         invalid_amount = (
-            f'<NFSe><infNFSe Id="NFS{key}">'
+            f'<NFSe xmlns="{NS}"><infNFSe Id="NFS{key}">'
             "<valores><vLiq>nope</vLiq></valores></infNFSe></NFSe>"
         ).encode()
         self.assertEqual(parse_nfse_xml(invalid_amount)["service_value"], 0.0)
