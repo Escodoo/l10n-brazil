@@ -440,10 +440,16 @@ class ResCompany(models.Model):
         digits = re.sub(r"\D", "", nsu or "")
         return int(digits or "0")
 
-    def _nfse_find_existing_dfe(self, nsu, access_key, schema):
+    def _nfse_find_existing_dfe(self, nsu, access_key, schema, event_type=None):
+        """Return the DF-e row that already represents this item.
+
+        A valid NSU is unique in the feed, so a new one is a new item even
+        when the access key already has another event. Without a valid NSU,
+        match the key and schema, and the event type when this is an event.
+        """
         dfe_model = self.env["l10n_br_fiscal_dfe.dfe"].sudo()
         if self._dfe_is_valid_nsu(nsu):
-            found = dfe_model.search(
+            return dfe_model.search(
                 [
                     ("nsu", "=", nsu),
                     ("company_id", "=", self.id),
@@ -451,23 +457,21 @@ class ResCompany(models.Model):
                 ],
                 limit=1,
             )
-            if found:
-                return found
         if not access_key:
             return dfe_model.browse()
         schemas = {schema}
         if str(schema or "").upper() == "EVENTO":
             # Older rows stored the event schema in lower case.
             schemas.add("evento")
-        return dfe_model.search(
-            [
-                ("access_key", "=", access_key),
-                ("company_id", "=", self.id),
-                ("fiscal_type", "=", "nfse"),
-                ("schema_type", "in", list(schemas)),
-            ],
-            limit=1,
-        )
+        domain = [
+            ("access_key", "=", access_key),
+            ("company_id", "=", self.id),
+            ("fiscal_type", "=", "nfse"),
+            ("schema_type", "in", list(schemas)),
+        ]
+        if event_type:
+            domain.append(("event_type_dfe", "=", event_type))
+        return dfe_model.search(domain, limit=1)
 
     def _nfse_create_note(self, item, xml_bytes, nsu):
         parsed = parse_nfse_xml(xml_bytes) or {}
@@ -540,10 +544,10 @@ class ResCompany(models.Model):
         schema = str(item.get("TipoDocumento") or "EVENTO").strip().upper()
         if schema not in NFSE_EVENT_DOCUMENT_TYPES:
             schema = "EVENTO"
-        if self._nfse_find_existing_dfe(nsu, access_key, schema):
-            return
         raw_type = item.get("TipoEvento") or parsed.get("event_type") or ""
         event_type = normalize_event_code(raw_type) or str(raw_type)
+        if self._nfse_find_existing_dfe(nsu, access_key, schema, event_type=event_type):
+            return
         document = self._dfe_get_or_create_document(access_key, "nfse")
         dfe_record = (
             self.env["l10n_br_fiscal_dfe.dfe"]

@@ -376,6 +376,56 @@ class TestNfseDfe(TransactionCase):
         document = self._documents().filtered(lambda rec: rec.access_key == key)
         self.assertEqual(document.document_state, "3")
 
+    def test_later_event_of_the_same_key_is_kept(self):
+        """A new NSU is a new event, even when the key already has one."""
+        key = "2" * 50
+        note = {
+            "NSU": 40,
+            "ChaveAcesso": key,
+            "TipoDocumento": "NFSE",
+            "ArquivoXml": gzip_base64(nfse_xml(access_key=key)),
+        }
+        accepted = {
+            "NSU": 41,
+            "ChaveAcesso": key,
+            "TipoDocumento": "EVENTO",
+            "TipoEvento": "105104",
+            "ArquivoXml": base64.b64encode(
+                event_xml(access_key=key, event_code="105104")
+            ).decode(),
+        }
+        cancel = {
+            "NSU": 42,
+            "ChaveAcesso": key,
+            "TipoDocumento": "EVENTO",
+            "TipoEvento": "101101",
+            "ArquivoXml": base64.b64encode(
+                event_xml(access_key=key, event_code="101101")
+            ).decode(),
+        }
+        self.company._nfse_process_item(note)
+        self.company._nfse_process_item(accepted)
+        self.company._nfse_process_item(cancel)
+        events = self.env["l10n_br_fiscal_dfe.dfe"].search(
+            [
+                ("company_id", "=", self.company.id),
+                ("access_key", "=", key),
+                ("document_type_dfe", "=", "event"),
+            ]
+        )
+        self.assertEqual(len(events), 2)
+        document = self._documents().filtered(lambda rec: rec.access_key == key)
+        self.assertEqual(document.document_state, "3")
+        self.company._nfse_process_item(cancel)
+        events = self.env["l10n_br_fiscal_dfe.dfe"].search(
+            [
+                ("company_id", "=", self.company.id),
+                ("access_key", "=", key),
+                ("document_type_dfe", "=", "event"),
+            ]
+        )
+        self.assertEqual(len(events), 2)
+
     def test_registration_request_does_not_cancel(self):
         key = "4" * 50
         note = {
