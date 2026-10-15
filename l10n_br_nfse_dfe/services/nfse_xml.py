@@ -234,22 +234,49 @@ def _ibs_cbs_values(inf_nfse, inf_dps):
     }
 
 
+def _csll_withholding(bundle, pis_withheld, pis_value, cofins_withheld, cofins_value):
+    """Return the CSLL part of ``vRetCSLL``.
+
+    When PIS or COFINS is withheld, the national layout stores the sum of
+    those withholdings and CSLL in ``vRetCSLL``. Otherwise the tag is CSLL.
+    """
+    deducted = 0.0
+    if pis_withheld:
+        deducted += pis_value or 0.0
+    if cofins_withheld:
+        deducted += cofins_value or 0.0
+    if not deducted:
+        return bundle
+    remaining = round((bundle or 0.0) - deducted, 2)
+    return remaining if remaining > 0 else 0.0
+
+
 def _federal_tax_values(inf_dps):
     """Read PIS/COFINS and the federal withholdings from the DPS."""
     pis_cofins = _path(inf_dps, "valores", "trib", "tribFed", "piscofins")
     retention = _path_text(pis_cofins, "tpRetPisCofins") or ""
     federal = _path(inf_dps, "valores", "trib", "tribFed")
+    pis_withheld = retention in _PIS_RETAINED
+    cofins_withheld = retention in _COFINS_RETAINED
+    pis_value = _amount(_path_text(pis_cofins, "vPis"))
+    cofins_value = _amount(_path_text(pis_cofins, "vCofins"))
     return {
         "pis_cofins_cst": _path_text(pis_cofins, "CST"),
         "pis_cofins_base": _amount(_path_text(pis_cofins, "vBCPisCofins")),
         "pis_percent": _amount(_path_text(pis_cofins, "pAliqPis")),
-        "pis_value": _amount(_path_text(pis_cofins, "vPis")),
+        "pis_value": pis_value,
         "cofins_percent": _amount(_path_text(pis_cofins, "pAliqCofins")),
-        "cofins_value": _amount(_path_text(pis_cofins, "vCofins")),
-        "pis_withheld": retention in _PIS_RETAINED,
-        "cofins_withheld": retention in _COFINS_RETAINED,
+        "cofins_value": cofins_value,
+        "pis_withheld": pis_withheld,
+        "cofins_withheld": cofins_withheld,
         "irpj_wh_value": _amount(_path_text(federal, "vRetIRRF")),
-        "csll_wh_value": _amount(_path_text(federal, "vRetCSLL")),
+        "csll_wh_value": _csll_withholding(
+            _amount(_path_text(federal, "vRetCSLL")),
+            pis_withheld,
+            pis_value,
+            cofins_withheld,
+            cofins_value,
+        ),
     }
 
 
