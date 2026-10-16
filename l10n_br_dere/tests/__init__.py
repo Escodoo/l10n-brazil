@@ -10,3 +10,4 @@ from . import test_dere_tpoper
 from . import test_dere_returns
 from . import test_dere_gaps
 from . import test_dere_xlsx
+from . import test_dere_transmission_hardening
