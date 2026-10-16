@@ -14,6 +14,7 @@ from cryptography.hazmat.primitives.serialization import (
     PrivateFormat,
     pkcs12,
 )
+from nfelib.nfse.client.v1_0.nfse import NfseClient
 
 from odoo import _, fields, models
 from odoo.exceptions import UserError
@@ -26,9 +27,6 @@ from odoo.addons.l10n_br_fiscal_dfe.constants.dfe import (
 from odoo.addons.l10n_br_fiscal_dfe.tools import utils
 
 from ..constants.nfse_dfe import (
-    NFSE_ADN_BASE_URLS,
-    NFSE_ADN_DFE_PATH,
-    NFSE_ADN_NFSE_PATH,
     NFSE_EVENT_DOCUMENT_TYPES,
     NFSE_LOTE_SIZE,
     NFSE_MAX_PAGES,
@@ -39,7 +37,7 @@ from ..constants.nfse_dfe import (
     NFSE_STATE_AUTHORIZED,
     NFSE_STATE_CANCELLED,
 )
-from ..services.adn_dfe import AdnDfeClient
+from ..services.adn_dfe import AdnDfeClient, AdnDfeResponse
 from ..services.nfse_xml import (
     decode_arquivo_xml,
     is_cancel_event,
@@ -120,19 +118,79 @@ class ResCompany(models.Model):
         self.ensure_one()
         return self.action_search_specific("nfse")
 
-    def _nfse_adn_base_url(self):
+    def _nfse_ambiente(self):
+        """Map the company environment to the nfelib code (1 or 2)."""
         self.ensure_one()
-        return NFSE_ADN_BASE_URLS.get(
-            self.nfse_dfe_environment, NFSE_ADN_BASE_URLS["producao_restrita"]
+        if self.nfse_dfe_environment == "producao":
+            return "1"
+        return "2"
+
+    def _nfse_cnpj(self):
+        self.ensure_one()
+        cnpj = re.sub(r"\D", "", self.vat or "")
+        return cnpj or None
+
+    def _nfse_client(self):
+        """Build an ADN client from the company e-CNPJ."""
+        self.ensure_one()
+        certificate = self._get_br_certificate(only_ecnpj=True)
+        if not certificate or not certificate.content:
+            raise UserError(
+                _("Configure an e-CNPJ certificate before querying the ADN.")
+            )
+        certificate = certificate.with_context(bin_size=False)
+        return NfseClient(
+            ambiente=self._nfse_ambiente(),
+            pkcs12_data=base64.b64decode(certificate.content),
+            pkcs12_password=certificate.pkcs12_password or "",
         )
 
-    def _nfse_query_params(self):
+    @staticmethod
+    def _nfse_close_client(client):
+        """Remove the PEM files nfelib writes and does not delete."""
+        for path in getattr(client, "_cert_files", ()) or ():
+            try:
+                os.unlink(path)
+            except OSError:
+                _logger.debug("Temporary NFS-e certificate file was already removed")
+
+    @staticmethod
+    def _nfse_from_nfelib(response):
+        """Adapt an nfelib answer to the inbox response.
+
+        nfelib 3.2.0 does not return HTTP headers, so a distribution 429
+        uses the generic cooldown instead of Retry-After.
+        """
+        body = response.body if isinstance(response.body, dict) else None
+        content = response.content or b""
+        text = content.decode("utf-8", errors="replace") if content else ""
+        return AdnDfeResponse(
+            status_code=response.status_code,
+            body=body,
+            content=content,
+            headers={},
+            text=text,
+        )
+
+    def _nfse_consulta_dfe(self, nsu):
+        """Fetch one ADN distribution batch through nfelib."""
         self.ensure_one()
-        params = {"lote": "true"}
-        cnpj = re.sub(r"\D", "", self.vat or "")
-        if cnpj:
-            params["cnpjConsulta"] = cnpj
-        return params
+        client = self._nfse_client()
+        try:
+            return self._nfse_from_nfelib(
+                client.consulta_dfe(nsu, cnpj=self._nfse_cnpj())
+            )
+        finally:
+            self._nfse_close_client(client)
+
+    def _nfse_consulta_eventos(self, chave):
+        """List the events of one NFS-e through nfelib."""
+        self.ensure_one()
+        client = self._nfse_client()
+        try:
+            return self._nfse_from_nfelib(client.consulta_eventos(chave))
+        finally:
+            self._nfse_close_client(client)
 
     def _nfse_certificate_pem(self):
         self.ensure_one()
@@ -175,10 +233,6 @@ class ResCompany(models.Model):
             except OSError:
                 _logger.debug("Temporary NFS-e certificate file was already removed")
 
-    def _nfse_adn_request(self, path, params=None):
-        """GET one ADN distribution resource with the company e-CNPJ."""
-        return self._nfse_http_get(self._nfse_adn_base_url(), path, params=params)
-
     def _nfse_sefin_request(self, path):
         """GET one Sefin Nacional resource with the company e-CNPJ."""
         return self._nfse_http_get(self._nfse_sefin_base_url(), path)
@@ -213,10 +267,7 @@ class ResCompany(models.Model):
         had_exception = False
         try:
             for _page in range(NFSE_MAX_PAGES):
-                response = self._nfse_adn_request(
-                    f"{NFSE_ADN_DFE_PATH}/{int(last_nsu)}",
-                    params=self._nfse_query_params(),
-                )
+                response = self._nfse_consulta_dfe(int(last_nsu))
                 outcome = self._nfse_handle_page(response, last_nsu)
                 last_nsu = outcome["last_nsu"]
                 status = outcome["status"]
@@ -591,10 +642,7 @@ class ResCompany(models.Model):
             self._nfse_fetch_by_access_key(access_key)
             return
         nsu_int = int(re.sub(r"\D", "", nsu or "0") or "0")
-        response = self._nfse_adn_request(
-            f"{NFSE_ADN_DFE_PATH}/{max(nsu_int - 1, 0)}",
-            params=self._nfse_query_params(),
-        )
+        response = self._nfse_consulta_dfe(max(nsu_int - 1, 0))
         self._nfse_raise_for_status(response)
         wanted = utils.format_nsu(nsu_int)
         match = [
@@ -620,7 +668,7 @@ class ResCompany(models.Model):
         response = self._nfse_sefin_request(f"{NFSE_SEFIN_NFSE_PATH}/{access_key}")
         self._nfse_raise_for_status(response)
         self._nfse_process_item(self._nfse_item_from_sefin(response, access_key))
-        events = self._nfse_adn_request(f"{NFSE_ADN_NFSE_PATH}/{access_key}/Eventos")
+        events = self._nfse_consulta_eventos(access_key)
         if events.status_code == 404:
             return
         self._nfse_raise_for_status(events)

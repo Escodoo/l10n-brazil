@@ -1,17 +1,9 @@
 # Copyright 2026 Escodoo - Marcel Savegnago <marcel.savegnago@escodoo.com.br>
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 
-# ADN distribution (tomador). Distinct from the Sefin Nacional emission API.
-NFSE_ADN_BASE_URLS = {
-    "producao": "https://adn.nfse.gov.br",
-    "producao_restrita": "https://adn.producaorestrita.nfse.gov.br",
-}
-
-NFSE_ADN_DFE_PATH = "/contribuintes/DFe"
-NFSE_ADN_NFSE_PATH = "/contribuintes/NFSe"
-
 # Sefin Nacional keeps the authorized NFS-e. ADN ``GET /NFSe/{chave}`` is 404;
-# the note is ``GET /nfse/{chave}`` here, and its events stay on the ADN.
+# the note is ``GET /nfse/{chave}`` here. The NSU batch and the event list
+# go through nfelib's NfseClient.
 NFSE_SEFIN_BASE_URLS = {
     "producao": "https://sefin.nfse.gov.br/SefinNacional",
     "producao_restrita": "https://sefin.producaorestrita.nfse.gov.br/SefinNacional",

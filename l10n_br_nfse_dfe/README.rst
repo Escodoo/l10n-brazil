@@ -72,8 +72,9 @@ Este módulo depende de:
 - ``l10n_br_fiscal_certificate``
 - ``queue_job`` (exigido pelo motor de DF-e)
 
-Bibliotecas Python: ``requests`` e ``cryptography``, usadas na consulta
-mTLS ao ADN.
+Bibliotecas Python: ``nfelib`` (>= 3.2.0) consulta o lote e os eventos
+no ADN. ``requests`` e ``cryptography`` continuam na leitura da nota por
+chave na Sefin Nacional.
 
 A empresa precisa de um certificado e-CNPJ A1 válido, o mesmo já
 utilizado pela localização fiscal.

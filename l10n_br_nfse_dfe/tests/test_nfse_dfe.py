@@ -139,7 +139,7 @@ class TestNfseDfe(TransactionCase):
 
     def _distribute(self, side_effect, page_size=None):
         patchers = [
-            mock.patch.object(type(self.company), "_nfse_adn_request", side_effect)
+            mock.patch.object(type(self.company), "_nfse_consulta_dfe", side_effect)
         ]
         if page_size:
             patchers.append(
@@ -169,8 +169,8 @@ class TestNfseDfe(TransactionCase):
         }
         calls = []
 
-        def side_effect(_company, path, params=None):
-            calls.append((path, params))
+        def side_effect(_company, nsu):
+            calls.append(nsu)
             return response(200, {"LoteDFe": [note, event]})
 
         self._distribute(side_effect)
@@ -193,8 +193,7 @@ class TestNfseDfe(TransactionCase):
             set(document.dfe_ids.mapped("document_type_dfe")), {"complete", "event"}
         )
         self.assertEqual(len(calls), 1)
-        self.assertTrue(calls[0][0].endswith("/contribuintes/DFe/0"))
-        self.assertEqual(calls[0][1]["cnpjConsulta"], TAKER_CNPJ)
+        self.assertEqual(calls[0], 0)
 
         self.company.nfse_dfe_next_query = False
         self.company._nfse_document_distribution()
@@ -205,8 +204,8 @@ class TestNfseDfe(TransactionCase):
     def test_pagination_stops_on_404(self):
         calls = []
 
-        def side_effect(_company, path, params=None):
-            calls.append(path)
+        def side_effect(_company, nsu):
+            calls.append(nsu)
             if len(calls) == 1:
                 return response(
                     200,
@@ -226,7 +225,7 @@ class TestNfseDfe(TransactionCase):
         self.company.nfse_last_nsu = "0"
         self._distribute(side_effect, page_size=1)
         self.assertEqual(len(calls), 2)
-        self.assertTrue(calls[1].endswith("/contribuintes/DFe/10"))
+        self.assertEqual(calls[1], 10)
         self.assertEqual(self.company.nfse_last_nsu, "000000000000010")
         self.assertEqual(self.company.nfse_dfe_last_status_code, "137")
 
@@ -235,7 +234,7 @@ class TestNfseDfe(TransactionCase):
         self.company.nfse_dfe_next_query = False
         before = fields.Datetime.now()
 
-        def side_effect(_company, path, params=None):
+        def side_effect(_company, nsu):
             return response(404)
 
         self._distribute(side_effect)
@@ -250,7 +249,7 @@ class TestNfseDfe(TransactionCase):
         self.company.nfse_dfe_next_query = False
         before = fields.Datetime.now()
 
-        def side_effect(_company, path, params=None):
+        def side_effect(_company, nsu):
             return response(429, headers={"Retry-After": "90"})
 
         self._distribute(side_effect)
@@ -353,8 +352,59 @@ class TestNfseDfe(TransactionCase):
         )
         mocked.json.return_value = {}
         with mock.patch.object(client._session, "get", return_value=mocked) as get:
-            client.get("/contribuintes/DFe/0", params={"lote": "true"})
-        self.assertTrue(get.call_args.args[0].endswith("/contribuintes/DFe/0"))
+            client.get("/nfse/" + ACCESS_KEY)
+        self.assertTrue(get.call_args.args[0].endswith("/nfse/" + ACCESS_KEY))
+
+    def test_consulta_dfe_passes_nsu_and_cnpj(self):
+        client = mock.Mock()
+        client._cert_files = ("/tmp/nfse-cert.pem", "/tmp/nfse-key.pem")
+        client.consulta_dfe.return_value = mock.Mock(
+            status_code=200, body={"LoteDFe": []}, content=b"{}"
+        )
+        with (
+            mock.patch.object(type(self.company), "_nfse_client", return_value=client),
+            mock.patch(
+                "odoo.addons.l10n_br_nfse_dfe.models.res_company.os.unlink"
+            ) as unlink,
+        ):
+            result = self.company._nfse_consulta_dfe(0)
+        client.consulta_dfe.assert_called_once_with(0, cnpj=TAKER_CNPJ)
+        self.assertTrue(result.ok)
+        self.assertEqual(result.body, {"LoteDFe": []})
+        self.assertEqual(result.headers, {})
+        self.assertEqual(result.text, "{}")
+        unlink.assert_any_call("/tmp/nfse-cert.pem")
+        unlink.assert_any_call("/tmp/nfse-key.pem")
+
+        self.company.vat = False
+        client.consulta_dfe.reset_mock()
+        client.consulta_dfe.return_value = mock.Mock(
+            status_code=200, body=["nope"], content=b"not-json"
+        )
+        with mock.patch.object(type(self.company), "_nfse_client", return_value=client):
+            result = self.company._nfse_consulta_dfe(1)
+        client.consulta_dfe.assert_called_once_with(1, cnpj=None)
+        self.assertIsNone(result.body)
+        self.assertEqual(result.text, "not-json")
+
+    def test_consulta_eventos_closes_temp_files(self):
+        client = mock.Mock()
+        client._cert_files = ("/tmp/nfse-cert.pem",)
+        client.consulta_eventos.return_value = mock.Mock(
+            status_code=404, body=None, content=b""
+        )
+        with (
+            mock.patch.object(type(self.company), "_nfse_client", return_value=client),
+            mock.patch(
+                "odoo.addons.l10n_br_nfse_dfe.models.res_company.os.unlink",
+                side_effect=OSError("already gone"),
+            ),
+        ):
+            result = self.company._nfse_consulta_eventos(ACCESS_KEY)
+        client.consulta_eventos.assert_called_once_with(ACCESS_KEY)
+        self.assertEqual(result.status_code, 404)
+        self.assertEqual(result.headers, {})
+        self.assertEqual(result.text, "")
 
     def test_event_before_note_stays_cancelled(self):
         key = "3" * 50
@@ -476,7 +526,7 @@ class TestNfseDfe(TransactionCase):
                 raise RuntimeError("broken item")
             return original(company, item, xml_bytes, nsu)
 
-        def side_effect(_company, path, params=None):
+        def side_effect(_company, nsu):
             return response(200, {"LoteDFe": [bad, good]})
 
         with (

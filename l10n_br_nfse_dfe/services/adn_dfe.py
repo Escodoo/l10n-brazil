@@ -27,10 +27,10 @@ class AdnDfeResponse:
 
 
 class AdnDfeClient:
-    """REST/mTLS client for the NFS-e ADN distribution API.
+    """REST/mTLS client for one Sefin Nacional GET.
 
-    This is the tomador feed (``GET /contribuintes/DFe/{NSU}``). It is not
-    the Sefin Nacional emission API used to authorize a DPS.
+    The authorized NFS-e is ``GET /nfse/{chave}`` on Sefin. The ADN
+    distribution batch and the event list go through ``NfseClient``.
     """
 
     def __init__(self, base_url, client_cert_pem, timeout=30):

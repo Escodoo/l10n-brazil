@@ -182,14 +182,16 @@ class TestNfseDfeCoverage(TransactionCase):
         nfse_search.assert_called_once()
         soap_search.assert_called_once()
 
-    def test_environment_and_query_without_cnpj(self):
+    def test_environment_and_cnpj(self):
         company = self.company
         company.nfse_dfe_environment = "producao"
-        self.assertIn("adn.nfse.gov.br", company._nfse_adn_base_url())
+        self.assertEqual(company._nfse_ambiente(), "1")
         ghost = self.env["res.company"].new({"nfse_dfe_environment": False})
-        self.assertIn("producaorestrita", ghost._nfse_adn_base_url())
+        self.assertEqual(ghost._nfse_ambiente(), "2")
+        company.nfse_dfe_environment = "producao_restrita"
+        self.assertEqual(company._nfse_ambiente(), "2")
         company.vat = False
-        self.assertNotIn("cnpjConsulta", company._nfse_query_params())
+        self.assertIsNone(company._nfse_cnpj())
 
     def test_certificate_and_request_cleanup(self):
         company = self.company
@@ -198,6 +200,8 @@ class TestNfseDfeCoverage(TransactionCase):
         ):
             with self.assertRaises(UserError):
                 company._nfse_certificate_pem()
+            with self.assertRaises(UserError):
+                company._nfse_client()
         certificate = mock.Mock()
         certificate.content = base64.b64encode(b"not-a-certificate")
         certificate.pkcs12_password = False
@@ -221,6 +225,22 @@ class TestNfseDfeCoverage(TransactionCase):
         ):
             pem = company._nfse_certificate_pem()
         self.assertIn(b"BEGIN", pem)
+        company.nfse_dfe_environment = "producao"
+        with (
+            mock.patch.object(
+                type(company), "_get_br_certificate", return_value=certificate
+            ),
+            mock.patch(
+                "odoo.addons.l10n_br_nfse_dfe.models.res_company.NfseClient"
+            ) as client_cls,
+        ):
+            company._nfse_client()
+        client_cls.assert_called_once_with(
+            ambiente="1",
+            pkcs12_data=base64.b64decode(certificate.content),
+            pkcs12_password="secret",
+        )
+        company.nfse_dfe_environment = "producao_restrita"
         with (
             mock.patch.object(
                 type(company), "_nfse_certificate_pem", return_value=b"pem"
@@ -234,34 +254,34 @@ class TestNfseDfeCoverage(TransactionCase):
                 side_effect=OSError("already gone"),
             ),
         ):
-            self.assertEqual(company._nfse_adn_request("/contribuintes/DFe/0").ok, True)
+            self.assertEqual(company._nfse_sefin_request("/nfse/0").ok, True)
 
     def test_distribution_edges(self):
         company = self.company
         company.nfse_dfe_next_query = fields.Datetime.now() + timedelta(hours=1)
-        with mock.patch.object(type(company), "_nfse_adn_request") as request:
+        with mock.patch.object(type(company), "_nfse_consulta_dfe") as request:
             company._nfse_document_distribution()
         request.assert_not_called()
 
         company.nfse_dfe_next_query = False
 
-        def explode(_company, path, params=None):
+        def explode(_company, nsu):
             raise RuntimeError("adn down")
 
-        with mock.patch.object(type(company), "_nfse_adn_request", explode):
+        with mock.patch.object(type(company), "_nfse_consulta_dfe", explode):
             company._nfse_document_distribution()
         self.assertFalse(company.nfse_dfe_last_status_code)
         company.nfse_dfe_next_query = False
 
-        def empty(_company, path, params=None):
+        def empty(_company, nsu):
             return response(200, {})
 
-        with mock.patch.object(type(company), "_nfse_adn_request", empty):
+        with mock.patch.object(type(company), "_nfse_consulta_dfe", empty):
             company._nfse_document_distribution()
         self.assertEqual(company.nfse_dfe_last_status_code, "137")
         company.nfse_dfe_next_query = False
 
-        def stuck(_company, path, params=None):
+        def stuck(_company, nsu):
             return response(
                 200,
                 {
@@ -276,12 +296,12 @@ class TestNfseDfeCoverage(TransactionCase):
                 },
             )
 
-        with mock.patch.object(type(company), "_nfse_adn_request", stuck):
+        with mock.patch.object(type(company), "_nfse_consulta_dfe", stuck):
             company._nfse_document_distribution()
         self.assertEqual(company.nfse_dfe_last_status_code, "138")
         company.nfse_dfe_next_query = False
 
-        def rejected(_company, path, params=None):
+        def rejected(_company, nsu):
             return response(
                 500,
                 {
@@ -292,7 +312,7 @@ class TestNfseDfeCoverage(TransactionCase):
                 },
             )
 
-        with mock.patch.object(type(company), "_nfse_adn_request", rejected):
+        with mock.patch.object(type(company), "_nfse_consulta_dfe", rejected):
             company._nfse_document_distribution()
         self.assertIn("E1", company.nfse_dfe_last_status)
 
@@ -310,13 +330,13 @@ class TestNfseDfeCoverage(TransactionCase):
             0,
         )
 
-        def rate_limit(_company, path, params=None):
+        def rate_limit(_company, nsu):
             return response(
                 429, headers={"Retry-After": "Wed, 21 Oct 2015 07:28:00 GMT"}
             )
 
         company.nfse_dfe_next_query = False
-        with mock.patch.object(type(company), "_nfse_adn_request", rate_limit):
+        with mock.patch.object(type(company), "_nfse_consulta_dfe", rate_limit):
             company._nfse_document_distribution()
         self.assertEqual(company.nfse_dfe_last_status_code, "656")
 
@@ -373,8 +393,8 @@ class TestNfseDfeCoverage(TransactionCase):
                 },
             )
 
-        def events(_company, path, params=None):
-            self.assertTrue(path.endswith("/Eventos"))
+        def events(_company, chave):
+            self.assertEqual(chave, key)
             return response(
                 200,
                 {
@@ -400,7 +420,7 @@ class TestNfseDfeCoverage(TransactionCase):
 
         with (
             mock.patch.object(type(company), "_nfse_sefin_request", sefin),
-            mock.patch.object(type(company), "_nfse_adn_request", events),
+            mock.patch.object(type(company), "_nfse_consulta_eventos", events),
         ):
             company._nfse_search_specific(access_key=key)
         document = self.env["l10n_br_fiscal_dfe.document"].search(
@@ -425,7 +445,10 @@ class TestNfseDfeCoverage(TransactionCase):
                 with self.assertRaises(UserError):
                     company._nfse_search_specific(access_key="7" * 50)
 
-        def by_nsu(_company, path, params=None):
+        calls = []
+
+        def by_nsu(_company, nsu):
+            calls.append(nsu)
             return response(
                 200,
                 {
@@ -442,10 +465,11 @@ class TestNfseDfeCoverage(TransactionCase):
                 },
             )
 
-        with mock.patch.object(type(company), "_nfse_adn_request", by_nsu):
+        with mock.patch.object(type(company), "_nfse_consulta_dfe", by_nsu):
             company._nfse_search_specific(nsu="15")
             with self.assertRaises(UserError):
                 company._nfse_search_specific(nsu="16")
+        self.assertEqual(calls, [14, 15])
 
     def test_event_label_import_and_duplicate_key(self):
         company = self.company

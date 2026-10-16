@@ -409,8 +409,9 @@ Only for development or testing purpose, do not use in production.
 <li><tt class="docutils literal">l10n_br_fiscal_certificate</tt></li>
 <li><tt class="docutils literal">queue_job</tt> (exigido pelo motor de DF-e)</li>
 </ul>
-<p>Bibliotecas Python: <tt class="docutils literal">requests</tt> e <tt class="docutils literal">cryptography</tt>, usadas na consulta
-mTLS ao ADN.</p>
+<p>Bibliotecas Python: <tt class="docutils literal">nfelib</tt> (&gt;= 3.2.0) consulta o lote e os eventos
+no ADN. <tt class="docutils literal">requests</tt> e <tt class="docutils literal">cryptography</tt> continuam na leitura da nota por
+chave na Sefin Nacional.</p>
 <p>A empresa precisa de um certificado e-CNPJ A1 válido, o mesmo já
 utilizado pela localização fiscal.</p>
 </div>
