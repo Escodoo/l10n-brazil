@@ -2,7 +2,6 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 
 import base64
-import gzip
 import re
 import zlib
 from datetime import datetime, timezone
@@ -18,6 +17,7 @@ from ..constants.nfse_dfe import (
     NFSE_CANCEL_EVENT_CODES,
     NFSE_CANCEL_EVENT_NAMES,
     NFSE_EVENT_CODE_BY_NAME,
+    NFSE_MAX_XML_BYTES,
 )
 
 
@@ -93,8 +93,11 @@ def decode_arquivo_xml(value):
             return None
     if raw[:2] == b"\x1f\x8b":
         try:
-            raw = gzip.decompress(raw)
+            decompressor = zlib.decompressobj(16 + zlib.MAX_WBITS)
+            raw = decompressor.decompress(raw, NFSE_MAX_XML_BYTES + 1)
         except (OSError, EOFError, zlib.error):
+            return None
+        if len(raw) > NFSE_MAX_XML_BYTES:
             return None
     return raw
 
