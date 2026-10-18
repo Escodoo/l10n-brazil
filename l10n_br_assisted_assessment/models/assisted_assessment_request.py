@@ -10,12 +10,11 @@ import pytz
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
-from ..constants import DAILY_REQUEST_QUOTA, SERVICE_TYPES, TRIBUTES
+from ..constants import DAILY_REQUEST_QUOTA, PERIOD_TIMEZONE, SERVICE_TYPES, TRIBUTES
 
 _logger = logging.getLogger(__name__)
 
 PERIOD_REQUEST_REL = "l10n_br_assisted_assessment_period_request_rel"
-QUOTA_TIMEZONE = "America/Sao_Paulo"
 
 
 class AssistedAssessmentRequest(models.Model):
@@ -134,7 +133,6 @@ class AssistedAssessmentRequest(models.Model):
         start, end = self._quota_window()
         used = self.search_count(
             [
-                ("id", "!=", self.id),
                 ("company_id", "=", self.company_id.id),
                 ("tribute", "=", self.tribute),
                 ("service", "=", self.service),
@@ -156,7 +154,7 @@ class AssistedAssessmentRequest(models.Model):
     def _quota_window(self):
         """Return the UTC bounds of the São Paulo day the quota is counted in."""
         self.ensure_one()
-        timezone = pytz.timezone(QUOTA_TIMEZONE)
+        timezone = pytz.timezone(PERIOD_TIMEZONE)
         today = datetime.now(timezone).date()
         start = timezone.localize(datetime.combine(today, time.min)).astimezone(
             pytz.utc

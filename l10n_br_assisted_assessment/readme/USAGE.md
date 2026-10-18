@@ -17,12 +17,11 @@ A rotina mensal tem três passos:
    esperado, valor do fisco e situação (aguardando download, confere, só no
    ERP ou valor diferente). Cada divergência traz a ação que a corrige, porque
    os ajustes se fazem emitindo documentos fiscais.
-3. **Confirmar** a apuração. A confirmação exige que toda divergência esteja
-   tratada ou ignorada, porque constitui o crédito tributário e implica
-   reconhecimento da dívida. Tratar um documento só na apuração exige
-   vincular o documento fiscal; ignorar exige uma nota.
+3. **Encerrar a revisão local**. Exige que toda divergência esteja tratada ou
+   ignorada. Isso não constitui o crédito tributário nem confirma a apuração
+   na RFB: o silêncio e a constituição são julgados lá. Tratar um documento
+   só na apuração exige vincular o documento fiscal; ignorar exige uma nota.
 
 Uma ação agendada diária avisa os responsáveis quando o prazo se aproxima e
-marca o período como expirado depois que ele passa. Período expirado significa
-que o saldo apresentado pela administração tributária foi tido como correto e
-o crédito tributário foi constituído sem manifestação.
+marca o período como expirado depois que ele passa. A expiração local não
+constitui o crédito na RFB.

@@ -1,7 +1,7 @@
 # Copyright 2026 - TODAY, Marcel Savegnago <marcel.savegnago@escodoo.com.br>
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase
@@ -28,6 +28,18 @@ class TestAssessmentDeadlines(TransactionCase):
         self.assertEqual(period.date_from, date(2026, 2, 1))
         self.assertEqual(period.date_to, date(2026, 2, 28))
         self.assertEqual(period.name, "CBS 2026-02")
+
+    def test_period_utc_bounds_use_sao_paulo(self):
+        """30/09 22:30 BRT (01/10 01:30 UTC) belongs to September."""
+        september = self._create_period("2026-09")
+        start, end = september._period_utc_bounds()
+        self.assertEqual(start, datetime(2026, 9, 1, 3, 0, 0))
+        self.assertEqual(end, datetime(2026, 10, 1, 3, 0, 0))
+        dusk = datetime(2026, 10, 1, 1, 30, 0)
+        self.assertTrue(start <= dusk < end)
+        october = self._create_period("2026-10")
+        oct_start, oct_end = october._period_utc_bounds()
+        self.assertFalse(oct_start <= dusk < oct_end)
 
     def test_invalid_per_apur(self):
         with self.assertRaises(ValidationError):
@@ -78,6 +90,14 @@ class TestAssessmentDeadlines(TransactionCase):
         self.assertEqual(period.state, "confirmed")
 
     def test_schedules_a_single_activity_near_deadline(self):
+        responsible = self.env["res.users"].create(
+            {
+                "name": "Assessment Responsible",
+                "login": "assessment_responsible",
+                "groups_id": [(6, 0, [self.env.ref("base.group_user").id])],
+            }
+        )
+        self.company.assessment_responsible_id = responsible
         period = self._create_period()
         period.state = "received"
         near_deadline = period.date_deadline - timedelta(days=2)
@@ -88,4 +108,5 @@ class TestAssessmentDeadlines(TransactionCase):
             == f"Review the assisted assessment of {period.name}"
         )
         self.assertEqual(len(activities), 1)
+        self.assertEqual(activities.user_id, responsible)
         self.assertEqual(period.state, "received")

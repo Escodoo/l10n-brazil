@@ -6,6 +6,7 @@ import re
 from calendar import monthrange
 from datetime import date, datetime, time, timedelta
 
+import pytz
 from markupsafe import Markup
 
 from odoo import _, api, fields, models
@@ -32,6 +33,7 @@ from ..constants import (
     LINE_DEBIT,
     OPEN_REQUEST_STATES,
     PER_APUR_RE,
+    PERIOD_TIMEZONE,
     SERVICE_CREDITS,
     SERVICE_DEBITS,
     SERVICE_LINE_TYPE,
@@ -79,6 +81,14 @@ class AssistedAssessment(models.Model):
     date_to = fields.Date(
         string="End Date", compute="_compute_period_dates", store=True
     )
+    document_utc_from = fields.Datetime(
+        compute="_compute_document_utc_bounds",
+        store=True,
+    )
+    document_utc_to = fields.Datetime(
+        compute="_compute_document_utc_bounds",
+        store=True,
+    )
     date_available = fields.Date(
         string="Presentation Date",
         compute="_compute_deadlines",
@@ -108,7 +118,7 @@ class AssistedAssessment(models.Model):
             ("received", "Received"),
             ("reconciled", "Reconciled"),
             ("diverged", "Divergences Found"),
-            ("confirmed", "Confirmed"),
+            ("confirmed", "Review Closed"),
             ("expired", "Expired"),
         ],
         string="Status",
@@ -153,8 +163,8 @@ class AssistedAssessment(models.Model):
     open_divergence_count = fields.Integer(compute="_compute_open_divergence_count")
 
     previous_balance = fields.Monetary(
-        string="Recoverable Balance",
-        help="Recoverable balance carried from previous periods, as considered by "
+        string="Balance to recover",
+        help="Balance to recover carried from previous periods, as considered by "
         "the tax administration.",
     )
     fisco_debit = fields.Monetary(compute="_compute_fisco_totals", store=True)
@@ -177,7 +187,6 @@ class AssistedAssessment(models.Model):
     bookkeeping_line_ids = fields.One2many(
         comodel_name="l10n_br_assisted_assessment.bookkeeping.line",
         inverse_name="period_id",
-        compute="_compute_bookkeeping_lines",
         string="Bookkeeping",
     )
     no_debits = fields.Boolean(
@@ -261,6 +270,17 @@ class AssistedAssessment(models.Model):
             year, month = (int(part) for part in record.per_apur.split("-"))
             record.date_from = date(year, month, 1)
             record.date_to = date(year, month, monthrange(year, month)[1])
+
+    @api.depends("date_from", "date_to")
+    def _compute_document_utc_bounds(self):
+        for record in self:
+            if record.date_from and record.date_to:
+                start, end = record._period_utc_bounds()
+                record.document_utc_from = start
+                record.document_utc_to = end
+            else:
+                record.document_utc_from = False
+                record.document_utc_to = False
 
     @api.depends(
         "date_to",
@@ -363,10 +383,14 @@ class AssistedAssessment(models.Model):
             record.local_credit = credit
             record.local_balance = debit - credit - record.previous_balance
 
-    @api.depends("fisco_balance", "local_balance")
+    @api.depends("fisco_balance", "local_balance", "directions_ready")
     def _compute_difference(self):
         for record in self:
-            record.difference = record.fisco_balance - record.local_balance
+            record.difference = (
+                record.fisco_balance - record.local_balance
+                if record.directions_ready
+                else 0.0
+            )
 
     @api.depends(
         "debit_delivery",
@@ -466,6 +490,25 @@ class AssistedAssessment(models.Model):
             entry["lines"] |= line
         return grouped
 
+    def _period_utc_bounds(self):
+        """Return naive UTC datetimes covering the period in Brasília.
+
+        Fiscal documents store ``document_date`` in UTC. Art. 43 of Decree
+        12,955/2026 places the event in the period of the America/Sao_Paulo
+        calendar day, so midnight of ``date_from`` and the start of the day
+        after ``date_to`` are converted from that zone.
+        """
+        self.ensure_one()
+        timezone = pytz.timezone(PERIOD_TIMEZONE)
+        start_local = timezone.localize(datetime.combine(self.date_from, time.min))
+        end_local = timezone.localize(
+            datetime.combine(self.date_to + timedelta(days=1), time.min)
+        )
+        return (
+            start_local.astimezone(pytz.utc).replace(tzinfo=None),
+            end_local.astimezone(pytz.utc).replace(tzinfo=None),
+        )
+
     def _local_document_lines(self, line_types):
         self.ensure_one()
         if not self.date_from or not self.date_to:
@@ -475,21 +518,14 @@ class AssistedAssessment(models.Model):
         ]
         if not operation_types:
             return self.env["l10n_br_fiscal.document.line"]
+        start, end = self._period_utc_bounds()
         return self.env["l10n_br_fiscal.document.line"].search(
             [
                 ("document_id.company_id", "=", self.company_id.id),
                 ("document_id.state_edoc", "=", SITUACAO_EDOC_AUTORIZADA),
                 ("document_id.document_key", "!=", False),
-                (
-                    "document_id.document_date",
-                    ">=",
-                    datetime.combine(self.date_from, time.min),
-                ),
-                (
-                    "document_id.document_date",
-                    "<=",
-                    datetime.combine(self.date_to, time.max),
-                ),
+                ("document_id.document_date", ">=", start),
+                ("document_id.document_date", "<", end),
                 ("document_id.fiscal_operation_type", "in", operation_types),
             ]
         )
@@ -518,63 +554,6 @@ class AssistedAssessment(models.Model):
                 line[value_field] or 0.0
             )
         return result
-
-    @api.depends(
-        "date_from",
-        "date_to",
-        "tribute",
-        "company_id",
-        "line_ids.line_type",
-        "line_ids.document_key",
-        "line_ids.value",
-        "no_debits",
-        "no_credits",
-    )
-    def _compute_bookkeeping_lines(self):
-        line_model = self.env["l10n_br_assisted_assessment.bookkeeping.line"]
-        for record in self:
-            if not record.id:
-                record.bookkeeping_line_ids = line_model
-                continue
-            lines = line_model.browse()
-            for vals in record._prepare_bookkeeping_vals():
-                lines |= line_model.new(vals)
-            record.bookkeeping_line_ids = lines
-
-    def _prepare_bookkeeping_vals(self):
-        """Return one row per authorized document of the period."""
-        self.ensure_one()
-        assessed = self._assessed_values_by_key()
-        compared = self._compared_line_types()
-        value_field = f"{self.tribute}_value"
-        grouped = {}
-        for line in self._local_document_lines([LINE_DEBIT, LINE_CREDIT]):
-            document = line.document_id
-            line_type = (
-                LINE_DEBIT
-                if document.fiscal_operation_type == FISCAL_OUT
-                else LINE_CREDIT
-            )
-            entry = grouped.setdefault(document, {"line_type": line_type, "value": 0.0})
-            entry["value"] += line[value_field] or 0.0
-        vals_list = []
-        for document, entry in grouped.items():
-            fisco_entry = assessed.get((entry["line_type"], document.document_key))
-            fisco_value = fisco_entry["value"] if fisco_entry else None
-            status = self._bookkeeping_status(
-                entry["line_type"], entry["value"], fisco_value, compared
-            )
-            vals_list.append(
-                {
-                    "period_id": self.id,
-                    "document_id": document.id,
-                    "line_type": entry["line_type"],
-                    "expected_value": entry["value"],
-                    "fisco_value": fisco_value or 0.0,
-                    "status": status,
-                }
-            )
-        return vals_list
 
     def _bookkeeping_status(self, line_type, expected_value, fisco_value, compared):
         """Return the row status of an ERP document against the assessment."""
@@ -764,7 +743,17 @@ class AssistedAssessment(models.Model):
             raise UserError(
                 _("Download the assessment before reconciling %s.", self.name)
             )
-        self.divergence_ids.filtered(lambda line: line.state == "open").unlink()
+        if not self.directions_ready:
+            raise UserError(
+                _(
+                    "Download both directions, or mark the missing one as "
+                    "absent, before reconciling %s.",
+                    self.name,
+                )
+            )
+        self.divergence_ids.filtered(lambda line: line.state == "open").with_context(
+            assisted_assessment_reconcile=True
+        ).unlink()
         stored = {line._natural_key(): line for line in self.divergence_ids}
         tolerance = self.company_id.assessment_tolerance or 0.01
         line_types = self._compared_line_types()
@@ -849,7 +838,9 @@ class AssistedAssessment(models.Model):
         if not existing:
             return vals
         if existing._values_changed(vals):
-            existing.write(dict(vals, state="open"))
+            existing.with_context(assisted_assessment_reconcile=True).write(
+                dict(vals, state="open")
+            )
         return False
 
     def action_confirm(self):
@@ -862,6 +853,14 @@ class AssistedAssessment(models.Model):
         if self.state not in ("reconciled", "diverged"):
             raise UserError(
                 _("Reconcile %s before closing the local review.", self.name)
+            )
+        if not self.directions_ready:
+            raise UserError(
+                _(
+                    "Download both directions, or mark the missing one as "
+                    "absent, before closing the local review of %s.",
+                    self.name,
+                )
             )
         if self.open_divergence_count:
             raise UserError(
@@ -917,9 +916,9 @@ class AssistedAssessment(models.Model):
         self.state = "expired"
         self.message_post(
             body=_(
-                "The deadline expired without confirmation. The balance presented "
-                "by the tax administration is presumed correct and the tax credit "
-                "is constituted."
+                "The deadline expired without closing the local review. "
+                "Whether the tax credit is constituted is decided at the tax "
+                "administration."
             )
         )
         return True
@@ -930,8 +929,10 @@ class AssistedAssessment(models.Model):
         existing = self.activity_ids.filtered(lambda act: act.summary == summary)
         if existing:
             return False
+        user = self.company_id.assessment_responsible_id or self.create_uid
         self.activity_schedule(
             "mail.mail_activity_data_todo",
+            user_id=user.id,
             date_deadline=self.date_deadline,
             summary=summary,
             note=_(

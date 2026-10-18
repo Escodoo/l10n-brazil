@@ -8,6 +8,8 @@ Assistida**:
   estaduais e municipais do domicílio da matriz, usado para achar o último
   dia útil do prazo. Sem calendário, só os fins de semana são pulados. Os
   feriados podem ser carregados com o assistente do `l10n_br_resource`.
+- **Responsável pela Apuração**: usuário que recebe a atividade de prazo.
+  Sem responsável, a atividade vai para quem criou o período.
 - **Tolerância da Conciliação**: diferença absoluta abaixo da qual a linha é
   considerada conciliada. O padrão é um centavo.
 

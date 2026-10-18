@@ -45,6 +45,10 @@ AVAILABILITY_DAY_DERE = 20
 # asynchronous assessment APIs. Exceeding it answers HTTP 429.
 DAILY_REQUEST_QUOTA = 4
 
+# Calendar used for the daily quota and for placing documents in a period
+# (Decree 12,955/2026, art. 43).
+PERIOD_TIMEZONE = "America/Sao_Paulo"
+
 # The signed download URL delivered by the webhook is valid for 48 hours.
 SIGNED_URL_HOURS = 48
 

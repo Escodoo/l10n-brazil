@@ -71,8 +71,8 @@
                         <group>
                             <field name="line_id" />
                             <field name="line_type" />
-                            <field name="fisco_value" />
-                            <field name="local_value" />
+                            <field name="fisco_value" readonly="1" />
+                            <field name="local_value" readonly="1" />
                             <field name="difference" />
                             <field name="suggested_action" />
                             <field name="notes" />

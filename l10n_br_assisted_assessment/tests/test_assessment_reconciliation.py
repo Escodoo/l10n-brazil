@@ -55,9 +55,37 @@ class TestAssessmentReconciliation(TransactionCase):
         )
 
     def _reconcile_against(self, booked):
+        if "debit" not in booked:
+            self.period.no_debits = True
+        if "credit" not in booked:
+            self.period.no_credits = True
         with patch(f"{PERIOD_CLASS}._local_values_by_key", return_value=booked):
             self.period._reconcile()
         return self.period.divergence_ids
+
+    def _authorized_document(self, key, document_date, **vals):
+        document = self.env["l10n_br_fiscal.document"].create(
+            {
+                "company_id": self.company.id,
+                "document_type_id": self.env.ref("l10n_br_fiscal.document_55").id,
+                "document_key": key,
+                "document_date": document_date,
+                "fiscal_operation_type": "out",
+                **vals,
+            }
+        )
+        # The authorized state is added by l10n_br_fiscal_edi; write it in SQL
+        # so the bookkeeping view can be tested without that extra module.
+        self.env.cr.execute(
+            """
+            UPDATE l10n_br_fiscal_document
+            SET state_edoc = 'autorizada', document_date = %s
+            WHERE id = %s
+            """,
+            [document_date, document.id],
+        )
+        document.invalidate_recordset(["state_edoc", "document_date"])
+        return document
 
     def _new_request(self, service="debits", **vals):
         return self.request_model.create(
@@ -156,14 +184,13 @@ class TestAssessmentReconciliation(TransactionCase):
     def test_directions_not_downloaded_are_not_reported(self):
         """Debits and credits are separate services with separate releases.
 
-        Booked inbound documents must not be reported as missing while the
-        credits service has not been downloaded yet.
+        Booked inbound documents must not be compared until the credits
+        service has been downloaded or marked as absent.
         """
         self._upsert_debits({self._key(1): 100.0})
-        divergences = self._reconcile_against(
-            {"debit": {self._key(1): 100.0}, "credit": {self._key(3): 90.0}}
-        )
-        self.assertFalse(divergences)
+        self.assertNotIn("credit", self.period._compared_line_types())
+        with self.assertRaises(UserError):
+            self.period._reconcile()
 
     def test_reconcile_requires_downloaded_assessment(self):
         with self.assertRaises(UserError):
@@ -298,6 +325,14 @@ class TestAssessmentReconciliation(TransactionCase):
             self._new_request(state="error")
         with patch(QUOTA, 4):
             self.assertTrue(self._new_request()._check_quota())
+
+    def test_quota_counts_a_retry_of_the_same_request(self):
+        now = fields.Datetime.now()
+        for _index in range(3):
+            self._new_request(state="error", request_date=now)
+        request = self._new_request(state="error", request_date=now)
+        with patch(QUOTA, 4), self.assertRaises(UserError):
+            request._check_quota()
 
     def test_quota_is_per_service(self):
         for _index in range(4):
@@ -582,9 +617,68 @@ class TestAssessmentReconciliation(TransactionCase):
             "value",
         )
 
-    def test_bookkeeping_lines_are_not_persisted(self):
-        lines = self.period.bookkeeping_line_ids
-        self.assertFalse(
-            self.env["l10n_br_assisted_assessment.bookkeeping.line"].search([])
+    def test_bookkeeping_lists_authorized_documents(self):
+        document = self._authorized_document(self._key(9), "2026-10-15 12:00:00")
+        self.env.flush_all()
+        lines = self.env["l10n_br_assisted_assessment.bookkeeping.line"].search(
+            [("period_id", "=", self.period.id)]
         )
-        self.assertFalse(lines.ids)
+        self.assertIn(document, lines.document_id)
+        self.assertIn(document, self.period.bookkeeping_line_ids.document_id)
+
+    def test_sao_paulo_dusk_document_stays_in_september(self):
+        """30/09 22:30 BRT is 01/10 01:30 UTC and belongs to September."""
+        document = self._authorized_document(self._key(10), "2026-10-01 01:30:00")
+        september = self.period_model.create(
+            {
+                "company_id": self.company.id,
+                "tribute": "cbs",
+                "per_apur": "2026-09",
+            }
+        )
+        self.env.flush_all()
+        self.env.invalidate_all()
+        dusk = datetime(2026, 10, 1, 1, 30, 0)
+        self.assertEqual(document.document_date, dusk)
+        self.assertEqual(document.state_edoc, "autorizada")
+        self.assertTrue(september.document_utc_from)
+        self.assertTrue(
+            september.document_utc_from
+            <= document.document_date
+            < september.document_utc_to
+        )
+        lines = self.env["l10n_br_assisted_assessment.bookkeeping.line"].search(
+            [("document_id", "=", document.id)]
+        )
+        self.assertEqual(lines.period_id, september)
+        self.assertNotIn(document, self.period.bookkeeping_line_ids.document_id)
+
+    def test_reconcile_requires_both_directions(self):
+        self._upsert_debits({self._key(1): 100.0})
+        with self.assertRaises(UserError):
+            self.period._reconcile()
+
+    def test_difference_stays_zero_until_both_directions_are_ready(self):
+        self._upsert_debits({self._key(1): 100.0})
+        booked = {"debit": {}, "credit": {}}
+        with patch(f"{PERIOD_CLASS}._local_values_by_key", return_value=booked):
+            self.period.invalidate_recordset(["difference"])
+            self.assertFalse(self.period.directions_ready)
+            self.assertEqual(self.period.difference, 0.0)
+        self.period.no_credits = True
+        with patch(f"{PERIOD_CLASS}._local_values_by_key", return_value=booked):
+            self.period.invalidate_recordset(["difference", "local_balance"])
+            self.assertTrue(self.period.directions_ready)
+            self.assertEqual(self.period.difference, 100.0)
+
+    def test_divergence_values_cannot_be_edited(self):
+        self._upsert_debits({self._key(1): 100.0})
+        divergence = self._reconcile_against({"debit": {self._key(1): 130.0}})
+        with self.assertRaises(UserError):
+            divergence.fisco_value = 90.0
+        with self.assertRaises(UserError):
+            divergence.unlink()
+        divergence.notes = "Accepted the assessed value."
+        divergence.action_mark_ignored()
+        with self.assertRaises(UserError):
+            divergence.notes = ""

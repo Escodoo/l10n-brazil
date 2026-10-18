@@ -174,8 +174,8 @@ msgstr "Encerrar Revisão"
 #. module: l10n_br_assisted_assessment
 #: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assisted_assessment_period__state__confirmed
 #: model_terms:ir.ui.view,arch_db:l10n_br_assisted_assessment.view_assessment_period_search
-msgid "Confirmed"
-msgstr "Confirmado"
+msgid "Review Closed"
+msgstr "Revisão Encerrada"
 
 #. module: l10n_br_assisted_assessment
 #: model_terms:ir.ui.view,arch_db:l10n_br_assisted_assessment.view_assessment_period_form
@@ -664,8 +664,8 @@ msgstr ""
 
 #. module: l10n_br_assisted_assessment
 #: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assisted_assessment_period__previous_balance
-msgid "Recoverable Balance"
-msgstr "Saldo Recuperável"
+msgid "Balance to recover"
+msgstr "Saldo a recuperar"
 
 #. module: l10n_br_assisted_assessment
 #: model:ir.model.fields.selection,name:l10n_br_assisted_assessment.selection__l10n_br_assisted_assessment_divergence__suggested_action__register_document
@@ -792,8 +792,17 @@ msgstr "Situação"
 
 #. module: l10n_br_assisted_assessment
 #: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_res_company__assessment_dere_subject
-msgid "Subject to DeRE"
-msgstr "Sujeito ao DeRE"
+msgid "Subject to the DeRE"
+msgstr "Sujeito à DeRE"
+
+#. module: l10n_br_assisted_assessment
+#: model:ir.model.fields,help:l10n_br_assisted_assessment.field_res_company__assessment_dere_subject
+msgid ""
+"Taxpayers required to file the DeRE receive the assisted assessment by the "
+"20th instead of the 15th of the following month."
+msgstr ""
+"Contribuintes obrigados à DeRE recebem a apuração assistida até o dia 20, e "
+"não até o dia 15 do mês seguinte."
 
 #. module: l10n_br_assisted_assessment
 #: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_l10n_br_assisted_assessment_divergence__suggested_action
@@ -854,3 +863,110 @@ msgstr "Tributo"
 #: model_terms:ir.ui.view,arch_db:l10n_br_assisted_assessment.view_assessment_period_search
 msgid "With Divergences"
 msgstr "Com Divergências"
+
+#. module: l10n_br_assisted_assessment
+#: model:res.groups,name:l10n_br_assisted_assessment.group_user
+msgid "Assisted Assessment User"
+msgstr "Usuário da Apuração Assistida"
+
+#. module: l10n_br_assisted_assessment
+#: model:res.groups,name:l10n_br_assisted_assessment.group_manager
+msgid "Assisted Assessment Manager"
+msgstr "Gerente da Apuração Assistida"
+
+#. module: l10n_br_assisted_assessment
+#: model:ir.model.fields,field_description:l10n_br_assisted_assessment.field_res_company__assessment_responsible_id
+msgid "Assessment Responsible"
+msgstr "Responsável pela Apuração"
+
+#. module: l10n_br_assisted_assessment
+#: model:ir.model.fields,help:l10n_br_assisted_assessment.field_res_company__assessment_responsible_id
+msgid ""
+"User assigned the deadline activity of the assisted assessment. When empty, "
+"the period author is used."
+msgstr ""
+"Usuário que recebe a atividade de prazo da apuração assistida. Sem "
+"responsável, a atividade vai para quem criou o período."
+
+#. module: l10n_br_assisted_assessment
+#: model:ir.model.fields,help:l10n_br_assisted_assessment.field_l10n_br_assisted_assessment_period__previous_balance
+msgid ""
+"Balance to recover carried from previous periods, as considered by the tax "
+"administration."
+msgstr ""
+"Saldo a recuperar trazido de períodos anteriores, conforme considerado pela "
+"administração tributária."
+
+#. module: l10n_br_assisted_assessment
+#. odoo-python
+#: code:addons/l10n_br_assisted_assessment/models/assisted_assessment_request.py:0
+msgid ""
+"The daily quota of %(quota)s calls for the %(service)s endpoint has been "
+"used. Try again tomorrow."
+msgstr ""
+"A cota diária de %(quota)s chamadas do endpoint de %(service)s foi usada. "
+"Tente novamente amanhã."
+
+#. module: l10n_br_assisted_assessment
+#. odoo-python
+#: code:addons/l10n_br_assisted_assessment/models/assisted_assessment.py:0
+msgid "Review the assisted assessment of %s"
+msgstr "Revisar a apuração assistida de %s"
+
+#. module: l10n_br_assisted_assessment
+#. odoo-python
+#: code:addons/l10n_br_assisted_assessment/models/assisted_assessment.py:0
+msgid ""
+"Close the local review or adjust the assessment by %s. Without a "
+"manifestation the presented balance is presumed correct."
+msgstr ""
+"Encerre a revisão local ou ajuste a apuração até %s. Sem manifestação o "
+"saldo apresentado é tido como correto."
+
+#. module: l10n_br_assisted_assessment
+#. odoo-python
+#: code:addons/l10n_br_assisted_assessment/models/assisted_assessment.py:0
+msgid ""
+"The deadline expired without closing the local review. Whether the tax "
+"credit is constituted is decided at the tax administration."
+msgstr ""
+"O prazo expirou sem encerrar a revisão local. A constituição do crédito "
+"tributário é decidida na administração tributária."
+
+#. module: l10n_br_assisted_assessment
+#. odoo-python
+#: code:addons/l10n_br_assisted_assessment/models/assisted_assessment.py:0
+msgid ""
+"Download both directions, or mark the missing one as absent, before "
+"reconciling %s."
+msgstr ""
+"Baixe as duas direções, ou marque a faltante como ausente, antes de "
+"conciliar %s."
+
+#. module: l10n_br_assisted_assessment
+#. odoo-python
+#: code:addons/l10n_br_assisted_assessment/models/assisted_assessment.py:0
+msgid ""
+"Download both directions, or mark the missing one as absent, before closing "
+"the local review of %s."
+msgstr ""
+"Baixe as duas direções, ou marque a faltante como ausente, antes de "
+"encerrar a revisão local de %s."
+
+#. module: l10n_br_assisted_assessment
+#. odoo-python
+#: code:addons/l10n_br_assisted_assessment/models/assisted_assessment_divergence.py:0
+msgid "Assessed and booked values cannot be edited."
+msgstr "Os valores apurados e escriturados não podem ser editados."
+
+#. module: l10n_br_assisted_assessment
+#. odoo-python
+#: code:addons/l10n_br_assisted_assessment/models/assisted_assessment_divergence.py:0
+msgid "An ignored divergence must keep the reason."
+msgstr "Uma divergência ignorada deve manter o motivo."
+
+#. module: l10n_br_assisted_assessment
+#. odoo-python
+#: code:addons/l10n_br_assisted_assessment/models/assisted_assessment_divergence.py:0
+msgid "Divergences can only be removed by reconciling again."
+msgstr "Divergências só podem ser removidas ao conciliar de novo."

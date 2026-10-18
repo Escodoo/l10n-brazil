@@ -12,6 +12,7 @@
                     <group>
                         <field name="assessment_dere_subject" />
                         <field name="assessment_calendar_id" />
+                        <field name="assessment_responsible_id" />
                         <field name="assessment_tolerance" />
                     </group>
                 </page>

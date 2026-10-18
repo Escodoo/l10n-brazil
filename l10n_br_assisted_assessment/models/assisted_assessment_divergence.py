@@ -179,6 +179,12 @@ class AssistedAssessmentDivergence(models.Model):
         return False
 
     def write(self, vals):
+        if not self.env.context.get("assisted_assessment_reconcile"):
+            if {"fisco_value", "local_value"} & set(vals):
+                raise UserError(_("Assessed and booked values cannot be edited."))
+            if "notes" in vals and not (vals.get("notes") or "").strip():
+                if any(record.state == "ignored" for record in self):
+                    raise UserError(_("An ignored divergence must keep the reason."))
         if vals.get("state") == "handled":
             vals.setdefault("handled_by_id", self.env.uid)
             vals.setdefault("handled_date", fields.Datetime.now())
@@ -232,3 +238,8 @@ class AssistedAssessmentDivergence(models.Model):
                     "the local review without fixing it."
                 )
             )
+
+    def unlink(self):
+        if not self.env.context.get("assisted_assessment_reconcile"):
+            raise UserError(_("Divergences can only be removed by reconciling again."))
+        return super().unlink()

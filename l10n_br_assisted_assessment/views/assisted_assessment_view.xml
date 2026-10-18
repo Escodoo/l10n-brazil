@@ -68,6 +68,7 @@
                         string="Reconcile"
                         class="btn-primary"
                         invisible="state != 'received' or not directions_ready"
+                        groups="l10n_br_assisted_assessment.group_manager"
                     />
                     <button
                         name="action_reconcile"
@@ -75,14 +76,6 @@
                         string="Reconcile"
                         confirm="Reconciling again clears the open divergences and builds them once more. Handled or ignored divergences stay as they are, and reopen only when the amounts changed. Continue?"
                         invisible="state not in ('reconciled', 'diverged') or not directions_ready"
-                    />
-                    <button
-                        name="action_confirm"
-                        type="object"
-                        string="Close Review"
-                        class="btn-primary"
-                        confirm="This closes the local review. It does not confirm the assessment at the RFB. Continue?"
-                        invisible="state not in ('reconciled', 'diverged') or open_divergence_count"
                         groups="l10n_br_assisted_assessment.group_manager"
                     />
                     <button
@@ -90,7 +83,16 @@
                         type="object"
                         string="Close Review"
                         class="btn-primary"
-                        invisible="state != 'diverged' or not open_divergence_count"
+                        confirm="This closes the local review. It does not confirm the assessment at the RFB. Continue?"
+                        invisible="state not in ('reconciled', 'diverged') or open_divergence_count or not directions_ready"
+                        groups="l10n_br_assisted_assessment.group_manager"
+                    />
+                    <button
+                        name="action_confirm"
+                        type="object"
+                        string="Close Review"
+                        class="btn-primary"
+                        invisible="state != 'diverged' or not open_divergence_count or not directions_ready"
                         groups="l10n_br_assisted_assessment.group_manager"
                     />
                     <field name="state" widget="statusbar" />
@@ -176,16 +178,12 @@
                             <field name="local_debit" />
                             <field name="local_credit" />
                             <field name="local_balance" />
-                            <field name="difference" />
+                            <field name="difference" invisible="not directions_ready" />
                         </group>
                     </group>
                     <notebook>
                         <page name="divergences" string="Divergences">
-                            <field
-                                name="divergence_ids"
-                                nolabel="1"
-                                context="{'default_period_id': id}"
-                            />
+                            <field name="divergence_ids" nolabel="1" readonly="1" />
                         </page>
                         <page name="bookkeeping" string="Bookkeeping">
                             <field
@@ -225,7 +223,7 @@
                 />
                 <filter
                     name="confirmed"
-                    string="Confirmed"
+                    string="Review Closed"
                     domain="[('state', '=', 'confirmed')]"
                 />
                 <filter

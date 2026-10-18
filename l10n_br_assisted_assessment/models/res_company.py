@@ -17,9 +17,15 @@ class ResCompany(models.Model):
         "the head office domicile.",
     )
     assessment_dere_subject = fields.Boolean(
-        string="Subject to DeRE",
+        string="Subject to the DeRE",
         help="Taxpayers required to file the DeRE receive the assisted "
         "assessment by the 20th instead of the 15th of the following month.",
+    )
+    assessment_responsible_id = fields.Many2one(
+        comodel_name="res.users",
+        string="Assessment Responsible",
+        help="User assigned the deadline activity of the assisted assessment. "
+        "When empty, the period author is used.",
     )
     assessment_tolerance = fields.Float(
         string="Reconciliation Tolerance",

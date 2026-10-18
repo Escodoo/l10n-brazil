@@ -425,6 +425,8 @@ estaduais e municipais do domicílio da matriz, usado para achar o
 último dia útil do prazo. Sem calendário, só os fins de semana são
 pulados. Os feriados podem ser carregados com o assistente do
 <tt class="docutils literal">l10n_br_resource</tt>.</li>
+<li><strong>Responsável pela Apuração</strong>: usuário que recebe a atividade de
+prazo. Sem responsável, a atividade vai para quem criou o período.</li>
 <li><strong>Tolerância da Conciliação</strong>: diferença absoluta abaixo da qual a
 linha é considerada conciliada. O padrão é um centavo.</li>
 </ul>
@@ -452,16 +454,15 @@ lado do ERP: valor esperado, valor do fisco e situação (aguardando
 download, confere, só no ERP ou valor diferente). Cada divergência
 traz a ação que a corrige, porque os ajustes se fazem emitindo
 documentos fiscais.</li>
-<li><strong>Confirmar</strong> a apuração. A confirmação exige que toda divergência
-esteja tratada ou ignorada, porque constitui o crédito tributário e
-implica reconhecimento da dívida. Tratar um documento só na apuração
-exige vincular o documento fiscal; ignorar exige uma nota.</li>
+<li><strong>Encerrar a revisão local</strong>. Exige que toda divergência esteja
+tratada ou ignorada. Isso não constitui o crédito tributário nem
+confirma a apuração na RFB: o silêncio e a constituição são julgados
+lá. Tratar um documento só na apuração exige vincular o documento
+fiscal; ignorar exige uma nota.</li>
 </ol>
 <p>Uma ação agendada diária avisa os responsáveis quando o prazo se
-aproxima e marca o período como expirado depois que ele passa. Período
-expirado significa que o saldo apresentado pela administração tributária
-foi tido como correto e o crédito tributário foi constituído sem
-manifestação.</p>
+aproxima e marca o período como expirado depois que ele passa. A
+expiração local não constitui o crédito na RFB.</p>
 </div>
 <div class="section" id="bug-tracker">
 <h1><a class="toc-backref" href="#toc-entry-3">Bug Tracker</a></h1>
