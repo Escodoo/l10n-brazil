@@ -1,0 +1,168 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_br_cbs_assisted_assessment
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 18.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-18 00:00+0000\n"
+"PO-Revision-Date: 2026-10-18 00:00+0000\n"
+"Last-Translator: Marcel Savegnago <marcel.savegnago@escodoo.com.br>\n"
+"Language-Team: Portuguese (Brazil)\n"
+"Language: pt_BR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
+
+#. module: l10n_br_cbs_assisted_assessment
+#: model:ir.model.fields,field_description:l10n_br_cbs_assisted_assessment.field_res_company__cbs_assessment_api_url
+msgid "API URL"
+msgstr "URL da API"
+
+#. module: l10n_br_cbs_assisted_assessment
+#: model:ir.module.module,shortdesc:l10n_br_cbs_assisted_assessment.module_l10n_br_cbs_assisted_assessment
+msgid "Brazilian CBS Assisted Assessment Transport"
+msgstr "Transporte da Apuração Assistida de CBS"
+
+#. module: l10n_br_cbs_assisted_assessment
+#: model:ir.model.fields,field_description:l10n_br_cbs_assisted_assessment.field_res_company__cbs_assessment_environment
+msgid "CBS Assessment Environment"
+msgstr "Ambiente da Apuração CBS"
+
+#. module: l10n_br_cbs_assisted_assessment
+#: model_terms:ir.ui.view,arch_db:l10n_br_cbs_assisted_assessment.view_company_form_cbs_assessment
+msgid "CBS Transport (Receita Federal)"
+msgstr "Transporte CBS (Receita Federal)"
+
+#. module: l10n_br_cbs_assisted_assessment
+#: model:ir.model.fields,field_description:l10n_br_cbs_assisted_assessment.field_res_company__cbs_assessment_webhook_url
+msgid "Callback URL"
+msgstr "URL de Retorno"
+
+#. module: l10n_br_cbs_assisted_assessment
+#. odoo-python
+#: code:addons/l10n_br_cbs_assisted_assessment/models/receita_integra_rtc.py:0
+msgid ""
+"Configure the Receita Integra client id and secret of %s before requesting "
+"the assessment."
+msgstr ""
+"Configure o client id e o secret Receita Integra de %s antes de solicitar a "
+"apuração."
+
+#. module: l10n_br_cbs_assisted_assessment
+#. odoo-python
+#: code:addons/l10n_br_cbs_assisted_assessment/models/res_company.py:0
+msgid "Generate the webhook token of %s before requesting the assessment."
+msgstr "Gere o token de webhook de %s antes de solicitar a apuração."
+
+#. module: l10n_br_cbs_assisted_assessment
+#: model:ir.model.fields.selection,name:l10n_br_cbs_assisted_assessment.selection__res_company__cbs_assessment_environment__production
+msgid "Production"
+msgstr "Produção"
+
+#. module: l10n_br_cbs_assisted_assessment
+#: model:ir.model.fields,field_description:l10n_br_cbs_assisted_assessment.field_res_company__cbs_assessment_client_id
+msgid "Receita Integra Client Id"
+msgstr "Client Id Receita Integra"
+
+#. module: l10n_br_cbs_assisted_assessment
+#: model:ir.model.fields,field_description:l10n_br_cbs_assisted_assessment.field_res_company__cbs_assessment_client_secret
+msgid "Receita Integra Client Secret"
+msgstr "Client Secret Receita Integra"
+
+#. module: l10n_br_cbs_assisted_assessment
+#. odoo-python
+#: code:addons/l10n_br_cbs_assisted_assessment/models/receita_integra_rtc.py:0
+msgid "Receita Integra token error %(code)s: %(body)s"
+msgstr "Erro de token Receita Integra %(code)s: %(body)s"
+
+#. module: l10n_br_cbs_assisted_assessment
+#. odoo-python
+#: code:addons/l10n_br_cbs_assisted_assessment/models/assisted_assessment_request.py:0
+msgid "Request %s has no ticket to poll the status with."
+msgstr "A solicitação %s não tem tiquete para consultar a situação."
+
+#. module: l10n_br_cbs_assisted_assessment
+#: model:ir.model.fields.selection,name:l10n_br_cbs_assisted_assessment.selection__res_company__cbs_assessment_environment__restricted
+msgid "Restricted Production"
+msgstr "Produção Restrita"
+
+#. module: l10n_br_cbs_assisted_assessment
+#: model_terms:ir.ui.view,arch_db:l10n_br_cbs_assisted_assessment.view_company_form_cbs_assessment
+msgid "Rotate token"
+msgstr "Girar token"
+
+#. module: l10n_br_cbs_assisted_assessment
+#: model_terms:ir.ui.view,arch_db:l10n_br_cbs_assisted_assessment.view_company_form_cbs_assessment
+msgid ""
+"Rotating the token invalidates the callback URL of requests still being "
+"processed. Continue?"
+msgstr ""
+"Girar o token invalida a URL de retorno das solicitações ainda em "
+"processamento. Continuar?"
+
+#. module: l10n_br_cbs_assisted_assessment
+#: model:ir.model.fields,help:l10n_br_cbs_assisted_assessment.field_res_company__cbs_assessment_webhook_token
+msgid ""
+"Secret embedded in the callback URL. Rotating it invalidates the URL "
+"informed in requests that are still being processed."
+msgstr ""
+"Segredo embutido na URL de retorno. Girar o token invalida a URL informada "
+"nas solicitações ainda em processamento."
+
+#. module: l10n_br_cbs_assisted_assessment
+#. odoo-python
+#: code:addons/l10n_br_cbs_assisted_assessment/models/assisted_assessment_request.py:0
+msgid "Service %s does not deliver assessment lines."
+msgstr "O serviço %s não entrega linhas de apuração."
+
+#. module: l10n_br_cbs_assisted_assessment
+#. odoo-python
+#: code:addons/l10n_br_cbs_assisted_assessment/models/receita_integra_rtc.py:0
+msgid "Service %s is not served by the CBS assessment APIs."
+msgstr "O serviço %s não é atendido pelas APIs de apuração da CBS."
+
+#. module: l10n_br_cbs_assisted_assessment
+#. odoo-python
+#: code:addons/l10n_br_cbs_assisted_assessment/models/receita_integra_rtc.py:0
+msgid ""
+"The CNPJ of %s does not provide the 8 digit root the assessment endpoints "
+"require."
+msgstr ""
+"O CNPJ de %s não fornece a raiz de 8 dígitos que os endpoints de apuração "
+"exigem."
+
+#. module: l10n_br_cbs_assisted_assessment
+#. odoo-python
+#: code:addons/l10n_br_cbs_assisted_assessment/models/receita_integra_rtc.py:0
+msgid "The assessment download failed with HTTP %(code)s: %(body)s"
+msgstr "O download da apuração falhou com HTTP %(code)s: %(body)s"
+
+#. module: l10n_br_cbs_assisted_assessment
+#. odoo-python
+#: code:addons/l10n_br_cbs_assisted_assessment/models/assisted_assessment_request.py:0
+msgid "The downloaded file of %s is not valid JSON."
+msgstr "O arquivo baixado de %s não é um JSON válido."
+
+#. module: l10n_br_cbs_assisted_assessment
+#. odoo-python
+#: code:addons/l10n_br_cbs_assisted_assessment/models/receita_integra_rtc.py:0
+msgid "The tax administration could not be reached: %s"
+msgstr "Não foi possível alcançar a administração tributária: %s"
+
+#. module: l10n_br_cbs_assisted_assessment
+#: model:ir.model.fields,field_description:l10n_br_cbs_assisted_assessment.field_res_company__cbs_assessment_token_url
+msgid "Token URL"
+msgstr "URL do Token"
+
+#. module: l10n_br_cbs_assisted_assessment
+#: model:ir.model.fields,help:l10n_br_cbs_assisted_assessment.field_res_company__cbs_assessment_webhook_url
+msgid "URL to inform as urlRetorno. It must be reachable over HTTPS."
+msgstr "URL a informar como urlRetorno. Precisa ser alcançável em HTTPS."
+
+#. module: l10n_br_cbs_assisted_assessment
+#: model:ir.model.fields,field_description:l10n_br_cbs_assisted_assessment.field_res_company__cbs_assessment_webhook_token
+msgid "Webhook Token"
+msgstr "Token de Webhook"

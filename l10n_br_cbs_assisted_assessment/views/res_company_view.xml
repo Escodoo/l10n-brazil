@@ -24,8 +24,11 @@
                     />
                     <field name="cbs_assessment_token_url" />
                     <field name="cbs_assessment_api_url" />
-                    <label for="cbs_assessment_webhook_url" />
-                    <div>
+                    <label
+                        for="cbs_assessment_webhook_url"
+                        groups="l10n_br_assisted_assessment.group_manager"
+                    />
+                    <div groups="l10n_br_assisted_assessment.group_manager">
                         <field name="cbs_assessment_webhook_url" readonly="1" />
                         <button
                             name="action_cbs_assessment_rotate_webhook_token"

@@ -110,17 +110,22 @@ class ReceitaIntegraRtc(models.AbstractModel):
         """Send an authenticated call and refresh the token once on HTTP 401."""
         timeout = kwargs.pop("timeout", REQUEST_TIMEOUT)
         response = None
-        for attempt in (1, 2):
-            response = requests.request(
-                method,
-                url,
-                headers=self._headers(company),
-                timeout=timeout,
-                **kwargs,
-            )
-            if response.status_code != 401 or attempt == 2:
-                break
-            self._invalidate_token(company)
+        try:
+            for attempt in (1, 2):
+                response = requests.request(
+                    method,
+                    url,
+                    headers=self._headers(company),
+                    timeout=timeout,
+                    **kwargs,
+                )
+                if response.status_code != 401 or attempt == 2:
+                    break
+                self._invalidate_token(company)
+        except requests.RequestException as error:
+            raise UserError(
+                _("The tax administration could not be reached: %s", error)
+            ) from error
         return self._parse_response(response)
 
     def _download(self, signed_url):

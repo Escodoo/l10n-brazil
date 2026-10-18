@@ -8,8 +8,10 @@ Assistida**, grupo **Transporte CBS**:
   DeRE. O manual para gerá-las está em
   <https://arquivos.receitafederal.gov.br> em _Documentos > Técnicos >
   Receita Integra_.
-- **URL de Callback**: gerada no primeiro uso e exibida para copiar. Ela
-  embute um segredo e é a URL informada como `urlRetorno`.
+- **URL de Callback**: gerada ao salvar a empresa (e na instalação, para as
+  que já existiam) e exibida para copiar. Ela embute um segredo e é a URL
+  informada como `urlRetorno`. Gire o token se a URL vazou; o giro invalida
+  as solicitações ainda em processamento.
 
 Dois requisitos vêm do gateway e não são impostos pelo addon:
 
@@ -26,10 +28,3 @@ Há duas ações agendadas. _Consultar e baixar solicitações pendentes_ roda a
 cada 15 minutos e vem habilitada; _Abrir as solicitações diárias_ vem
 desabilitada e abre as solicitações de débitos e créditos do período corrente
 para cada empresa que tiver credenciais.
-
-Neste stack Doodba de desenvolvimento há um gateway falso em
-`cbs-assessment-mock:18951` (publicado no host como `127.0.0.1:18951`).
-Aponte a **URL do Token** para `http://cbs-assessment-mock:18951/token` e a
-**URL da API** para `http://cbs-assessment-mock:18951`. Qualquer client id e
-secret são aceitos. O arquivo devolvido contém só outubro de 2026. Uma URL de
-callback com `mock-refuse` é respondida com `APURACAO-001`.

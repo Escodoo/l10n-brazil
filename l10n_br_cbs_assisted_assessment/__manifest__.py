@@ -15,6 +15,7 @@
         "l10n_br_assisted_assessment",
     ],
     "post_load": "post_load",
+    "post_init_hook": "post_init_hook",
     "data": [
         "data/ir_cron.xml",
         "views/res_company_view.xml",

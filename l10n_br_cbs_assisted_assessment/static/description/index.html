@@ -417,8 +417,10 @@ matriz. Elas são pedidas por serviço, então não são necessariamente as
 mesmas da DeRE. O manual para gerá-las está em
 <a class="reference external" href="https://arquivos.receitafederal.gov.br">https://arquivos.receitafederal.gov.br</a> em <em>Documentos &gt; Técnicos &gt;
 Receita Integra</em>.</li>
-<li><strong>URL de Callback</strong>: gerada no primeiro uso e exibida para copiar. Ela
-embute um segredo e é a URL informada como <tt class="docutils literal">urlRetorno</tt>.</li>
+<li><strong>URL de Callback</strong>: gerada ao salvar a empresa (e na instalação, para
+as que já existiam) e exibida para copiar. Ela embute um segredo e é a
+URL informada como <tt class="docutils literal">urlRetorno</tt>. Gire o token se a URL vazou; o giro
+invalida as solicitações ainda em processamento.</li>
 </ul>
 <p>Dois requisitos vêm do gateway e não são impostos pelo addon:</p>
 <ul class="simple">
@@ -435,13 +437,6 @@ ultrapassar a cota.</li>
 roda a cada 15 minutos e vem habilitada; <em>Abrir as solicitações diárias</em>
 vem desabilitada e abre as solicitações de débitos e créditos do período
 corrente para cada empresa que tiver credenciais.</p>
-<p>Neste stack Doodba de desenvolvimento há um gateway falso em
-<tt class="docutils literal"><span class="pre">cbs-assessment-mock:18951</span></tt> (publicado no host como
-<tt class="docutils literal">127.0.0.1:18951</tt>). Aponte a <strong>URL do Token</strong> para
-<tt class="docutils literal"><span class="pre">http://cbs-assessment-mock:18951/token</span></tt> e a <strong>URL da API</strong> para
-<tt class="docutils literal"><span class="pre">http://cbs-assessment-mock:18951</span></tt>. Qualquer client id e secret são
-aceitos. O arquivo devolvido contém só outubro de 2026. Uma URL de
-callback com <tt class="docutils literal"><span class="pre">mock-refuse</span></tt> é respondida com <tt class="docutils literal"><span class="pre">APURACAO-001</span></tt>.</p>
 </div>
 <div class="section" id="usage">
 <h1><a class="toc-backref" href="#toc-entry-2">Usage</a></h1>

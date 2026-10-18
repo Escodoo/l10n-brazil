@@ -106,13 +106,16 @@ class TestCbsTransport(TransactionCase):
         self.assertTrue(request.return_url)
         self.assertEqual(opened.call_args.args[1], "debits")
 
-    def test_transmit_generates_the_callback_token_once(self):
+    def test_company_create_issues_the_webhook_token(self):
+        company = self.env["res.company"].create({"name": "Token Co"})
+        self.assertTrue(company.cbs_assessment_webhook_token)
+
+    def test_transmit_does_not_issue_the_webhook_token(self):
+        token = self.company.cbs_assessment_webhook_token
+        self.assertTrue(token)
         answer = {"tiqueteSolicitacao": "a", "tEASegundos": "1"}
         with patch(f"{CLIENT_CLASS}._open_request", return_value=answer):
             self._new_request().action_transmit()
-            token = self.company.cbs_assessment_webhook_token
-            self._new_request(service="credits").action_transmit()
-        self.assertTrue(token)
         self.assertEqual(self.company.cbs_assessment_webhook_token, token)
 
     def test_transmit_reports_a_refusal(self):
@@ -296,3 +299,21 @@ class TestCbsTransport(TransactionCase):
             payload = client._get_status(self.company, "ticket")
         self.assertEqual(payload["estado"], "EM_PROCESSAMENTO")
         self.assertEqual(called.call_count, 2)
+
+    def test_authorized_request_turns_connection_errors_into_user_errors(self):
+        client = self.env["l10n_br_cbs_assisted_assessment.client"]
+        with (
+            patch.object(
+                receita_integra_rtc.ReceitaIntegraRtc,
+                "_get_token",
+                return_value="tok",
+            ),
+            patch.object(
+                receita_integra_rtc.requests,
+                "request",
+                side_effect=receita_integra_rtc.requests.ConnectionError("down"),
+            ),
+            self.assertRaises(UserError) as error,
+        ):
+            client._get_status(self.company, "ticket")
+        self.assertIn("could not be reached", str(error.exception))
