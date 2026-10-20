@@ -1,6 +1,7 @@
 # Copyright 2019 KMEE INFORMATICA LTDA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
+import inspect
 import xml.etree.ElementTree as ET
 from datetime import datetime
 
@@ -28,6 +29,16 @@ from odoo.addons.l10n_br_fiscal.constants.fiscal import (
 )
 
 from ..constants.paulistana import CONSULTA_LOTE, ENVIO_LOTE_RPS
+
+# Depending on the nfselib.paulistana release, the generated tpRPS class
+# exports the RPS signature either as a plain string or base64-encoded. Only
+# the base64 flavour needs a bytes-like object.
+try:
+    ASSINATURA_RPS_AS_BYTES = "gds_format_base64(self.Assinatura" in inspect.getsource(
+        tpRPS._exportChildren
+    )
+except (OSError, TypeError):  # pragma: no cover - source not available
+    ASSINATURA_RPS_AS_BYTES = False
 
 
 def filter_oca_nfse(record):
@@ -338,6 +349,9 @@ class Document(models.Model):
         # assinatura += '3'
         # assinatura += ''.zfill(14)
         # assinatura += 'N'
+
+        if ASSINATURA_RPS_AS_BYTES:
+            return assinatura.encode()
 
         return assinatura
 
