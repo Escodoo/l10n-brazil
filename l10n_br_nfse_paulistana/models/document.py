@@ -216,10 +216,10 @@ class Document(models.Model):
                 tpRPS, "ValorDeducoes", dados_servico["valor_deducoes"]
             ),
             ValorPIS=self._convert_type_nfselib_paulistana(
-                tpRPS, "ValorPIS", dados_servico["valor_pis_retido"]
+                tpRPS, "ValorPIS", dados_servico["valor_pis"]
             ),
             ValorCOFINS=self._convert_type_nfselib_paulistana(
-                tpRPS, "ValorCOFINS", dados_servico["valor_cofins_retido"]
+                tpRPS, "ValorCOFINS", dados_servico["valor_cofins"]
             ),
             ValorINSS=self._convert_type_nfselib_paulistana(
                 tpRPS, "ValorINSS", dados_servico["valor_inss_retido"]
@@ -227,8 +227,14 @@ class Document(models.Model):
             ValorIR=self._convert_type_nfselib_paulistana(
                 tpRPS, "ValorIR", dados_servico["valor_ir_retido"]
             ),
+            # Manual da Paulistana: ValorCSLL carrega o somatório das retenções
+            # federais (PIS + COFINS + CSLL retidos), não o CSLL isolado.
             ValorCSLL=self._convert_type_nfselib_paulistana(
-                tpRPS, "ValorCSLL", dados_servico["valor_csll_retido"]
+                tpRPS,
+                "ValorCSLL",
+                dados_servico["valor_pis_retido"]
+                + dados_servico["valor_cofins_retido"]
+                + dados_servico["valor_csll_retido"],
             ),
             CodigoServico=self._convert_type_nfselib_paulistana(
                 tpRPS, "CodigoServico", dados_servico["codigo_tributacao_municipio"]
