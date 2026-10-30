@@ -34,6 +34,8 @@ from odoo.addons.l10n_br_fiscal.constants.fiscal import (
 
 from ..constants.paulistana import CONSULTA_LOTE, ENVIO_LOTE_RPS
 
+NFSE_PAULISTANA_BENS_IMOVEIS_SUBITENS = ("25.05", "15.09", "17.12", "10.05")
+
 
 def filter_oca_nfse(record):
     if record.processador_edoc == PROCESSADOR_OCA and record.document_type_id.code in [
@@ -116,6 +118,12 @@ class Document(models.Model):
                     )
                 )
 
+    def _nfse_paulistana_tp_oper(self):
+        line = self.fiscal_line_ids[:1]
+        if line.service_type_id.code in NFSE_PAULISTANA_BENS_IMOVEIS_SUBITENS:
+            return "1"
+        return None
+
     def serialize_nfse_paulistana(self):
         dados_lote_rps = self._prepare_lote_rps()
         dados_servico = self._prepare_dados_servico()
@@ -167,6 +175,11 @@ class Document(models.Model):
                     tpIBSCBS, "cIndOp", dados_servico["indop"]
                 ),
                 indDest=self._convert_type_nfselib_paulistana(tpIBSCBS, "indDest", 1),
+                tpOper=self.convert_type_nfselib(
+                    tpIBSCBS,
+                    "tpOper",
+                    self._nfse_paulistana_tp_oper(),
+                ),
                 valores=tpValores(trib=tpTrib(gIBSCBS=gIBSCBS)),
             )
         return tpRPS(
@@ -435,6 +448,30 @@ class Document(models.Model):
         csll_retido = float(valor_csll_retido or 0) > 0
         return dict_retencao_pis_cofins_csll[(pis_retido, cofins_retido, csll_retido)]
 
+    @api.model
+    def _paulistana_retorno_etree(self, processo):
+        """`processo.retorno` is normally the raw XML text of the SOAP
+        response, but for some webservices (e.g. EnvioLoteRPS) the SOAP
+        library may hand back an already-deserialized response object
+        instead of text. Only attempt the XML parse when it is text."""
+        retorno = processo.retorno
+        if isinstance(retorno, (str, bytes)) and retorno:
+            return ET.fromstring(retorno)
+        return None
+
+    @api.model
+    def _paulistana_erro_message(self, processo, retorno):
+        mensagem_erro = ""
+        if retorno is not None:
+            for erro in retorno.findall("Erro"):
+                codigo = erro.find("Codigo").text
+                descricao = erro.find("Descricao").text
+                mensagem_erro += codigo + " - " + descricao + "\n"
+        else:
+            for erro in getattr(processo.resposta, "Erro", None) or []:
+                mensagem_erro += "%s - %s\n" % (erro.Codigo, erro.Descricao)
+        return mensagem_erro
+
     def _eletronic_document_send(self):
         super()._eletronic_document_send()
         for record in self.filtered(filter_oca_nfse).filtered(filter_paulistana):
@@ -448,10 +485,10 @@ class Document(models.Model):
                     processo = None
                     for p in processador.processar_documento(edoc):
                         processo = p
-                        retorno = ET.fromstring(processo.retorno)
+                        retorno = record._paulistana_retorno_etree(processo)
 
                         if processo.webservice in CONSULTA_LOTE:
-                            if processo.resposta.Cabecalho.Sucesso:
+                            if processo.resposta.Cabecalho.Sucesso and retorno is not None:
                                 nfse = retorno.find(".//NFe")
                                 # TODO: Verificar resposta do ConsultarLote
                                 vals["document_number"] = nfse.find(".//NumeroNFe").text
@@ -471,22 +508,18 @@ class Document(models.Model):
                             continue
 
                         if processo.webservice in ENVIO_LOTE_RPS:
-                            if retorno:
+                            if processo.resposta:
                                 if processo.resposta.Cabecalho.Sucesso:
                                     record._change_state(SITUACAO_EDOC_AUTORIZADA)
                                     vals["status_name"] = _("Procesado com Sucesso")
                                     vals["status_code"] = 4
                                     vals["edoc_error_message"] = ""
                                 else:
-                                    mensagem_erro = ""
-                                    for erro in retorno.findall("Erro"):
-                                        codigo = erro.find("Codigo").text
-                                        descricao = erro.find("Descricao").text
-                                        mensagem_erro += (
-                                            codigo + " - " + descricao + "\n"
+                                    vals["edoc_error_message"] = (
+                                        record._paulistana_erro_message(
+                                            processo, retorno
                                         )
-
-                                    vals["edoc_error_message"] = mensagem_erro
+                                    )
                                     vals["status_name"] = _("Procesado com Erro")
                                     vals["status_code"] = 3
                                     record._change_state(SITUACAO_EDOC_REJEITADA)
