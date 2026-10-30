@@ -1,5 +1,5 @@
 # Copyright 2023 Akretion (Raphaẽl Valyi <raphael.valyi@akretion.com.br>)
-# Copyright 2026 Escodoo - Marcel Savegnago <marcel.savegnago@escodoo.com.br>
+# Copyright 2026 - TODAY Escodoo - Marcel Savegnago <marcel.savegnago@escodoo.com.br>
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
 from erpbrasil.base.misc import punctuation_rm
