@@ -618,6 +618,17 @@ class AccountMove(models.Model):
             action["domain"] = [("id", "in", self.fiscal_document_ids.ids)]
         return action
 
+    def _imported_partner_document_cancelled_at_source(self):
+        """Posted bills whose imported partner document was cancelled."""
+        return self.filtered(
+            lambda move: (
+                move.state == "posted"
+                and move.state_edoc == DOCUMENT_STATE_CANCEL
+                and move.imported_document
+                and move.issuer == DOCUMENT_ISSUER_PARTNER
+            )
+        )
+
     def button_draft(self):
         """Set the move to draft state, handling fiscal documents."""
         if self.env.context.get("in_button_cancel"):
@@ -626,6 +637,14 @@ class AccountMove(models.Model):
             # been cancelled by action_document_cancel() above, so skip the
             # back2draft to keep it in 'cancelada' (matching 16.0 behavior).
             return super().button_draft()
+        if self._imported_partner_document_cancelled_at_source():
+            raise UserError(
+                self.env._(
+                    "You cannot reset this bill to draft because its fiscal "
+                    "document was cancelled at the source. Settle it with a "
+                    "credit note."
+                )
+            )
         # Process fiscal documents first to sync their state
         for move in self.filtered(lambda d: d.document_type_id):
             if (
@@ -649,6 +668,16 @@ class AccountMove(models.Model):
                 lambda d: d.state_edoc != DOCUMENT_STATE_DRAFT
             ).with_context(in_button_draft=True).action_document_back2draft()
         return super().button_draft()
+
+    def action_register_payment(self):
+        if self._imported_partner_document_cancelled_at_source():
+            raise UserError(
+                self.env._(
+                    "You cannot pay this bill because its fiscal document "
+                    "was cancelled at the source. Settle it with a credit note."
+                )
+            )
+        return super().action_register_payment()
 
     def action_document_send(self):
         for invoice in self.filtered(lambda d: d.document_type_id):

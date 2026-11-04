@@ -2,9 +2,13 @@
 # Copyright 2026 KMEE (Ygor Carvalho <ygor.carvalho@kmee.com.br>)
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
+from odoo.exceptions import UserError
 from odoo.tests.common import tagged
 
-from odoo.addons.l10n_br_fiscal.constants.fiscal import DOCUMENT_STATE_CANCEL
+from odoo.addons.l10n_br_fiscal.constants.fiscal import (
+    DOCUMENT_ISSUER_PARTNER,
+    DOCUMENT_STATE_CANCEL,
+)
 
 from .common import AccountMoveBRCommon
 
@@ -93,3 +97,75 @@ class TestMoveWorkflow(AccountMoveBRCommon):
         self.move_out_venda.fiscal_document_id.state_edoc = DOCUMENT_STATE_CANCEL
 
         self.assertFalse(self.move_out_venda._settled_moves_no_longer_valid())
+
+    def _source_cancel_notes(self, move):
+        return move.message_ids.filtered(
+            lambda message: "cancelled at the source" in (message.body or "")
+        )
+
+    def _posted_imported_vendor_bill(self, number):
+        bill = self.init_invoice(
+            "in_invoice",
+            products=[self.product_a],
+            document_type=self.env.ref("l10n_br_fiscal.document_55"),
+            fiscal_operation=self.env.ref("l10n_br_fiscal.fo_compras"),
+            fiscal_operation_lines=[
+                self.env.ref("l10n_br_fiscal.fo_compras_compras_comercializacao")
+            ],
+            document_serie="1",
+            document_number=number,
+            post=True,
+        )
+        self.assertEqual(bill.issuer, DOCUMENT_ISSUER_PARTNER)
+        self.assertEqual(bill.state, "posted")
+        bill.fiscal_document_id.imported_document = True
+        return bill
+
+    def test_cancelling_an_imported_document_notes_the_posted_bill_once(self):
+        bill = self._posted_imported_vendor_bill("88001")
+        bill.fiscal_document_id.state_edoc = DOCUMENT_STATE_CANCEL
+
+        self.assertEqual(bill.state, "posted")
+        self.assertEqual(bill.state_edoc, DOCUMENT_STATE_CANCEL)
+        notes = self._source_cancel_notes(bill)
+        self.assertEqual(len(notes), 1)
+        self.assertIn("Settle it with a credit note.", notes.body)
+
+        bill.fiscal_document_id.state_edoc = DOCUMENT_STATE_CANCEL
+        self.assertEqual(len(self._source_cancel_notes(bill)), 1)
+
+    def test_a_paid_imported_bill_asks_for_a_manual_settlement(self):
+        bill = self._posted_imported_vendor_bill("88002")
+        self._pay(bill)
+        self.assertIn(bill.payment_state, ("paid", "partial", "in_payment"))
+
+        bill.fiscal_document_id.state_edoc = DOCUMENT_STATE_CANCEL
+
+        self.assertEqual(bill.state, "posted")
+        notes = self._source_cancel_notes(bill)
+        self.assertEqual(len(notes), 1)
+        self.assertIn("a payment already exists", notes.body)
+
+    def test_an_imported_cancelled_bill_cannot_be_drafted_or_paid(self):
+        bill = self._posted_imported_vendor_bill("88003")
+        bill.fiscal_document_id.state_edoc = DOCUMENT_STATE_CANCEL
+
+        with self.assertRaises(UserError):
+            bill.button_draft()
+        self.assertEqual(bill.state, "posted")
+        self.assertEqual(bill.state_edoc, DOCUMENT_STATE_CANCEL)
+
+        with self.assertRaises(UserError):
+            bill.action_register_payment()
+        self.assertEqual(bill.state, "posted")
+
+    def test_a_company_invoice_cancel_does_not_note_the_bill(self):
+        self.move_out_venda.action_post()
+        self.move_out_venda.fiscal_document_id.state_edoc = DOCUMENT_STATE_CANCEL
+        self.assertFalse(self._source_cancel_notes(self.move_out_venda))
+
+    def test_a_local_cancel_does_not_use_the_source_wording(self):
+        bill = self._posted_imported_vendor_bill("88004")
+        bill.button_cancel()
+        self.assertEqual(bill.state_edoc, DOCUMENT_STATE_CANCEL)
+        self.assertFalse(self._source_cancel_notes(bill))
