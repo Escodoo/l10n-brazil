@@ -21,6 +21,13 @@
                 >['|','|','|', '|', ('document_number','ilike',self), ('name','ilike',self), ('invoice_origin','ilike',self), ('ref', 'ilike', self), ('partner_id', 'child_of', self)]</attribute>
                 <attribute name="string">Account Number</attribute>
             </field>
+            <filter name="posted" position="after">
+                <filter
+                    name="cancelled_fiscal_document"
+                    string="Cancelled fiscal document"
+                    domain="[('state', '=', 'posted'), ('state_edoc', '=', 'cancelada'), ('imported_document', '=', True)]"
+                />
+            </filter>
         </field>
     </record>
 
@@ -59,6 +66,24 @@
         <field name="inherit_id" ref="account.view_move_form" />
         <field name="priority">200</field>
         <field name="arch" type="xml">
+            <xpath expr="//header" position="after">
+                <field name="state_edoc" invisible="1" />
+                <field name="imported_document" invisible="1" />
+                <div
+                    class="alert alert-warning"
+                    role="alert"
+                    invisible="state != 'posted' or state_edoc != 'cancelada' or not imported_document or issuer != 'partner' or payment_state in ('paid', 'partial', 'in_payment')"
+                >
+                    The fiscal document was cancelled at the source. This bill stays posted. Do not pay it. Settle it with a credit note.
+                </div>
+                <div
+                    class="alert alert-warning"
+                    role="alert"
+                    invisible="state != 'posted' or state_edoc != 'cancelada' or not imported_document or issuer != 'partner' or payment_state not in ('paid', 'partial', 'in_payment')"
+                >
+                    The fiscal document was cancelled at the source. This bill stays posted and a payment already exists. Settle it by hand.
+                </div>
+            </xpath>
             <div name="button_box" position="inside">
                 <button
                     name="open_fiscal_document"

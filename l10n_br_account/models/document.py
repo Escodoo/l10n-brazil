@@ -12,6 +12,7 @@ from odoo.exceptions import UserError
 from odoo.addons.l10n_br_fiscal.constants.fiscal import (
     DOCUMENT_ISSUER_COMPANY,
     DOCUMENT_ISSUER_PARTNER,
+    DOCUMENT_STATE_CANCEL,
     DOCUMENT_STATE_DRAFT,
     MODELO_FISCAL_CTE,
     MODELO_FISCAL_NFE,
@@ -262,6 +263,56 @@ class FiscalDocument(models.Model):
         if len(self) == 0:
             return
         return super()._update_cache(values, validate)
+
+    def write(self, vals):
+        """Note a posted bill when an imported document is cancelled.
+
+        A local cancel goes through ``action_document_cancel`` and must not
+        use the source-cancellation wording. Writing the same state again
+        does not add another note.
+        """
+        becoming_cancelled = self.browse()
+        if vals.get("state_edoc") == DOCUMENT_STATE_CANCEL and not self.env.context.get(
+            "l10n_br_account_skip_source_cancel_note"
+        ):
+            becoming_cancelled = self.filtered(
+                lambda document: (
+                    document.state_edoc != DOCUMENT_STATE_CANCEL
+                    and document.imported_document
+                    and document.issuer == DOCUMENT_ISSUER_PARTNER
+                )
+            )
+        result = super().write(vals)
+        if becoming_cancelled:
+            becoming_cancelled._note_posted_bills_cancelled_at_source()
+        return result
+
+    def action_document_cancel(self):
+        return super(
+            FiscalDocument,
+            self.with_context(l10n_br_account_skip_source_cancel_note=True),
+        ).action_document_cancel()
+
+    def _note_posted_bills_cancelled_at_source(self):
+        settled_states = ("paid", "partial", "in_payment")
+        for document in self:
+            posted_moves = document.move_ids.filtered(
+                lambda move: move.state == "posted"
+            )
+            for move in posted_moves:
+                if move.payment_state in settled_states:
+                    body = _(
+                        "The fiscal document was cancelled at the source. "
+                        "This bill stays posted and a payment already exists. "
+                        "Settle it by hand."
+                    )
+                else:
+                    body = _(
+                        "The fiscal document was cancelled at the source. "
+                        "This bill stays posted. Do not pay it. "
+                        "Settle it with a credit note."
+                    )
+                move.message_post(body=body, subtype_xmlid="mail.mt_note")
 
     @api.returns("mail.message", lambda value: value.id)
     def message_post(self, **kwargs):
