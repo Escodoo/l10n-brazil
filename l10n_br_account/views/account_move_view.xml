@@ -55,6 +55,18 @@
                     display="always"
                 />
             </xpath>
+            <field name="status_in_payment" position="before">
+                <field name="imported_document" column_invisible="True" />
+                <field name="issuer" column_invisible="True" />
+                <field
+                    name="state_edoc"
+                    string="Fiscal Status"
+                    widget="badge"
+                    decoration-danger="state_edoc == 'cancelada'"
+                    optional="show"
+                    invisible="state != 'posted' or state_edoc != 'cancelada' or not imported_document or issuer != 'partner'"
+                />
+            </field>
         </field>
     </record>
 
