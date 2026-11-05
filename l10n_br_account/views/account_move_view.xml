@@ -56,15 +56,17 @@
                 />
             </xpath>
             <field name="status_in_payment" position="before">
-                <field name="imported_document" column_invisible="True" />
-                <field name="issuer" column_invisible="True" />
+                <field name="fiscal_document_id" column_invisible="True" />
+                <field name="state_edoc" column_invisible="True" />
                 <field
-                    name="state_edoc"
-                    string="Fiscal Status"
+                    name="fiscal_document_status"
                     widget="badge"
-                    decoration-danger="state_edoc == 'cancelada'"
                     optional="show"
-                    invisible="state != 'posted' or state_edoc != 'cancelada' or not imported_document or issuer != 'partner'"
+                    invisible="not fiscal_document_id"
+                    decoration-danger="state_edoc in ('cancelada', 'denegada', 'rejeitada')"
+                    decoration-warning="state_edoc in ('a_enviar', 'enviada')"
+                    decoration-success="state_edoc == 'autorizada'"
+                    decoration-muted="state_edoc in ('em_digitacao', 'inutilizada')"
                 />
             </field>
         </field>

@@ -121,6 +121,30 @@ class TestMoveWorkflow(AccountMoveBRCommon):
         bill.fiscal_document_id.imported_document = True
         return bill
 
+    def test_the_list_shows_every_fiscal_status(self):
+        labels = dict(
+            self.env["l10n_br_fiscal.document"]
+            ._fields["state_edoc"]
+            ._description_selection(self.env)
+        )
+        self.assertEqual(
+            self.move_out_venda.fiscal_document_status,
+            labels[self.move_out_venda.state_edoc],
+        )
+        self.move_out_venda.fiscal_document_id.state_edoc = DOCUMENT_STATE_CANCEL
+        self.assertEqual(
+            self.move_out_venda.fiscal_document_status,
+            labels[DOCUMENT_STATE_CANCEL],
+        )
+        bare = self.env["account.move"].create(
+            {
+                "move_type": "in_invoice",
+                "partner_id": self.partner_a.id,
+            }
+        )
+        self.assertFalse(bare.fiscal_document_id)
+        self.assertFalse(bare.fiscal_document_status)
+
     def test_cancelling_an_imported_document_notes_the_posted_bill_once(self):
         bill = self._posted_imported_vendor_bill("88001")
         bill.fiscal_document_id.state_edoc = DOCUMENT_STATE_CANCEL

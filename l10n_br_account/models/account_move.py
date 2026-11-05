@@ -61,6 +61,10 @@ class AccountMove(models.Model):
         readonly=False,
         index="btree_not_null",
     )
+    fiscal_document_status = fields.Char(
+        string="Fiscal Status",
+        compute="_compute_fiscal_document_status",
+    )
 
     fiscal_document_ids = fields.One2many(
         comodel_name="l10n_br_fiscal.document",
@@ -617,6 +621,25 @@ class AccountMove(models.Model):
         else:
             action["domain"] = [("id", "in", self.fiscal_document_ids.ids)]
         return action
+
+    @api.depends("fiscal_document_id", "fiscal_document_id.state_edoc")
+    def _compute_fiscal_document_status(self):
+        """Show the fiscal situation on the invoice list.
+
+        A bill with no linked document leaves the column empty.
+        """
+        labels = dict(
+            self.env["l10n_br_fiscal.document"]
+            ._fields["state_edoc"]
+            ._description_selection(self.env)
+        )
+        for move in self:
+            if not move.fiscal_document_id:
+                move.fiscal_document_status = False
+            else:
+                move.fiscal_document_status = labels.get(
+                    move.state_edoc, move.state_edoc or ""
+                )
 
     def _imported_partner_document_cancelled_at_source(self):
         """Posted bills whose imported partner document was cancelled."""
