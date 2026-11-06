@@ -1,13 +1,16 @@
 # Copyright (C) 2009 - TODAY Renato Lima - Akretion
+# Copyright 2026 - TODAY Escodoo - Marcel Savegnago <marcel.savegnago@escodoo.com.br>
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
 import logging
 from datetime import datetime, time
 
+from markupsafe import Markup, escape
 from pytz import UTC, timezone
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+from odoo.tools import formatLang
 
 from odoo.addons.l10n_br_fiscal.constants.fiscal import (
     DOCUMENT_ISSUER_COMPANY,
@@ -16,6 +19,7 @@ from odoo.addons.l10n_br_fiscal.constants.fiscal import (
     DOCUMENT_STATE_DRAFT,
     MODELO_FISCAL_CTE,
     MODELO_FISCAL_NFE,
+    MODELO_FISCAL_NFSE,
 )
 
 _logger = logging.getLogger(__name__)
@@ -313,6 +317,94 @@ class FiscalDocument(models.Model):
                         "Settle it with a credit note."
                     )
                 move.message_post(body=body, subtype_xmlid="mail.mt_note")
+                document._schedule_source_cancel_alert(move)
+
+    def _source_cancel_origin(self):
+        """Official service that cancelled this document, when it is known."""
+        self.ensure_one()
+        code = self.document_type_id.code
+        if code == MODELO_FISCAL_NFE:
+            return _("SEFAZ")
+        if code == MODELO_FISCAL_NFSE:
+            return _("ADN")
+        return False
+
+    def _source_cancel_alert_user(self, move):
+        """User who should treat the cancelled posted bill."""
+        salesperson = move.invoice_user_id.filtered(
+            lambda user: user.active and not user.share
+        )
+        if salesperson:
+            return salesperson[:1]
+        creator = move.create_uid.filtered(
+            lambda user: (
+                user.active
+                and not user.share
+                and user != self.env.ref("base.user_root")
+            )
+        )
+        if creator:
+            return creator[:1]
+        return self.env.user
+
+    def _source_cancel_purchase_order_names(self, move):
+        lines = move.invoice_line_ids
+        if "purchase_line_id" not in lines._fields:
+            return []
+        return lines.purchase_line_id.order_id.mapped("name")
+
+    def _source_cancel_alert_note(self, move, user):
+        self.ensure_one()
+        lines = [
+            _("Document: %(number)s", number=self.document_number or ""),
+            _("Access key: %(key)s", key=self.document_key or ""),
+            _(
+                "Supplier: %(supplier)s",
+                supplier=move.partner_id.display_name or "",
+            ),
+            _(
+                "Amount: %(amount)s",
+                amount=formatLang(
+                    self.env, move.amount_total, currency_obj=move.currency_id
+                ),
+            ),
+            _("Bill: %(bill)s", bill=move.display_name or ""),
+        ]
+        origin = self._source_cancel_origin()
+        if origin:
+            lines.append(_("Source: %(origin)s", origin=origin))
+        orders = self._source_cancel_purchase_order_names(move)
+        if orders:
+            lines.append(_("Purchase order: %(order)s", order=", ".join(orders)))
+        else:
+            lines.append(_("Purchase order: none"))
+        lines.append(_("Assigned to: %(user)s", user=user.display_name))
+        if move.payment_state in ("paid", "partial", "in_payment"):
+            lines.append(_("A payment already exists. Settle it by hand."))
+        return Markup("<br/>").join(escape(line) for line in lines)
+
+    def _schedule_source_cancel_alert(self, move):
+        """Leave a pending activity on a posted vendor bill.
+
+        A draft bill and a second cancellation do not create another one.
+        """
+        self.ensure_one()
+        if move.move_type not in ("in_invoice", "in_refund"):
+            return
+        activity_type = self.env.ref(
+            "l10n_br_account.mail_activity_fiscal_document_cancelled_at_source"
+        )
+        if move.activity_ids.filtered(
+            lambda activity: activity.activity_type_id == activity_type
+        ):
+            return
+        user = self._source_cancel_alert_user(move)
+        move.activity_schedule(
+            "l10n_br_account.mail_activity_fiscal_document_cancelled_at_source",
+            summary=_("Fiscal document cancelled at the source"),
+            note=self._source_cancel_alert_note(move, user),
+            user_id=user.id,
+        )
 
     @api.returns("mail.message", lambda value: value.id)
     def message_post(self, **kwargs):

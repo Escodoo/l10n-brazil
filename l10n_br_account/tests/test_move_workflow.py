@@ -1,5 +1,6 @@
 # Copyright (C) 2025 Diego Paradeda - KMEE
 # Copyright 2026 KMEE (Ygor Carvalho <ygor.carvalho@kmee.com.br>)
+# Copyright 2026 - TODAY Escodoo - Marcel Savegnago <marcel.savegnago@escodoo.com.br>
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
 from odoo.exceptions import UserError
@@ -103,6 +104,19 @@ class TestMoveWorkflow(AccountMoveBRCommon):
             lambda message: "cancelled at the source" in (message.body or "")
         )
 
+    def _source_cancel_alerts(self, move):
+        activity_type = self.env.ref(
+            "l10n_br_account.mail_activity_fiscal_document_cancelled_at_source"
+        )
+        return move.activity_ids.filtered(
+            lambda activity: activity.activity_type_id == activity_type
+        )
+
+    def _cancel_imported_at_source(self, bill):
+        bill.fiscal_document_id.with_context(lang="en_US").write(
+            {"state_edoc": DOCUMENT_STATE_CANCEL}
+        )
+
     def _posted_imported_vendor_bill(self, number):
         bill = self.init_invoice(
             "in_invoice",
@@ -187,9 +201,72 @@ class TestMoveWorkflow(AccountMoveBRCommon):
         self.move_out_venda.action_post()
         self.move_out_venda.fiscal_document_id.state_edoc = DOCUMENT_STATE_CANCEL
         self.assertFalse(self._source_cancel_notes(self.move_out_venda))
+        self.assertFalse(self._source_cancel_alerts(self.move_out_venda))
 
     def test_a_local_cancel_does_not_use_the_source_wording(self):
         bill = self._posted_imported_vendor_bill("88004")
         bill.button_cancel()
         self.assertEqual(bill.state_edoc, DOCUMENT_STATE_CANCEL)
         self.assertFalse(self._source_cancel_notes(bill))
+        self.assertFalse(self._source_cancel_alerts(bill))
+
+    def test_a_posted_imported_bill_gets_one_source_cancel_alert(self):
+        salesperson = self.env["res.users"].create(
+            {
+                "name": "Source Cancel Salesperson",
+                "login": "source_cancel_salesperson",
+                "email": "source_cancel_salesperson@example.com",
+                "groups_id": [(6, 0, [self.env.ref("base.group_user").id])],
+            }
+        )
+        bill = self._posted_imported_vendor_bill("88011")
+        bill.invoice_user_id = salesperson
+        self._cancel_imported_at_source(bill)
+
+        alerts = self._source_cancel_alerts(bill)
+        self.assertEqual(len(alerts), 1)
+        self.assertEqual(alerts.user_id, salesperson)
+        note = str(alerts.note)
+        self.assertIn(bill.partner_id.display_name, note)
+        self.assertIn("Amount:", note)
+        self.assertIn(bill.with_context(lang="en_US").display_name, note)
+        self.assertIn("Source: SEFAZ", note)
+        self.assertIn("Purchase order: none", note)
+        self.assertIn(salesperson.name, note)
+
+        self._cancel_imported_at_source(bill)
+        self.assertEqual(len(self._source_cancel_alerts(bill)), 1)
+
+    def test_the_alert_uses_the_bill_creator_without_a_salesperson(self):
+        bill = self._posted_imported_vendor_bill("88013")
+        bill.invoice_user_id = False
+        self._cancel_imported_at_source(bill)
+        self.assertEqual(self._source_cancel_alerts(bill).user_id, bill.create_uid)
+
+    def test_a_draft_imported_bill_gets_no_source_cancel_alert(self):
+        bill = self.init_invoice(
+            "in_invoice",
+            products=[self.product_a],
+            document_type=self.env.ref("l10n_br_fiscal.document_55"),
+            fiscal_operation=self.env.ref("l10n_br_fiscal.fo_compras"),
+            fiscal_operation_lines=[
+                self.env.ref("l10n_br_fiscal.fo_compras_compras_comercializacao")
+            ],
+            document_serie="1",
+            document_number="88014",
+        )
+        self.assertEqual(bill.state, "draft")
+        self.assertEqual(bill.issuer, DOCUMENT_ISSUER_PARTNER)
+        bill.fiscal_document_id.imported_document = True
+        self._cancel_imported_at_source(bill)
+        self.assertFalse(self._source_cancel_alerts(bill))
+
+    def test_an_imported_service_bill_names_the_adn(self):
+        bill = self._posted_imported_vendor_bill("88012")
+        bill.fiscal_document_id.document_type_id = self.env.ref(
+            "l10n_br_fiscal.document_SE"
+        )
+        self._cancel_imported_at_source(bill)
+        note = str(self._source_cancel_alerts(bill).note)
+        self.assertIn("Source: ADN", note)
+        self.assertNotIn("SEFAZ", note)
