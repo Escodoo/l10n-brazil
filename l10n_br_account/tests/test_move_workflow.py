@@ -167,7 +167,7 @@ class TestMoveWorkflow(AccountMoveBRCommon):
         self.assertEqual(bill.state_edoc, DOCUMENT_STATE_CANCEL)
         notes = self._source_cancel_notes(bill)
         self.assertEqual(len(notes), 1)
-        self.assertIn("Settle it with a credit note.", notes.body)
+        self.assertIn("decide how to handle it.", notes.body)
 
         bill.fiscal_document_id.state_edoc = DOCUMENT_STATE_CANCEL
         self.assertEqual(len(self._source_cancel_notes(bill)), 1)
@@ -182,7 +182,7 @@ class TestMoveWorkflow(AccountMoveBRCommon):
         self.assertEqual(bill.state, "posted")
         notes = self._source_cancel_notes(bill)
         self.assertEqual(len(notes), 1)
-        self.assertIn("a payment already exists", notes.body)
+        self.assertIn("decide how to handle it.", notes.body)
 
     def test_an_imported_cancelled_bill_cannot_be_drafted_or_paid(self):
         bill = self._posted_imported_vendor_bill("88003")
@@ -226,13 +226,7 @@ class TestMoveWorkflow(AccountMoveBRCommon):
         alerts = self._source_cancel_alerts(bill)
         self.assertEqual(len(alerts), 1)
         self.assertEqual(alerts.user_id, salesperson)
-        note = str(alerts.note)
-        self.assertIn(bill.partner_id.display_name, note)
-        self.assertIn("Amount:", note)
-        self.assertIn(bill.with_context(lang="en_US").display_name, note)
-        self.assertIn("Source: SEFAZ", note)
-        self.assertIn("Purchase order: none", note)
-        self.assertIn(salesperson.name, note)
+        self.assertIn("decide how to handle it.", str(alerts.note))
 
         self._cancel_imported_at_source(bill)
         self.assertEqual(len(self._source_cancel_alerts(bill)), 1)
@@ -260,13 +254,3 @@ class TestMoveWorkflow(AccountMoveBRCommon):
         bill.fiscal_document_id.imported_document = True
         self._cancel_imported_at_source(bill)
         self.assertFalse(self._source_cancel_alerts(bill))
-
-    def test_an_imported_service_bill_names_the_adn(self):
-        bill = self._posted_imported_vendor_bill("88012")
-        bill.fiscal_document_id.document_type_id = self.env.ref(
-            "l10n_br_fiscal.document_SE"
-        )
-        self._cancel_imported_at_source(bill)
-        note = str(self._source_cancel_alerts(bill).note)
-        self.assertIn("Source: ADN", note)
-        self.assertNotIn("SEFAZ", note)

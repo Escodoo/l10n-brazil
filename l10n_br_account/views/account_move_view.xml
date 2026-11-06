@@ -86,16 +86,9 @@
                 <div
                     class="alert alert-warning"
                     role="alert"
-                    invisible="state != 'posted' or state_edoc != 'cancelada' or not imported_document or issuer != 'partner' or payment_state in ('paid', 'partial', 'in_payment')"
+                    invisible="state != 'posted' or state_edoc != 'cancelada' or not imported_document or issuer != 'partner'"
                 >
-                    The fiscal document was cancelled at the source. This bill stays posted. Do not pay it. Settle it with a credit note.
-                </div>
-                <div
-                    class="alert alert-warning"
-                    role="alert"
-                    invisible="state != 'posted' or state_edoc != 'cancelada' or not imported_document or issuer != 'partner' or payment_state not in ('paid', 'partial', 'in_payment')"
-                >
-                    The fiscal document was cancelled at the source. This bill stays posted and a payment already exists. Settle it by hand.
+                    The fiscal document was cancelled at the source. Check this bill and decide how to handle it.
                 </div>
             </xpath>
             <div name="button_box" position="inside">
