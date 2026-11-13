@@ -39,6 +39,8 @@ class DocumentImportWizard(models.TransientModel):
 
     file = fields.Binary(string="File to Import")
 
+    file_name = fields.Char()
+
     allow_product_creation = fields.Boolean(
         string="Create unmapped products",
         default=False,
@@ -93,10 +95,12 @@ class DocumentImportWizard(models.TransientModel):
 
     @api.depends("issuer_cnpj", "company_id.vat")
     def _compute_fiscal_operation_type(self):
-        if self.issuer_cnpj == self.company_id.vat:
-            self.fiscal_operation_type = "out"
-        else:
-            self.fiscal_operation_type = "in"
+        # The issuer CNPJ comes formatted from the access key, while the
+        # company vat may be stored with or without punctuation.
+        for wizard in self:
+            issuer = punctuation_rm(wizard.issuer_cnpj or "")
+            company = punctuation_rm(wizard.company_id.vat or "")
+            wizard.fiscal_operation_type = "out" if issuer == company else "in"
 
     def _search_partner(self, cnpj=None, name=None, legal_name=None):
         """
@@ -130,9 +134,11 @@ class DocumentImportWizard(models.TransientModel):
             domain.append(("cnpj_cpf_stripped", "=", punctuation_rm(cnpj)))
         elif legal_name or name:
             domain = [("is_company", "=", True)]
-            domain.append(
-                ["|", ("legal_name", "ilike", legal_name), ("name", "ilike", name)]
-            )
+            domain += [
+                "|",
+                ("legal_name", "ilike", legal_name or name),
+                ("name", "ilike", name or legal_name),
+            ]
         else:
             raise UserError(_("No CNPJ or Legal Name to search for a partner!"))
         return self.env["res.partner"].search(domain, limit=1)

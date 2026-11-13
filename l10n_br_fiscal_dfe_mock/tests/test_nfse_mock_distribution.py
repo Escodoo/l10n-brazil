@@ -1,0 +1,229 @@
+# Copyright 2026 - TODAY Escodoo - Marcel Savegnago <marcel.savegnago@escodoo.com.br>
+# Copyright 2026 - TODAY Escodoo - Cristiano Mafra <cristiano.mafra@escodoo.com.br>
+# Copyright 2026 - TODAY Escodoo - Gabriel Medici <gabriel.medici@escodoo.com.br>
+# License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
+
+from unittest import mock
+
+from odoo.exceptions import UserError
+from odoo.tests.common import TransactionCase
+
+from odoo.addons.l10n_br_nfse_dfe.services.nfse_xml import (
+    decode_arquivo_xml,
+    parse_nfse_xml,
+)
+
+
+class TestNfseMockDistribution(TransactionCase):
+    """The NFS-e side of the mock: the pool, the ADN answer and the inbox."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.company = cls.env.ref("l10n_br_base.empresa_simples_nacional")
+        cls.company.sudo().write({"dfe_mock_mode": True})
+
+    def setUp(self):
+        super().setUp()
+        self.env["dfe.mock.nsu"].sudo().search(
+            [("company_id", "=", self.company.id)]
+        ).unlink()
+
+    def _generate(self, quantity=2):
+        wizard = self.env["dfe.mock.generate.wizard"].create(
+            {
+                "company_id": self.company.id,
+                "fiscal_type": "nfse",
+                "quantity": quantity,
+            }
+        )
+        wizard.action_generate()
+        return self.env["dfe.mock.nsu"].search(
+            [("company_id", "=", self.company.id), ("fiscal_type", "=", "nfse")],
+            order="nsu asc",
+        )
+
+    def test_generated_pool_is_parsable(self):
+        """Each generated row carries an NFS-e the importer can read."""
+        records = self._generate()
+        self.assertEqual(len(records), 2)
+        for record in records:
+            self.assertEqual(record.schema_type, "NFSe")
+            self.assertEqual(len(record.access_key), 50)
+            parsed = parse_nfse_xml(record.xml_content.encode())
+            self.assertTrue(parsed, "the national NFS-e binding did not parse")
+            self.assertEqual(parsed["access_key"], record.access_key)
+            self.assertTrue(parsed["provider_cnpj"])
+            self.assertGreater(parsed["service_value"], 0)
+
+    def test_access_key_check_digit(self):
+        """The 50th digit is the mod 11 of the other 49."""
+        record = self._generate(quantity=1)
+        key = record.access_key
+        weights = [2, 3, 4, 5, 6, 7, 8, 9]
+        total = sum(
+            int(digit) * weights[idx % len(weights)]
+            for idx, digit in enumerate(reversed(key[:-1]))
+        )
+        remainder = total % 11
+        expected = "0" if remainder < 2 else str(11 - remainder)
+        self.assertEqual(key[-1], expected)
+
+    def test_consulta_dfe_answers_from_the_pool(self):
+        """The ADN call is a cursor over the pool, and 404 once caught up."""
+        records = self._generate(quantity=3)
+        response = self.company._nfse_consulta_dfe(0)
+        self.assertEqual(response.status_code, 200)
+        items = response.body["LoteDFe"]
+        self.assertEqual(len(items), 3)
+        self.assertEqual(items[0]["TipoDocumento"], "NFSE")
+        self.assertEqual(items[0]["ChaveAcesso"], records[0].access_key)
+        self.assertTrue(decode_arquivo_xml(items[0]["ArquivoXml"]).startswith(b"<?xml"))
+
+        # The cursor skips what is behind it, and the feed ends with a 404.
+        after_first = self.company._nfse_consulta_dfe(int(records[0].nsu))
+        self.assertEqual(len(after_first.body["LoteDFe"]), 2)
+        self.assertEqual(
+            self.company._nfse_consulta_dfe(int(records[-1].nsu)).status_code, 404
+        )
+
+    def test_distribution_fills_the_inbox(self):
+        """A full distribution run creates the DF-e documents offline."""
+        records = self._generate(quantity=2)
+        self.company.sudo().write({"nfse_last_nsu": "0", "nfse_dfe_next_query": False})
+        self.company._nfse_document_distribution()
+        documents = self.env["l10n_br_fiscal_dfe.document"].search(
+            [("company_id", "=", self.company.id), ("fiscal_type", "=", "nfse")]
+        )
+        self.assertEqual(
+            sorted(documents.mapped("access_key")),
+            sorted(records.mapped("access_key")),
+        )
+        for document in documents:
+            self.assertEqual(document.document_state, "1")
+            self.assertTrue(document.emitter)
+            self.assertGreater(document.document_amount, 0)
+
+    def test_nfe_pool_is_not_served_to_nfse(self):
+        """The two feeds are numbered and served apart."""
+        self.env["dfe.mock.nsu"].create(
+            {
+                "nsu": "000000000000001",
+                "fiscal_type": "nfe",
+                "schema_type": "resNFe",
+                "xml_content": "<resNFe/>",
+                "company_id": self.company.id,
+            }
+        )
+        self.assertEqual(self.company._nfse_consulta_dfe(0).status_code, 404)
+        record = self._generate(quantity=1)
+        # The NFS-e feed starts at 1 of its own, beside the NF-e row.
+        self.assertEqual(record.nsu, "000000000000001")
+
+    def test_search_by_access_key_uses_the_pool(self):
+        """The key search imports the note without touching Sefin or the ADN."""
+        record = self._generate(quantity=1)
+
+        def explode(*args, **kwargs):
+            raise AssertionError("the mock must not reach the real service")
+
+        with (
+            mock.patch.object(type(self.company), "_nfse_http_get", explode),
+            mock.patch.object(type(self.company), "_nfse_client", explode),
+        ):
+            self.company._nfse_search_specific(access_key=record.access_key)
+        document = self.env["l10n_br_fiscal_dfe.document"].search(
+            [
+                ("company_id", "=", self.company.id),
+                ("fiscal_type", "=", "nfse"),
+                ("access_key", "=", record.access_key),
+            ]
+        )
+        self.assertEqual(len(document), 1)
+        self.assertEqual(document.document_state, "1")
+        # Replaying a note does not consume it: the feed still serves it.
+        self.assertFalse(record.consumed)
+
+    def test_search_by_unknown_access_key_is_not_found(self):
+        """A key outside the pool answers as the Sefin 404 does, offline."""
+        self._generate(quantity=1)
+        with (
+            mock.patch.object(
+                type(self.company), "_nfse_http_get", side_effect=AssertionError
+            ),
+            self.assertRaises(UserError),
+        ):
+            self.company._nfse_search_specific(access_key="9" * 50)
+
+    def _inbox(self, access_key):
+        return self.env["l10n_br_fiscal_dfe.document"].search(
+            [
+                ("company_id", "=", self.company.id),
+                ("fiscal_type", "=", "nfse"),
+                ("access_key", "=", access_key),
+            ]
+        )
+
+    def _pull(self, reset_cursor=False):
+        vals = {"nfse_dfe_next_query": False}
+        if reset_cursor:
+            vals["nfse_last_nsu"] = "0"
+        self.company.sudo().write(vals)
+        self.company._nfse_document_distribution()
+
+    def test_cancellation_is_a_later_event(self):
+        """The note row stays authorized. The cancel is the next NSU."""
+        note = self._generate(quantity=1)
+        note_xml = note.xml_content
+        event = note.action_register_nfse_cancellation()
+        self.assertEqual(event["type"], "ir.actions.client")
+        pooled = self.env["dfe.mock.nsu"].search(
+            [
+                ("company_id", "=", self.company.id),
+                ("fiscal_type", "=", "nfse"),
+                ("access_key", "=", note.access_key),
+            ],
+            order="nsu asc",
+        )
+        self.assertEqual(pooled.mapped("schema_type"), ["NFSe", "EVENTO"])
+        self.assertEqual(note.xml_content, note_xml)
+        self.assertGreater(pooled[1].nsu, note.nsu)
+        item = pooled[1]._nfse_mock_lote_item()
+        self.assertEqual(item["TipoDocumento"], "EVENTO")
+        self.assertEqual(item["TipoEvento"], "101101")
+        self.assertEqual(item["ChaveAcesso"], note.access_key)
+        with self.assertRaises(UserError):
+            note.action_register_nfse_cancellation()
+
+    def test_cancellation_refuses_a_row_that_is_not_the_note(self):
+        note = self._generate(quantity=1)
+        note.action_register_nfse_cancellation()
+        event = note._nfse_cancellation_event()
+        with self.assertRaises(UserError):
+            event.action_register_nfse_cancellation()
+
+    def test_event_list_serves_the_pooled_cancellation(self):
+        """A key with no event is 404. After registering, the ADN list has it."""
+        note = self._generate(quantity=1)
+        missing = self.company._nfse_consulta_eventos(note.access_key)
+        self.assertEqual(missing.status_code, 404)
+        note.action_register_nfse_cancellation()
+        found = self.company._nfse_consulta_eventos(note.access_key)
+        self.assertEqual(found.status_code, 200)
+        self.assertEqual(found.body["LoteDFe"][0]["TipoDocumento"], "EVENTO")
+        # Listing events does not consume the row or move the note.
+        self.assertFalse(note.consumed)
+
+    def test_distribution_cancels_the_inbox(self):
+        """The second pull applies the event the way the ADN feed does."""
+        note = self._generate(quantity=1)
+        self._pull(reset_cursor=True)
+        inbox = self._inbox(note.access_key)
+        self.assertEqual(inbox.document_state, "1")
+        note.action_register_nfse_cancellation()
+        inbox.invalidate_recordset()
+        self.assertEqual(inbox.document_state, "1")
+        self._pull()
+        inbox.invalidate_recordset()
+        self.assertEqual(inbox.document_state, "3")
+        self.assertIn("101101", inbox.dfe_ids.mapped("event_type_dfe"))

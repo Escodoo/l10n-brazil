@@ -84,6 +84,28 @@ class StockMove(models.Model):
         self.ensure_one()
         return self.picking_id
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get("picking_id") and not vals.get("fiscal_operation_id"):
+                picking = self.env["stock.picking"].browse(vals["picking_id"])
+                if picking.fiscal_operation_id:
+                    vals["fiscal_operation_id"] = picking.fiscal_operation_id.id
+        # skip_compute_fiscal_tax_ids avoids the precompute of the fiscal taxes
+        # (see _add_precomputed_values / _compute_fiscal_tax_ids below)
+        return super(
+            StockMove, self.with_context(skip_compute_fiscal_tax_ids=True)
+        ).create(vals_list)
+
+    def write(self, vals):
+        result = super().write(vals)
+        if vals.get("picking_id"):
+            for move in self.filtered(
+                lambda m: not m.fiscal_operation_id and m.picking_id.fiscal_operation_id
+            ):
+                move.fiscal_operation_id = move.picking_id.fiscal_operation_id
+        return result
+
     @api.depends("fiscal_tax_ids", "fiscal_operation_line_id")
     def _compute_tax_ids(self):
         for record in self:
@@ -164,18 +186,11 @@ class StockMove(models.Model):
             field.precompute = False
         return res
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        return super(
-            StockMove, self.with_context(skip_compute_fiscal_tax_ids=True)
-        ).create(vals_list)
-
     def _compute_fiscal_tax_ids(self):
-        # Skip during creation/precompute when record is not yet in DB.
-        # In Odoo 18, precompute runs during create before flush, causing
-        # the m2m insert to fail with FK constraint.
-        # Check if records exist in DB before writing to m2m relation.
-        if self.ids:
+        # No contexto de create/precompute o compute do mixin já retorna sem
+        # fazer nada (document_line_mixin.py:322), então o SELECT de existência
+        # abaixo seria uma query inútil: só roda quando o contexto não pede.
+        if self.ids and not self._context.get("skip_compute_fiscal_tax_ids"):
             self.env.cr.execute(
                 "SELECT id FROM stock_move WHERE id IN %s", (tuple(self.ids),)
             )

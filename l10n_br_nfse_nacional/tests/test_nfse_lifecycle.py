@@ -27,8 +27,13 @@ PEDREG_SCHEMA = os.path.join(
     "pedRegEvento_v1.01.xsd",
 )
 
+# A 50-digit NFS-e access key. TSIdPedRegEvt now spells the key out (leiaute
+# 1.04.01): 8 digits, the federal inscription type (1 = CNPJ, 2 = CPF) and its
+# 14 digits, then 27 digits -- the event type completes the 33-digit tail.
+NFSE_KEY = "42024042" + "1" + "5" * 41
+
 AUTHORIZED = {
-    "chaveAcesso": "5" * 50,
+    "chaveAcesso": NFSE_KEY,
     "nNFSe": "123",
     "protocolo": "PROT-1",
     "motivo": "Autorizado",
@@ -76,6 +81,12 @@ class TestNfseLifecycle(TransactionCase):
             patcher.start()
             self.addCleanup(patcher.stop)
 
+    def test_competence_date_uses_brazil_timezone(self):
+        """dCompet must not be later than dhEmi when UTC is already the next day."""
+        self.doc.document_date = "2026-10-07 00:30:00"  # 21:30 on the 6th in Brasília
+        self.assertTrue(self.doc.nfse10_dhEmi.startswith("2026-10-06T21:30:00"))
+        self.assertEqual(self.doc.nfse10_dCompet, "2026-10-06")
+
     def test_demo_documents_carry_a_series(self):
         """The demo documents confirm and take edits with no helper."""
         for xmlid in ("demo_nfse_lc", "demo_nfse_sn"):
@@ -94,7 +105,7 @@ class TestNfseLifecycle(TransactionCase):
             self.doc.action_document_confirm()
             self.doc.action_document_send()
         self.assertEqual(self.doc.state_edoc, "autorizada")
-        self.assertEqual(self.doc.nfse_key, "5" * 50)
+        self.assertEqual(self.doc.nfse_key, NFSE_KEY)
         self.assertEqual(self.doc.nfse_number, "123")
         self.assertEqual(self.doc.nfse_protocol, "PROT-1")
         self.assertFalse(self.doc.edoc_error_message)
@@ -109,21 +120,21 @@ class TestNfseLifecycle(TransactionCase):
         self.assertFalse(self.doc.nfse_key)
 
     def test_cancel_event_id_layout(self):
-        self.doc.nfse_key = "5" * 50
+        self.doc.nfse_key = NFSE_KEY
         event_id = self.doc._cancel_event_id()
         self.assertEqual(len(event_id), 59)
         self.assertTrue(re.fullmatch(r"PRE[0-9]{56}", event_id))
-        self.assertEqual(event_id, "PRE" + "5" * 50 + "101101")
+        self.assertEqual(event_id, "PRE" + NFSE_KEY + "101101")
 
     def test_cancel_pedreg_validates_against_schema(self):
-        self.doc.nfse_key = "5" * 50
+        self.doc.nfse_key = NFSE_KEY
         ped = self.doc._build_cancel_pedreg("Erro na emissao do documento.", "1")
         xml = self.doc._serialize_pedreg(ped)
         self.assertEqual(CommonMixin.schema_validation(xml, PEDREG_SCHEMA), [])
-        self.assertIn(f"<chNFSe>{'5' * 50}</chNFSe>", xml)
+        self.assertIn(f"<chNFSe>{NFSE_KEY}</chNFSe>", xml)
 
     def test_cancellation(self):
-        self.doc.nfse_key = "5" * 50
+        self.doc.nfse_key = NFSE_KEY
         with mock.patch(SESSION_POST, return_value=mock_response(CANCELLED)):
             self.doc._adn_cancel("Erro na emissão do documento.", "1")
         self.assertTrue(self.doc.cancel_event_id)
@@ -131,7 +142,7 @@ class TestNfseLifecycle(TransactionCase):
         self.assertEqual(self.doc.cancel_event_id.type, "2")
 
     def test_check_status_detects_oficio_cancellation(self):
-        self.doc.nfse_key = "5" * 50
+        self.doc.nfse_key = NFSE_KEY
         self.doc.state_edoc = "autorizada"
         event_body = {"eventoXmlGZipB64": ""}
         responses = {
@@ -150,7 +161,7 @@ class TestNfseLifecycle(TransactionCase):
         self.assertEqual(self.doc.cancel_event_id.state, "done")
 
     def test_check_status_no_cancellation_found(self):
-        self.doc.nfse_key = "5" * 50
+        self.doc.nfse_key = NFSE_KEY
         self.doc.state_edoc = "autorizada"
         with mock.patch("requests.Session.get", return_value=mock_response({}, 404)):
             self.doc.action_adn_check_status()

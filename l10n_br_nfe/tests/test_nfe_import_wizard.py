@@ -3,6 +3,7 @@ import os
 import re
 from unittest.mock import MagicMock, patch
 
+from odoo import Command
 from odoo.exceptions import UserError
 from odoo.tests import TransactionCase
 from odoo.tools import mute_logger
@@ -123,6 +124,31 @@ class NFeImportWizardTest(TransactionCase):
 
         self.check_edoc(edoc)
 
+    def test_imported_document_view_xml_and_pdf(self):
+        """Ver XML and Ver PDF must work on a document imported from a
+        supplier XML, without an authorization event."""
+        self._prepare_wizard(self.xml_1)
+        binding, edoc = self.wizard._create_edoc_from_file()
+
+        self.assertFalse(edoc.authorization_event_id)
+        self.assertTrue(edoc.original_xml_file_id)
+        self.assertEqual(
+            base64.b64decode(edoc.original_xml_file_id.datas),
+            self.xml_1,
+        )
+        state_edoc = edoc.state_edoc
+
+        action = edoc.view_xml()
+        self.assertIn(str(edoc.original_xml_file_id.id), action["url"])
+
+        action = edoc.view_pdf()
+        self.assertTrue(edoc.file_report_id)
+        self.assertIn(str(edoc.file_report_id.id), action["url"])
+        self.assertTrue(base64.b64decode(edoc.file_report_id.datas).startswith(b"%PDF"))
+
+        self.assertFalse(edoc.authorization_event_id)
+        self.assertEqual(edoc.state_edoc, state_edoc)
+
     def FIXME_test_set_fiscal_operation_type(self):
         self._prepare_wizard(self.xml_1)
 
@@ -156,6 +182,24 @@ class NFeImportWizardTest(TransactionCase):
 
         first_product.product_id = old_product_id
         self.assertNotEqual(first_product.product_id, self.product_1)
+        # The fiscal profile imports the XML without purchase access rights
+        fiscal_user = self.env["res.users"].create(
+            {
+                "name": "Fiscal importer",
+                "login": "fiscal_importer",
+                "groups_id": [
+                    Command.set(
+                        [
+                            self.env.ref("base.group_user").id,
+                            self.env.ref("l10n_br_fiscal.group_manager").id,
+                            self.env.ref("l10n_br_nfe.group_manager").id,
+                        ]
+                    )
+                ],
+            }
+        )
+        first_product.with_user(fiscal_user)._find_or_create_product_supplierinfo()
+        self.assertIn(first_product.product_supplier_id, old_product_id.seller_ids)
 
         self.wizard.partner_id = self.partner_1
         first_product.product_supplier_id = self.env["product.supplierinfo"].create(
@@ -168,7 +212,7 @@ class NFeImportWizardTest(TransactionCase):
         )
         wiz_supplier_id = first_product.product_supplier_id
 
-        first_product._find_or_create_product_supplierinfo()
+        first_product.with_user(fiscal_user)._find_or_create_product_supplierinfo()
         self.assertEqual(wiz_supplier_id.product_id, first_product.product_id)
         self.assertEqual(wiz_supplier_id.partner_uom_id, first_product.uom_internal)
         self.assertEqual(wiz_supplier_id.product_name, first_product.product_name)

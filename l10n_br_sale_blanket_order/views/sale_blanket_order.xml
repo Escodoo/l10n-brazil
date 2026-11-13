@@ -17,13 +17,18 @@
                     options="{'currency_field': 'currency_id'}"
                 />
             </field>
-            <field name="amount_total" position="after">
+            <!-- amount_total is wrapped in a div with its label outside it:
+                 add the field after the div so that it gets its own label -->
+            <xpath
+                expr="//div[hasclass('oe_subtotal_footer_separator')][field[@name='amount_total']]"
+                position="after"
+            >
                 <field
                     name="amount_financial_total"
                     widget='monetary'
                     options="{'currency_field': 'currency_id'}"
                 />
-            </field>
+            </xpath>
             <xpath expr="//field[@name='line_ids']/list" position="inside">
                 <control name="fiscal_fields" invisible="1" />
                 <!-- this is a dynamic fiscal fields placeholder-->
@@ -79,10 +84,16 @@
                 expr="//field[@name='line_ids']/list/field[@name='analytic_distribution']"
                 position="replace"
             />
+            <!-- Keep taxes_id in the list datapoint but hide the column: in tree,
+                 invisible="1" becomes modifiers.column_invisible (column_invisible
+                 XML attr alone is ignored). Visible only on the line form
+                 Accounting tab; fiscal_tax_ids stays visible in the tree. -->
             <xpath
                 expr="//field[@name='line_ids']/list/field[@name='taxes_id']"
                 position="replace"
-            />
+            >
+                <field name="taxes_id" invisible="1" force_save="1" />
+            </xpath>
             <xpath
                 expr="//field[@name='line_ids']/list/field[@name='price_unit']"
                 position="after"

@@ -29,7 +29,7 @@ class L10nBrFiscalDocumentLine(spec_models.SpecModel):
     ]
 
     _nfse10_odoo_module = (
-        "odoo.addons.l10n_br_nfse_spec.models.v1_0.tipos_complexos_v1_00"
+        "odoo.addons.l10n_br_nfse_spec.models.v1_0.tipos_complexos_v1_01"
     )
     _nfse10_binding_module = "nfelib.nfse.bindings.v1_0.tipos_complexos_v1_01"
     _nfse10_binding_type_serv = "Tcserv"
@@ -93,16 +93,18 @@ class L10nBrFiscalDocumentLine(spec_models.SpecModel):
 
     # Fields mapped to tags
     nfse10_cLocPrestacao = fields.Char(related="issqn_fg_city_id.ibge_code")
-    nfse10_cTribNac = fields.Char(related="national_taxation_code_id.code")
-    nfse10_cTribMun = fields.Char(related="city_taxation_code_id.code")
-    nfse10_cNBS = fields.Char(related="nbs_id.code")
+    # The NFSe schema patterns only accept the unmasked codes: the fiscal
+    # tables store them formatted (17.09.01, 1.1404.43.00) for the UI.
+    nfse10_cTribNac = fields.Char(related="national_taxation_code_id.code_unmasked")
+    nfse10_cTribMun = fields.Char(related="city_taxation_code_id.code_unmasked")
+    nfse10_cNBS = fields.Char(related="nbs_id.code_unmasked")
     nfse10_xDescServ = fields.Char(related="name")
 
     nfse10_vServ = fields.Char(compute="_compute_nfse10_valores")
     nfse10_vDescIncond = fields.Char(compute="_compute_nfse10_valores")
     nfse10_vDescCond = fields.Char(compute="_compute_nfse10_valores")
 
-    nfse10_tribISSQN = fields.Selection(default="1")
+    nfse10_tribISSQN = fields.Selection(compute="_compute_nfse10_trib_issqn")
     nfse10_tpRetISSQN = fields.Selection(compute="_compute_nfse10_trib_mun")
     nfse10_pAliq = fields.Char(compute="_compute_nfse10_trib_mun")
 
@@ -153,6 +155,23 @@ class L10nBrFiscalDocumentLine(spec_models.SpecModel):
                 if rec.issqn_desc_cond_amount
                 else False
             )
+
+    @api.depends("issqn_tax_id", "issqn_eligibility")
+    def _compute_nfse10_trib_issqn(self):
+        # issqn_eligibility defaults to "2" (Não incidência) and is rarely set,
+        # so only its explicit export and immunity values are taken from it.
+        # Non-incidence (such as the rental of movable goods, STF SV 31) comes
+        # from the ISSQN NT tax of the fiscal operation.
+        issqn_nt = self.env.ref("l10n_br_fiscal.tax_issqn_nt", False)
+        for rec in self:
+            if rec.issqn_eligibility == "4":
+                rec.nfse10_tribISSQN = "3"
+            elif rec.issqn_eligibility == "5":
+                rec.nfse10_tribISSQN = "2"
+            elif issqn_nt and rec.issqn_tax_id == issqn_nt:
+                rec.nfse10_tribISSQN = "4"
+            else:
+                rec.nfse10_tribISSQN = "1"
 
     @api.depends("issqn_wh_value")
     def _compute_nfse10_trib_mun(self):
@@ -212,6 +231,9 @@ class L10nBrFiscalDocumentLine(spec_models.SpecModel):
         "company_id.simplified_tax_range_id.total_tax_percent",
         "pis_percent",
         "cofins_percent",
+        "irpj_percent",
+        "csll_percent",
+        "inss_percent",
         "issqn_percent",
     )
     def _compute_nfse10_tot_trib(self):
@@ -237,7 +259,19 @@ class L10nBrFiscalDocumentLine(spec_models.SpecModel):
                 rec.nfse10_indTotTrib = False
                 rec.nfse10_pTotTribSN = False
                 rec.nfse10_pTotTrib = rec.id
-                federal = (rec.pis_percent or 0.0) + (rec.cofins_percent or 0.0)
+                # The approximate federal burden of a service adds the
+                # withheld IRPJ, CSLL and INSS to PIS/COFINS: leaving them out
+                # understates pTotTribFed and the DANFSE approximate total.
+                federal = sum(
+                    rec[f] or 0.0
+                    for f in (
+                        "pis_percent",
+                        "cofins_percent",
+                        "irpj_percent",
+                        "csll_percent",
+                        "inss_percent",
+                    )
+                )
                 rec.nfse10_pTotTribFed = f"{federal:.2f}"
                 rec.nfse10_pTotTribEst = "0.00"
                 rec.nfse10_pTotTribMun = f"{rec.issqn_percent or 0.0:.2f}"

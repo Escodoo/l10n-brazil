@@ -1154,7 +1154,7 @@ msgid "ICMS Effective Base"
 msgstr ""
 
 #. module: l10n_br_account
-#: model:ir.model.fields,field_description:l10n_br_account.field_account_move_line__icms_destination_percent
+#: model:ir.model.fields,field_description:l10n_br_account.field_account_move_line__icms_origin_percent
 msgid "ICMS External %"
 msgstr ""
 
@@ -1195,7 +1195,7 @@ msgid "ICMS FCP Value"
 msgstr ""
 
 #. module: l10n_br_account
-#: model:ir.model.fields,field_description:l10n_br_account.field_account_move_line__icms_origin_percent
+#: model:ir.model.fields,field_description:l10n_br_account.field_account_move_line__icms_destination_percent
 msgid "ICMS Internal %"
 msgstr ""
 
@@ -1841,6 +1841,11 @@ msgid "Model Data"
 msgstr ""
 
 #. module: l10n_br_account
+#: model:ir.model,name:l10n_br_account.model_ir_model_inherit
+msgid "Model Inheritance Tree"
+msgstr ""
+
+#. module: l10n_br_account
 #. odoo-python
 #: code:addons/l10n_br_account/models/account_move.py:0
 msgid ""
@@ -1874,16 +1879,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_br_account.field_account_move_line__proxy_name
 #: model:ir.model.fields,field_description:l10n_br_account.field_l10n_br_fiscal_document_line__proxy_name
 msgid "Name (proxy)"
-msgstr ""
-
-#. module: l10n_br_account
-#: model:ir.model.fields,field_description:l10n_br_account.field_account_move_line__simple_value
-msgid "National Simple Taxes"
-msgstr ""
-
-#. module: l10n_br_account
-#: model:ir.model.fields,field_description:l10n_br_account.field_account_move_line__simple_without_icms_value
-msgid "National Simple Taxes without ICMS"
 msgstr ""
 
 #. module: l10n_br_account
@@ -1929,6 +1924,12 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_br_account.field_account_bank_statement_line__operation_name
 #: model:ir.model.fields,field_description:l10n_br_account.field_account_move__operation_name
 msgid "Operation Name"
+msgstr ""
+
+#. module: l10n_br_account
+#: model:ir.model.fields,field_description:l10n_br_account.field_account_bank_statement_line__original_xml_file_id
+#: model:ir.model.fields,field_description:l10n_br_account.field_account_move__original_xml_file_id
+msgid "Original XML File"
 msgstr ""
 
 #. module: l10n_br_account
@@ -2178,6 +2179,13 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_br_account.field_account_move_line__proxy_quantity
 #: model:ir.model.fields,field_description:l10n_br_account.field_l10n_br_fiscal_document_line__proxy_quantity
 msgid "Quantity (proxy)"
+msgstr ""
+
+#. module: l10n_br_account
+#: model:ir.model.fields,help:l10n_br_account.field_account_move_line__icmssn_range_id
+msgid ""
+"Range of the Simples Nacional annex that taxes the operation, the one the "
+"company was in when the taxes of the line were computed."
 msgstr ""
 
 #. module: l10n_br_account
@@ -2634,17 +2642,17 @@ msgid "Without a fiscal document: %s"
 msgstr ""
 
 #. module: l10n_br_account
-#: model:ir.model.fields,field_description:l10n_br_account.field_account_bank_statement_line__xml_error_message
-#: model:ir.model.fields,field_description:l10n_br_account.field_account_move__xml_error_message
-msgid "XML validation errors"
+#: model:ir.model.fields,help:l10n_br_account.field_account_bank_statement_line__original_xml_file_id
+#: model:ir.model.fields,help:l10n_br_account.field_account_move__original_xml_file_id
+msgid ""
+"XML of a document issued by a third party, kept as received when the "
+"document is imported. It is not an authorization event."
 msgstr ""
 
 #. module: l10n_br_account
-#. odoo-python
-#: code:addons/l10n_br_account/models/account_move.py:0
-msgid ""
-"You can't set this document number: %(doc_number)s to draft because this "
-"document is cancelled in SEFAZ"
+#: model:ir.model.fields,field_description:l10n_br_account.field_account_bank_statement_line__xml_error_message
+#: model:ir.model.fields,field_description:l10n_br_account.field_account_move__xml_error_message
+msgid "XML validation errors"
 msgstr ""
 
 #. module: l10n_br_account

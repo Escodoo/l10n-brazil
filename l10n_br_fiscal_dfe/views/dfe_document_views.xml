@@ -52,6 +52,7 @@
                             <field name="serie" />
                             <field name="document_emission_date" />
                             <field name="document_state" />
+                            <field name="utilization" />
                             <field name="document_amount" widget="monetary" />
                             <field name="currency_id" invisible="1" />
                             <field name="fiscal_document_id" />
@@ -90,8 +91,8 @@
     </record>
 
     <!-- Base tree: generic, no banner. Fiscal type specific modules
-         (e.g. l10n_br_nfe_dfe) provide their own tree view with a
-         banner_route and reference it from their action. -->
+         (e.g. l10n_br_nfe_dfe) provide their own tree view with the
+         dfe_document_list js_class and reference it from their action. -->
     <record model="ir.ui.view" id="l10n_br_fiscal_dfe_document_tree">
         <field name="name">l10n_br_fiscal_dfe.document.tree</field>
         <field name="model">l10n_br_fiscal_dfe.document</field>
@@ -123,6 +124,7 @@
                 <field name="currency_id" invisible="1" />
                 <field name="fiscal_document_id" />
                 <field name="document_state_label" string="State" />
+                <field name="utilization" optional="show" />
                 <button
                     string="XML"
                     name="action_download_xml"

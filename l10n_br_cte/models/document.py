@@ -12,6 +12,7 @@ from datetime import datetime
 
 from erpbrasil.base.fiscal import cnpj_cpf
 from erpbrasil.base.fiscal.edoc import ChaveEdoc
+from erpbrasil.base.misc import punctuation_rm
 from erpbrasil.edoc.cte import TransmissaoCTE
 from lxml import etree
 from nfelib.cte.bindings.v4_0.cte_v4_00 import Cte
@@ -62,6 +63,7 @@ from odoo.addons.spec_driven_model.models import spec_models
 from ..constants.cte import (
     CTE_CST,
     CTE_ENVIRONMENTS,
+    CTE_IBSCBS_IN_VTPREST_DATE,
     CTE_ICMS_SELECTION,
     CTE_INDIETOMA,
     CTE_INDIETOMA_DEFAULT,
@@ -76,6 +78,16 @@ from ..constants.cte import (
     CTE_TYPE_DEFAULT,
 )
 from ..constants.modal import CTE_MODAL_VERSION_DEFAULT
+
+TOMA4_PARTNER_FIELDS = (
+    "cte40_CNPJ",
+    "cte40_CPF",
+    "cte40_IE",
+    "cte40_xNome",
+    "cte40_xFant",
+    "cte40_fone",
+    "cte40_email",
+)
 
 CTE_XML_NAMESPACE = {"cte": "http://www.portalfiscal.inf.br/cte"}
 
@@ -127,36 +139,39 @@ class CTe(spec_models.StackedModel):
     )
     _cte_search_keys = ["cte40_Id"]
 
+    # When dynamic stacking is applied the CTe structure is:
+    # (+ content of the m2o is stacked in the parent / - standard m2o /
+    # ≡ o2m; the mapped Odoo model may follow the tag)
     INFCTE_TREE = """
-    > infCte
-        > <ide>
-            > <toma> res.partner
-        > <compl>
-            > <Entrega>
+    + infCte
+        + <ide>
+            + <toma> res.partner
+        + <compl>
+            + <Entrega>
             - <xObs>
             ≡ <ObsCont>
             ≡ <ObsFisco>
 
-        > <emit> res.company
-        > <rem> res.company
-        > <exped> res.partner
-        > <receb> res.partner
-        > <vPrest>
+        + <emit> res.company
+        + <rem> res.company
+        + <exped> res.partner
+        + <receb> res.partner
+        + <vPrest>
             ≡ <comp>
-        > <imp>
-            > <ICMS>
-            > <ICMSUFFim>
-        > <infCTeNorm>
-            > <infCarga>
+        + <imp>
+            + <ICMS>
+            + <ICMSUFFim>
+        + <infCTeNorm>
+            + <infCarga>
                 ≡ <infQ>
-            > <infDoc>
+            + <infDoc>
                 ≡ <infNF>
                 ≡ <infNFe>
                 ≡ <infOutros>
-        -   > <infModal>
-        > <autXML>
-        > <infRespTec>
-    > <infCTeSupl>"""
+        -   + <infModal>
+        ≡ <autXML> l10n_br_cte.autxml
+        + <infRespTec>
+    + <infCTeSupl>"""
 
     cte40_versao = fields.Char(related="document_version")
 
@@ -623,7 +638,17 @@ class CTe(spec_models.StackedModel):
     # CT-e tag: vPrest
     ##########################
 
-    cte40_vTPrest = fields.Monetary(related="fiscal_amount_total")
+    cte40_vTPrest = fields.Monetary(compute="_compute_cte40_vprest_totals")
+
+    # NT CT-e 2026.004: net amount of the service, without IBS/CBS. The tag is
+    # not in the nfelib schema yet (PL_CTe_400_NT2026.002_RTC), so it only
+    # reaches the XML once l10n_br_cte_spec is regenerated with that package.
+    cte40_vTPrestLiq = fields.Monetary(
+        string="Valor Líquido da Prestação",
+        compute="_compute_cte40_vprest_totals",
+        currency_field="brl_currency_id",
+        help="Valor líquido total da prestação, sem IBS e CBS (NT CT-e 2026.004).",
+    )
 
     cte40_vRec = fields.Monetary(related="amount_price_gross")
 
@@ -805,7 +830,7 @@ class CTe(spec_models.StackedModel):
     )
     cte40_vTotDFe = fields.Monetary(
         string="Valor total do documento fiscal",
-        compute="_compute_cte40_ibscbs_fields",
+        compute="_compute_cte40_vprest_totals",
         currency_field="brl_currency_id",
     )
 
@@ -832,7 +857,6 @@ class CTe(spec_models.StackedModel):
                 record.cte40_pIBSUF = 0.0
                 record.cte40_pIBSMun = 0.0
                 record.cte40_pCBS = 0.0
-                record.cte40_vTotDFe = 0.0
                 continue
 
             first = lines[0]
@@ -861,19 +885,72 @@ class CTe(spec_models.StackedModel):
             record.cte40_pIBSMun = p_ibs_mun
             record.cte40_pCBS = p_cbs
 
-            year = datetime.now().year
-            if record.cte40_vIBS or record.cte40_vCBS:
-                if year <= 2026:
-                    # Exceção: em 2026 não soma IBS e CBS
-                    record.cte40_vTotDFe = record.fiscal_amount_total or 0.0
-                else:
-                    record.cte40_vTotDFe = (
-                        (record.fiscal_amount_total or 0.0)
-                        + record.cte40_vIBS
-                        + record.cte40_vCBS
-                    )
-            else:
-                record.cte40_vTotDFe = 0.0
+    def _get_cte_reference_date(self):
+        """Date that decides the yearly rule of the CT-e: the local issue date.
+
+        Uses the same timezone as the exported dhEmi (context_timestamp), so a
+        CT-e issued at 22:00 of 2026-12-31 in Sao Paulo (2027-01-01 in UTC)
+        follows the 2026 rule. The server clock is only a fallback for drafts
+        without an issue date.
+        """
+        self.ensure_one()
+        if self.document_date:
+            return fields.Datetime.context_timestamp(self, self.document_date).date()
+        return fields.Date.context_today(self)
+
+    def _get_cte_ibscbs_in_amount_total(self):
+        """IBS/CBS already added to fiscal_amount_total by the fiscal engine.
+
+        With the default tax groups (tax_include) IBS and CBS stay out of the
+        total; if the setup adds them, they must not enter vTPrest twice.
+        """
+        self.ensure_one()
+        amount = 0.0
+        for line in self.fiscal_line_ids:
+            if line.ibs_tax_id and not line.ibs_tax_id.tax_group_id.tax_include:
+                amount += line.ibs_value
+            if line.cbs_tax_id and not line.cbs_tax_id.tax_group_id.tax_include:
+                amount += line.cbs_value
+        return amount
+
+    @api.depends(
+        "fiscal_amount_total",
+        "document_date",
+        "fiscal_line_ids.ibs_value",
+        "fiscal_line_ids.cbs_value",
+        "fiscal_line_ids.ibs_tax_id",
+        "fiscal_line_ids.cbs_tax_id",
+        "cte40_vIBS",
+        "cte40_vCBS",
+    )
+    @api.depends_context("tz")
+    def _compute_cte40_vprest_totals(self):
+        """vTPrest, vTPrestLiq and vTotDFe as in NT CT-e 2026.004.
+
+        - vTPrestLiq: amount of the service without IBS/CBS.
+        - vTPrest: the net amount in 2026; from 2027 on (by the issue date)
+          the net amount plus IBS and CBS.
+        - vTotDFe: repeats vTPrest (rule 365), IBS/CBS are never added again.
+          Only informed when the CT-e has IBS/CBS, as before.
+        """
+        for record in self:
+            currency = record.brl_currency_id or record.currency_id
+            net_amount = (
+                record.fiscal_amount_total or 0.0
+            ) - record._get_cte_ibscbs_in_amount_total()
+            ibscbs_amount = record.cte40_vIBS + record.cte40_vCBS
+            total = net_amount
+            if (
+                ibscbs_amount
+                and record._get_cte_reference_date() >= CTE_IBSCBS_IN_VTPREST_DATE
+            ):
+                total += ibscbs_amount
+            if currency:
+                net_amount = currency.round(net_amount)
+                total = currency.round(total)
+            record.cte40_vTPrestLiq = net_amount
+            record.cte40_vTPrest = total
+            record.cte40_vTotDFe = total if ibscbs_amount else 0.0
 
     # ##########################
     # # CT-e tag: ICMSUFFim
@@ -1012,7 +1089,10 @@ class CTe(spec_models.StackedModel):
             authorized_partners.append(company.accountant_id.id)
         if company.technical_support_id:
             authorized_partners.append(company.technical_support_id.id)
-        return authorized_partners
+        return [
+            Command.create({"partner_id": partner_id})
+            for partner_id in authorized_partners
+        ]
 
     ##########################
     # CT-e tag: autXML
@@ -1354,7 +1434,31 @@ class CTe(spec_models.StackedModel):
             "imported_document": True,
         }
 
+    def _export_toma4_field(self, xsd_field):
+        """The "Outros" service taker (toma4) is identified by partner_id."""
+        partner = self.partner_id
+        cnpj_cpf_number = punctuation_rm(partner.vat or "")
+        if xsd_field == "cte40_CNPJ":
+            return cnpj_cpf_number if len(cnpj_cpf_number) == 14 else False
+        if xsd_field == "cte40_CPF":
+            return cnpj_cpf_number if len(cnpj_cpf_number) == 11 else False
+        if xsd_field == "cte40_IE":
+            return partner.cte40_IE or False
+        if xsd_field == "cte40_xNome":
+            if self.env.context.get("tpAmb") == "2":
+                return "CTE EMITIDO EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL"
+            return partner.legal_name or partner.name
+        if xsd_field == "cte40_xFant":
+            return partner.name if partner.legal_name else False
+        if xsd_field == "cte40_fone":
+            return partner.cte40_fone or False
+        if xsd_field == "cte40_email":
+            return partner.email or False
+        return False
+
     def _export_field(self, xsd_field, class_obj, member_spec, export_value=None):
+        if class_obj._name == "cte.40.tcte_toma4" and xsd_field in TOMA4_PARTNER_FIELDS:
+            return self._export_toma4_field(xsd_field)
         if xsd_field == "cte40_tpAmb":
             self.env.context = dict(self.env.context)
             self.env.context.update({"tpAmb": self[xsd_field]})

@@ -7,7 +7,7 @@
     Generic framework to monitor incoming electronic fiscal documents
     via the Sefaz DF-e distribution web service.
     """,
-    "version": "18.0.1.7.0",
+    "version": "18.0.2.1.0",
     "license": "AGPL-3",
     "author": "Engenere, KMEE, Odoo Community Association (OCA)",
     "maintainers": ["felipemotter", "antoniospneto", "rvalyi"],
@@ -21,7 +21,6 @@
         "data/dfe_actions.xml",
         "data/queue_job_data.xml",
         # Views
-        "views/dfe_banner_template.xml",
         "views/dfe_views.xml",
         "views/dfe_document_views.xml",
         "views/dfe_distribution_log_views.xml",
@@ -31,4 +30,12 @@
         # Wizards
         "wizards/specific_search_wizard.xml",
     ],
+    "assets": {
+        "web.assets_backend": [
+            "l10n_br_fiscal_dfe/static/src/components/dfe_banner/dfe_banner.esm.js",
+            "l10n_br_fiscal_dfe/static/src/components/dfe_banner/dfe_banner.xml",
+            "l10n_br_fiscal_dfe/static/src/views/dfe_document_list/dfe_document_list_view.esm.js",
+            "l10n_br_fiscal_dfe/static/src/views/dfe_document_list/dfe_document_list_view.xml",
+        ],
+    },
 }

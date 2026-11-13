@@ -70,15 +70,17 @@ class DocumentImportWizard(models.TransientModel):
         if self.document_type == MODELO_FISCAL_NFE:
             if hasattr(binding, "NFe"):
                 binding = binding.NFe
+            dest = binding.infNFe.dest
+            dest_document = dest.CNPJ or dest.CPF
             self.destination_partner_id = self._search_partner(
-                cnpj=binding.infNFe.dest.CNPJ,
-                legal_name=binding.infNFe.dest.xNome,
+                cnpj=dest_document,
+                legal_name=dest.xNome,
             )
             self.issuer_legal_name = binding.infNFe.emit.xNome
             self.issuer_name = binding.infNFe.emit.xFant
 
-            self.destination_cnpj = formata(binding.infNFe.dest.CNPJ)
-            self.destination_name = binding.infNFe.dest.xNome
+            self.destination_cnpj = dest_document and formata(dest_document)
+            self.destination_name = dest.xNome
 
     def _parse_file(self):
         binding = super()._parse_file()
@@ -140,7 +142,9 @@ class DocumentImportWizard(models.TransientModel):
     def _search_product_supplier_by_product_code(self, code):
         return self.env["product.supplierinfo"].search(
             [
-                ("partner_id", "=", self.partner_id.id),
+                # the preview runs before the document, and so before the
+                # partner, exist: only the issuer is known then
+                ("partner_id", "=", (self.partner_id or self.issuer_partner_id).id),
                 ("product_code", "=", code),
             ],
             limit=1,
@@ -324,7 +328,7 @@ class DocumentImportWizard(models.TransientModel):
         return super()._create_edoc_from_file()
 
     def _attach_original_nfe_xml_to_document(self, edoc):
-        return self.env["ir.attachment"].create(
+        attachment = self.env["ir.attachment"].create(
             {
                 "name": f"NFe-Importada-{edoc.document_key}.xml",
                 "datas": self.file,
@@ -333,6 +337,8 @@ class DocumentImportWizard(models.TransientModel):
                 "res_id": edoc.id,
             }
         )
+        edoc.original_xml_file_id = attachment
+        return attachment
 
     def _edit_parsed_xml(self, parsed_xml):
         for product_line in self.imported_products_ids.filtered("product_id"):
@@ -439,23 +445,29 @@ class NfeImportProducts(models.TransientModel):
         else:
             price = self.product_id.lst_price
 
-        self.product_supplier_id = self.env["product.supplierinfo"].create(
-            {
-                "product_id": self.product_id.id,
-                "product_name": self.product_name,
-                "product_code": self.product_code,
-                "price": price,
-                "partner_id": self.imported_partner_id.id,
-                "partner_uom_id": self.uom_internal.id,
-                "partner_uom_factor": self.uom_conversion_factor,
-            }
+        # The de-para memory is a by-product of the import: the fiscal profile
+        # that runs it has no purchase (product.supplierinfo) access rights.
+        self.product_supplier_id = (
+            self.env["product.supplierinfo"]
+            .sudo()
+            .create(
+                {
+                    "product_id": self.product_id.id,
+                    "product_name": self.product_name,
+                    "product_code": self.product_code,
+                    "price": price,
+                    "partner_id": self.imported_partner_id.id,
+                    "partner_uom_id": self.uom_internal.id,
+                    "partner_uom_factor": self.uom_conversion_factor,
+                }
+            )
         )
-        self.product_id.write(
+        self.product_id.sudo().write(
             {"seller_ids": [Command.link(self.product_supplier_id.id)]}
         )
 
     def _update_product_supplier(self):
-        self.product_supplier_id.write(
+        self.product_supplier_id.sudo().write(
             {
                 "product_id": self.product_id.id,
                 "product_name": self.product_name,

@@ -167,6 +167,15 @@ class Document(models.Model):
         readonly=True,
     )
 
+    original_xml_file_id = fields.Many2one(
+        comodel_name="ir.attachment",
+        string="Original XML File",
+        copy=False,
+        readonly=True,
+        help="XML of a document issued by a third party, kept as received "
+        "when the document is imported. It is not an authorization event.",
+    )
+
     # Cancel Event Related Fields
     cancel_event_id = fields.Many2one(
         comodel_name="l10n_br_fiscal.event",
@@ -793,6 +802,19 @@ class Document(models.Model):
 
     def action_document_back2draft(self):
         """Override base button"""
+        if (
+            self.state_edoc == DOCUMENT_STATE_CANCEL
+            and self.document_number
+            and self.issuer == DOCUMENT_ISSUER_COMPANY
+            and self.cancel_event_id
+        ):
+            raise UserError(
+                self.env._(
+                    "You can't set this document number: %(doc_number)s to draft "
+                    "because this document is cancelled in SEFAZ",
+                    doc_number=self.document_number,
+                )
+            )
         if self.document_electronic and self.issuer == DOCUMENT_ISSUER_COMPANY:
             if self.state_edoc == DOCUMENT_STATE_DRAFT:
                 return True  # idempotent: already in draft
@@ -875,7 +897,9 @@ class Document(models.Model):
 
     def view_xml(self):
         self.ensure_one()
-        xml_file = self.authorization_file_id or self.send_file_id
+        xml_file = (
+            self.authorization_file_id or self.send_file_id or self.original_xml_file_id
+        )
         if not xml_file:
             self._document_export()
             xml_file = self.authorization_file_id or self.send_file_id

@@ -4,6 +4,7 @@
 
 import base64
 import gzip
+import logging
 import os
 import re
 import tempfile
@@ -12,6 +13,10 @@ import pytz
 from nfelib import CommonMixin
 from nfelib.nfse.bindings.v1_0.dps_v1_01 import Dps
 from nfelib.nfse.bindings.v1_0.ped_reg_evento_v1_01 import PedRegEvento
+from nfelib.nfse.bindings.v1_0.tipos_complexos_v1_01 import (
+    TcrtcinfoTribIbscbs,
+    TcrtcinfoValoresIbscbs,
+)
 from nfelib.nfse.bindings.v1_0.tipos_eventos_v1_01 import (
     TcinfPedReg,
     Te101101,
@@ -45,6 +50,8 @@ from ..transport.adn_rest import AdnRestClient
 
 BRAZIL_TZ = pytz.timezone("America/Sao_Paulo")
 
+_logger = logging.getLogger(__name__)
+
 
 def filter_nfse_nacional(record):
     return (
@@ -64,7 +71,7 @@ class L10nBrFiscalDocument(spec_models.SpecModel):
     ]
 
     _nfse10_odoo_module = (
-        "odoo.addons.l10n_br_nfse_spec.models.v1_0.tipos_complexos_v1_00"
+        "odoo.addons.l10n_br_nfse_spec.models.v1_0.tipos_complexos_v1_01"
     )
     _nfse10_binding_module = "nfelib.nfse.bindings.v1_0.tipos_complexos_v1_01"
     _nfse10_binding_type = "TcinfDps"  # Tcdps"
@@ -83,6 +90,10 @@ class L10nBrFiscalDocument(spec_models.SpecModel):
     nfse10_nDPS = fields.Char(related="document_number")
     nfse10_dCompet = fields.Char(compute="_compute_nfse10_dates")
     nfse10_tpEmit = fields.Selection(default="1")
+    # Leiaute 1.04.01 (NT 009) moved finNFSe from the IBSCBS group to infDPS,
+    # where it is mandatory. The schema only allows "0" (regular NFS-e): a
+    # substitution is declared by its own subst group.
+    nfse10_finNFSe = fields.Selection(default="0")
     nfse10_cLocEmi = fields.Char(related="company_id.partner_id.city_id.ibge_code")
 
     nfse10_prest = fields.Many2one("res.company", related="company_id")
@@ -125,7 +136,7 @@ class L10nBrFiscalDocument(spec_models.SpecModel):
             if rec.document_date:
                 local_dt = pytz.utc.localize(rec.document_date).astimezone(BRAZIL_TZ)
                 rec.nfse10_dhEmi = local_dt.isoformat(timespec="seconds")
-                rec.nfse10_dCompet = rec.document_date.strftime("%Y-%m-%d")
+                rec.nfse10_dCompet = local_dt.strftime("%Y-%m-%d")
             else:
                 rec.nfse10_dhEmi = False
                 rec.nfse10_dCompet = False
@@ -146,6 +157,99 @@ class L10nBrFiscalDocument(spec_models.SpecModel):
                 class_name=class_obj._fields[field_name].comodel_name
             )
         return super()._export_many2one(field_name, xsd_required, class_obj)
+
+    ##########################
+    # NFS-e tag: IBSCBS
+    # Inverse Methods
+    ##########################
+
+    def _nfse_ibscbs_line(self):
+        """Return the line the DPS IBSCBS group is built from.
+
+        A DPS declares a single servico, so the RTC data of the group comes
+        from the first line, the same one already exported for the serv and
+        valores groups.
+        """
+        self.ensure_one()
+        return self.fiscal_line_ids[:1]
+
+    def _nfse_export_ibscbs(self):
+        """Return True when the DPS must carry the RTC IBSCBS group.
+
+        Like the NF-e IBSCBS group, the DPS one (leiaute 1.01) is exported as
+        soon as the line carries the RTC data: the cClassTrib classification
+        plus the CST and the cIndOp operation indicator, both mandatory in the
+        group. The cIndOp is read from the line, which is where the user
+        informs it (from the product or from the line view), like the other
+        NFS-e layouts do.
+
+        A line carrying the cClassTrib but missing one of the two other data
+        would produce an invalid group. A DPS without the IBSCBS group is a
+        valid 1.01 document, so the group is skipped rather than blocking the
+        emission, but the reason is logged: nothing else tells the user why
+        the group left the DPS.
+        """
+        self.ensure_one()
+        line = self._nfse_ibscbs_line()
+        if not line.tax_classification_id:
+            # No RTC data: the document keeps the legacy 1.00 shape.
+            return False
+        missing = [
+            label
+            for value, label in (
+                (line.operation_indicator_id, "cIndOp"),
+                (line.ibs_cst_id or line.cbs_cst_id, "CST"),
+            )
+            if not value
+        ]
+        if not missing:
+            return True
+        _logger.warning(
+            "NFS-e %s: line %s carries the RTC classification %s but no %s, "
+            "so the DPS is exported without the IBSCBS group.",
+            self.display_name,
+            line.display_name,
+            line.tax_classification_id.code,
+            " and no ".join(missing),
+        )
+        return False
+
+    def _export_tag_nfse_10_ibscbs(self, xsd_fields, class_obj, export_dict):
+        """Export the IBSCBS group declared in the DPS (leiaute 1.04.01, RTC).
+
+        Dispatched by spec_driven_model through the per tag hooks while
+        exporting the nfse10_IBSCBS field of the nfse.10.tcinfdps class: its
+        comodel is the reusable nfse.10.tcrtcinfoibscbs type, so the class
+        name dispatch would not match the IBSCBS tag name. The nested group is
+        built here instead of relying on self stacking fields because the
+        valores and trib tags of the DPS (nfse.10.tcinfovalores and
+        nfse.10.tcinfotributacao) already hold those field names on the
+        document.
+
+        The classification (CST and cClassTrib) and the operation indicator
+        (cIndOp) come from the line, exactly like the NF-e IBSCBS group; the
+        amounts of the group are declared by the Sefin in the NFS-e, not in
+        the DPS. Leiaute 1.04.01 (NT 009) keeps CST and cClassTrib directly
+        under valores/trib: the gIBSCBS group below them only carries the
+        credit presumption, regular taxation and deferred amounts.
+        """
+        if not self._nfse_export_ibscbs():
+            return
+        line = self._nfse_ibscbs_line()
+        # indDest = "0" (the recipient is the tomador identified in the
+        # NFS-e) comes with the dest group, which is not exported yet: it
+        # stays a constant instead of a new document field holding a single
+        # possible value for the documents this module emits.
+        export_dict.update(
+            cIndOp=line.operation_indicator_id.code,
+            indDest="0",
+            valores=TcrtcinfoValoresIbscbs(
+                trib=TcrtcinfoTribIbscbs(
+                    CST=line.ibs_cst_id.code or line.cbs_cst_id.code,
+                    cClassTrib=line.tax_classification_id.code,
+                )
+            ),
+        )
 
     def import_binding_nfse(self, binding, edoc_type="in", dry_run=False):
         if hasattr(binding, "DPS"):

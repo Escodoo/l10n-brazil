@@ -10,23 +10,62 @@
         <field name="arch" type="xml">
             <field name="cnae_secondary_ids" position="after">
                 <field name="equity_capital" widget="monetary" />
-                <field name="company_size" readonly="False" />
-                <field name="cnpj_status" readonly="False" />
-                <field name="cnpj_status_date" readonly="False" />
-                <field name="cnpj_status_reason" readonly="False" />
-                <field name="opening_date" readonly="False" />
-                <field name="cnpj_branch_type" readonly="False" />
-                <field name="simples_option_date" readonly="False" />
-                <field name="legal_responsible_name" readonly="False" />
-                <field name="legal_responsible_function" readonly="False" />
+                <field
+                    name="company_size"
+                    readonly="False"
+                    invisible="not is_company"
+                />
+                <field name="cnpj_status" readonly="False" invisible="not is_company" />
+                <field
+                    name="cnpj_status_date"
+                    readonly="False"
+                    invisible="not is_company"
+                />
+                <field
+                    name="cnpj_status_reason"
+                    readonly="False"
+                    invisible="not is_company"
+                />
+                <field
+                    name="opening_date"
+                    readonly="False"
+                    invisible="not is_company"
+                />
+                <field
+                    name="cnpj_branch_type"
+                    readonly="False"
+                    invisible="not is_company"
+                />
+                <field
+                    name="simples_option_date"
+                    readonly="False"
+                    invisible="not is_company"
+                />
+                <field
+                    name="legal_responsible_name"
+                    readonly="False"
+                    invisible="not is_company"
+                />
+                <field
+                    name="legal_responsible_function"
+                    readonly="False"
+                    invisible="not is_company"
+                />
             </field>
             <field name="vat" position="replace">
+                <field name="vat" nolabel="1" invisible="show_l10n_br" />
+            </field>
+            <field name="vat_formatted_cnpj" position="replace">
                 <div class="o_row" colspan="4">
-                    <field name="vat" nolabel="1" />
+                    <field
+                        name="vat_formatted_cnpj"
+                        nolabel="1"
+                        invisible="not show_l10n_br"
+                    />
                     <button
                         name="action_open_cnpj_search_wizard"
                         type="object"
-                        invisible="country_id != %(base.br)d and is_company != True"
+                        invisible="not show_l10n_br"
                         class="btn-sm btn-link mb4 fa fa-search oe_edit_only oe_inline"
                         aria-label="Pesquisar CNPJ"
                         title="Pesquisar CNPJ"

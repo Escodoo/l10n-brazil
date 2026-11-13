@@ -6,15 +6,15 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 14.0\n"
 "Report-Msgid-Bugs-To: \n"
-"PO-Revision-Date: 2025-01-16 18:06+0000\n"
-"Last-Translator: Marcel Savegnago <marcel.savegnago@gmail.com>\n"
+"PO-Revision-Date: 2026-10-20 20:14+0000\n"
+"Last-Translator: Luis Felipe Miléo <mileo@kmee.com.br>\n"
 "Language-Team: none\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.6.2\n"
+"X-Generator: Weblate 5.15.2\n"
 
 #. module: l10n_br_cte
 #. odoo-python
@@ -131,7 +131,7 @@ msgstr ""
 #: model:ir.model.fields,help:l10n_br_cte.field_account_move__cte40_vRec
 #: model:ir.model.fields,help:l10n_br_cte.field_l10n_br_fiscal_document__cte40_vRec
 msgid "Amount without discount."
-msgstr ""
+msgstr "Total sem desconto."
 
 #. module: l10n_br_cte
 #: model:ir.model.fields.selection,name:l10n_br_cte.selection__l10n_br_fiscal_document__transport_modal__03
@@ -176,6 +176,16 @@ msgstr ""
 #. odoo-python
 #: code:addons/l10n_br_cte/models/document.py:0
 msgid "Authorization Protocol Not Found!"
+msgstr ""
+
+#. module: l10n_br_cte
+#: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_autxml__partner_id
+msgid "Authorized Partner"
+msgstr ""
+
+#. module: l10n_br_cte
+#: model_terms:ir.ui.view,arch_db:l10n_br_cte.cte_document_form_view
+msgid "Authorized to Download the XML"
 msgstr ""
 
 #. module: l10n_br_cte
@@ -236,7 +246,7 @@ msgstr ""
 #. module: l10n_br_cte
 #: model:ir.model.fields,help:l10n_br_cte.field_res_company__dacte_margin_bottom
 msgid "Bottom margin in mm for the DACTE layout."
-msgstr ""
+msgstr "Margem inferior, em mm, do layout do DACTE."
 
 #. module: l10n_br_cte
 #: model:ir.model.fields.selection,name:l10n_br_cte.selection__l10n_br_cte_modal_rodo_occ__cte40_UF__ce
@@ -277,7 +287,6 @@ msgstr ""
 
 #. module: l10n_br_cte
 #: model:ir.model.fields.selection,name:l10n_br_cte.selection__res_company__cte40_choice_emit__cte40_cnpj
-#: model:ir.model.fields.selection,name:l10n_br_cte.selection__res_partner__cte40_choice_autxml__cte40_cnpj
 #: model:ir.model.fields.selection,name:l10n_br_cte.selection__res_partner__cte40_choice_dest__cte40_cnpj
 #: model:ir.model.fields.selection,name:l10n_br_cte.selection__res_partner__cte40_choice_emit__cte40_cnpj
 #: model:ir.model.fields.selection,name:l10n_br_cte.selection__res_partner__cte40_choice_exped__cte40_cnpj
@@ -305,6 +314,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_br_cte.field_cte_40_tcteos_autxml__cte40_CNPJ
 #: model:ir.model.fields,field_description:l10n_br_cte.field_cte_40_tctesimp_autxml__cte40_CNPJ
 #: model:ir.model.fields,field_description:l10n_br_cte.field_cte_40_tgtve_autxml__cte40_CNPJ
+#: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_autxml__cte40_CNPJ
 msgid "CNPJ do autorizado"
 msgstr ""
 
@@ -312,6 +322,7 @@ msgstr ""
 #: model:ir.model.fields,help:l10n_br_cte.field_cte_40_tcteos_autxml__cte40_CNPJ
 #: model:ir.model.fields,help:l10n_br_cte.field_cte_40_tctesimp_autxml__cte40_CNPJ
 #: model:ir.model.fields,help:l10n_br_cte.field_cte_40_tgtve_autxml__cte40_CNPJ
+#: model:ir.model.fields,help:l10n_br_cte.field_l10n_br_cte_autxml__cte40_CNPJ
 msgid ""
 "CNPJ do autorizado\n"
 "Informar zeros não significativos"
@@ -363,12 +374,6 @@ msgid "CNPJ/CPF do Parceiro (cte_choice_tlocal)"
 msgstr ""
 
 #. module: l10n_br_cte
-#: model:ir.model.fields,field_description:l10n_br_cte.field_res_partner__cte40_choice_autxml
-#: model:ir.model.fields,field_description:l10n_br_cte.field_res_users__cte40_choice_autxml
-msgid "CNPJ/CPF do Parceiro Autorizado"
-msgstr ""
-
-#. module: l10n_br_cte
 #: model:ir.model.fields,field_description:l10n_br_cte.field_res_partner__cte40_choice_dest
 #: model:ir.model.fields,field_description:l10n_br_cte.field_res_users__cte40_choice_dest
 msgid "CNPJ/CPF/idEstrangeiro (cte_choice_dest)"
@@ -400,7 +405,6 @@ msgstr ""
 
 #. module: l10n_br_cte
 #: model:ir.model.fields.selection,name:l10n_br_cte.selection__res_company__cte40_choice_emit__cte40_cpf
-#: model:ir.model.fields.selection,name:l10n_br_cte.selection__res_partner__cte40_choice_autxml__cte40_cpf
 #: model:ir.model.fields.selection,name:l10n_br_cte.selection__res_partner__cte40_choice_dest__cte40_cpf
 #: model:ir.model.fields.selection,name:l10n_br_cte.selection__res_partner__cte40_choice_emit__cte40_cpf
 #: model:ir.model.fields.selection,name:l10n_br_cte.selection__res_partner__cte40_choice_exped__cte40_cpf
@@ -410,12 +414,13 @@ msgstr ""
 #: model:ir.model.fields.selection,name:l10n_br_cte.selection__res_partner__cte40_choice_toma__cte40_cpf
 #: model:ir.model.fields.selection,name:l10n_br_cte.selection__res_partner__cte40_choice_transporta__cte40_cpf
 msgid "CPF"
-msgstr ""
+msgstr "CPF"
 
 #. module: l10n_br_cte
 #: model:ir.model.fields,field_description:l10n_br_cte.field_cte_40_tcteos_autxml__cte40_CPF
 #: model:ir.model.fields,field_description:l10n_br_cte.field_cte_40_tctesimp_autxml__cte40_CPF
 #: model:ir.model.fields,field_description:l10n_br_cte.field_cte_40_tgtve_autxml__cte40_CPF
+#: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_autxml__cte40_CPF
 msgid "CPF do autorizado"
 msgstr ""
 
@@ -423,6 +428,7 @@ msgstr ""
 #: model:ir.model.fields,help:l10n_br_cte.field_cte_40_tcteos_autxml__cte40_CPF
 #: model:ir.model.fields,help:l10n_br_cte.field_cte_40_tctesimp_autxml__cte40_CPF
 #: model:ir.model.fields,help:l10n_br_cte.field_cte_40_tgtve_autxml__cte40_CPF
+#: model:ir.model.fields,help:l10n_br_cte.field_l10n_br_cte_autxml__cte40_CPF
 msgid ""
 "CPF do autorizado\n"
 "Informar zeros não significativos"
@@ -458,7 +464,7 @@ msgstr "CT-e"
 #. module: l10n_br_cte
 #: model:ir.model.fields,field_description:l10n_br_cte.field_res_company__cte_dacte_layout
 msgid "CT-e DACTE Layout"
-msgstr ""
+msgstr "Layout do DACTE"
 
 #. module: l10n_br_cte
 #: model:ir.model.fields,field_description:l10n_br_cte.field_res_company__cte_default_serie_id
@@ -882,6 +888,7 @@ msgid "Country state"
 msgstr "Estado do país"
 
 #. module: l10n_br_cte
+#: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_autxml__create_uid
 #: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_cargo_quantity_infos__create_uid
 #: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_modal_aereo__create_uid
 #: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_modal_aereo_peri__create_uid
@@ -896,6 +903,7 @@ msgid "Created by"
 msgstr "Criado por"
 
 #. module: l10n_br_cte
+#: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_autxml__create_date
 #: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_cargo_quantity_infos__create_date
 #: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_modal_aereo__create_date
 #: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_modal_aereo_peri__create_date
@@ -948,7 +956,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_br_cte.field_cte_40_tcteos_autxml__cte40_autXML_infCte_id
 #: model:ir.model.fields,field_description:l10n_br_cte.field_cte_40_tctesimp_autxml__cte40_autXML_infCte_id
 #: model:ir.model.fields,field_description:l10n_br_cte.field_cte_40_tgtve_autxml__cte40_autXML_infCte_id
-#: model:ir.model.fields,field_description:l10n_br_cte.field_res_partner__cte40_autXML_infCte_id
+#: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_autxml__cte40_autXML_infCte_id
 msgid "Cte40 Autxml Infcte"
 msgstr ""
 
@@ -1628,22 +1636,22 @@ msgstr ""
 #. module: l10n_br_cte
 #: model:ir.model.fields,field_description:l10n_br_cte.field_res_company__dacte_margin_bottom
 msgid "Dacte Margin Bottom"
-msgstr ""
+msgstr "Margem inferior do DACTE"
 
 #. module: l10n_br_cte
 #: model:ir.model.fields,field_description:l10n_br_cte.field_res_company__dacte_margin_left
 msgid "Dacte Margin Left"
-msgstr ""
+msgstr "Margem esquerda do DACTE"
 
 #. module: l10n_br_cte
 #: model:ir.model.fields,field_description:l10n_br_cte.field_res_company__dacte_margin_right
 msgid "Dacte Margin Right"
-msgstr ""
+msgstr "Margem direita do DACTE"
 
 #. module: l10n_br_cte
 #: model:ir.model.fields,field_description:l10n_br_cte.field_res_company__dacte_margin_top
 msgid "Dacte Margin Top"
-msgstr ""
+msgstr "Margem superior do DACTE"
 
 #. module: l10n_br_cte
 #: model:ir.model.fields,field_description:l10n_br_cte.field_cte_40_tgtve_infcte__cte40_compl
@@ -2160,9 +2168,10 @@ msgstr ""
 #. module: l10n_br_cte
 #: model_terms:ir.ui.view,arch_db:l10n_br_cte.cte_res_company_form
 msgid "Display IBS/CBS"
-msgstr ""
+msgstr "Exibir IBS/CBS"
 
 #. module: l10n_br_cte
+#: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_autxml__display_name
 #: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_cargo_quantity_infos__display_name
 #: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_modal_aereo__display_name
 #: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_modal_aereo_peri__display_name
@@ -2200,7 +2209,7 @@ msgstr ""
 #. module: l10n_br_cte
 #: model:ir.model,name:l10n_br_cte.model_l10n_br_fiscal_document_mixin
 msgid "Document Fiscal Mixin Fields"
-msgstr ""
+msgstr "Campos do mixin de documento fiscal"
 
 #. module: l10n_br_cte
 #: model:ir.model,name:l10n_br_cte.model_l10n_br_fiscal_document_supplement
@@ -2802,6 +2811,7 @@ msgid "ICMSSN"
 msgstr ""
 
 #. module: l10n_br_cte
+#: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_autxml__id
 #: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_cargo_quantity_infos__id
 #: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_modal_aereo__id
 #: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_modal_aereo_peri__id
@@ -3023,7 +3033,7 @@ msgstr ""
 #. module: l10n_br_cte
 #: model:ir.model,name:l10n_br_cte.model_l10n_br_fiscal_document_import_wizard
 msgid "Import Document Wizard"
-msgstr ""
+msgstr "Assistente de importação de documento"
 
 #. module: l10n_br_cte
 #: model:ir.model.fields,field_description:l10n_br_cte.field_res_company__cte_authorize_accountant_download_xml
@@ -3806,6 +3816,7 @@ msgid "Lacres das Unidades de Transporte"
 msgstr ""
 
 #. module: l10n_br_cte
+#: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_autxml__write_uid
 #: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_cargo_quantity_infos__write_uid
 #: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_modal_aereo__write_uid
 #: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_modal_aereo_peri__write_uid
@@ -3820,6 +3831,7 @@ msgid "Last Updated by"
 msgstr "Última Atualização por"
 
 #. module: l10n_br_cte
+#: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_autxml__write_date
 #: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_cargo_quantity_infos__write_date
 #: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_modal_aereo__write_date
 #: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_modal_aereo_peri__write_date
@@ -3836,7 +3848,7 @@ msgstr "Última Atualização em"
 #. module: l10n_br_cte
 #: model:ir.model.fields,help:l10n_br_cte.field_res_company__dacte_margin_left
 msgid "Left margin in mm for the DACTE layout."
-msgstr ""
+msgstr "Margem esquerda, em mm, do layout do DACTE."
 
 #. module: l10n_br_cte
 #: model:ir.model.fields.selection,name:l10n_br_cte.selection__l10n_br_fiscal_document__cte40_direc__l
@@ -3872,22 +3884,22 @@ msgstr ""
 #. module: l10n_br_cte
 #: model_terms:ir.ui.view,arch_db:l10n_br_cte.cte_res_company_form
 msgid "Margin Bottom"
-msgstr ""
+msgstr "Margem inferior"
 
 #. module: l10n_br_cte
 #: model_terms:ir.ui.view,arch_db:l10n_br_cte.cte_res_company_form
 msgid "Margin Left"
-msgstr ""
+msgstr "Margem esquerda"
 
 #. module: l10n_br_cte
 #: model_terms:ir.ui.view,arch_db:l10n_br_cte.cte_res_company_form
 msgid "Margin Right"
-msgstr ""
+msgstr "Margem direita"
 
 #. module: l10n_br_cte
 #: model_terms:ir.ui.view,arch_db:l10n_br_cte.cte_res_company_form
 msgid "Margin Top"
-msgstr ""
+msgstr "Margem superior"
 
 #. module: l10n_br_cte
 #: model:ir.model,name:l10n_br_cte.model_cte_40_tprotcte_inffisco
@@ -4157,6 +4169,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_br_cte.field_cte_40_tprotgtve_infprot__brl_currency_id
 #: model:ir.model.fields,field_description:l10n_br_cte.field_cte_40_tunidadetransp__brl_currency_id
 #: model:ir.model.fields,field_description:l10n_br_cte.field_cte_40_tunidcarga__brl_currency_id
+#: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_autxml__brl_currency_id
 #: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_cargo_quantity_infos__brl_currency_id
 #: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_modal_aereo__brl_currency_id
 #: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_cte_modal_aereo_peri__brl_currency_id
@@ -4814,6 +4827,11 @@ msgid "Paisagem."
 msgstr ""
 
 #. module: l10n_br_cte
+#: model:ir.model,name:l10n_br_cte.model_l10n_br_cte_autxml
+msgid "Person Authorized to Download the CT-e XML"
+msgstr ""
+
+#. module: l10n_br_cte
 #: model:ir.model.fields,field_description:l10n_br_cte.field_cte_40_tcte_infnf__cte40_nPeso
 msgid "Peso total em Kg"
 msgstr ""
@@ -5137,7 +5155,7 @@ msgstr ""
 #. module: l10n_br_cte
 #: model:ir.model.fields,help:l10n_br_cte.field_res_company__dacte_margin_right
 msgid "Right margin in mm for the DACTE layout."
-msgstr ""
+msgstr "Margem direita, em mm, do layout do DACTE."
 
 #. module: l10n_br_cte
 #: model:ir.model.fields.selection,name:l10n_br_cte.selection__l10n_br_fiscal_document__cte40_tpTraf__2
@@ -5172,7 +5190,7 @@ msgstr ""
 #. module: l10n_br_cte
 #: model:ir.model.fields,help:l10n_br_cte.field_res_company__dacte_display_ibs_cbs
 msgid "Select to display the IBS and CBS fields in the generated DACTE."
-msgstr ""
+msgstr "Marque para exibir os campos de IBS e CBS no DACTE gerado."
 
 #. module: l10n_br_cte
 #: model:ir.model.fields.selection,name:l10n_br_cte.selection__l10n_br_fiscal_document__cte40_tpHor__0
@@ -5409,7 +5427,7 @@ msgstr ""
 #: model:ir.model.fields,help:l10n_br_cte.field_account_move__cte40_enderToma
 #: model:ir.model.fields,help:l10n_br_cte.field_l10n_br_fiscal_document__cte40_enderToma
 msgid "Technical Field."
-msgstr ""
+msgstr "Campo técnico."
 
 #. module: l10n_br_cte
 #: model:ir.model.fields,field_description:l10n_br_cte.field_cte_40_tcteos_toma__cte40_fone
@@ -5535,6 +5553,11 @@ msgid ""
 msgstr ""
 "O parceiro responsável pelo envio das mercadorias, normalmente o emissor do "
 "documento. Este campo é usado principalmente ao emitir o CT-e."
+
+#. module: l10n_br_cte
+#: model:ir.model.constraint,message:l10n_br_cte.constraint_l10n_br_cte_autxml_autxml_partner_document_uniq
+msgid "This partner is already authorized to download this document XML."
+msgstr ""
 
 #. module: l10n_br_cte
 #: model:ir.model,name:l10n_br_cte.model_cte_40_tunidcarga
@@ -6084,7 +6107,7 @@ msgstr ""
 #. module: l10n_br_cte
 #: model:ir.model.fields,help:l10n_br_cte.field_res_company__dacte_margin_top
 msgid "Top margin in mm for the DACTE layout."
-msgstr ""
+msgstr "Margem superior, em mm, do layout do DACTE."
 
 #. module: l10n_br_cte
 #: model:ir.model.fields,field_description:l10n_br_cte.field_account_bank_statement_line__cte40_vBCIBSCBS
@@ -6165,6 +6188,13 @@ msgstr "Usado em documentos fiscais"
 #. module: l10n_br_cte
 #: model:ir.model.fields,field_description:l10n_br_cte.field_cte_40_inftribfed__cte40_vCOFINS
 msgid "Valor COFINS"
+msgstr ""
+
+#. module: l10n_br_cte
+#: model:ir.model.fields,field_description:l10n_br_cte.field_account_bank_statement_line__cte40_vTPrestLiq
+#: model:ir.model.fields,field_description:l10n_br_cte.field_account_move__cte40_vTPrestLiq
+#: model:ir.model.fields,field_description:l10n_br_cte.field_l10n_br_fiscal_document__cte40_vTPrestLiq
+msgid "Valor Líquido da Prestação"
 msgstr ""
 
 #. module: l10n_br_cte
@@ -6369,6 +6399,13 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_br_cte.field_cte_40_tcteos_fat__cte40_vLiq
 #: model:ir.model.fields,field_description:l10n_br_cte.field_cte_40_tctesimp_fat__cte40_vLiq
 msgid "Valor líquido da fatura"
+msgstr ""
+
+#. module: l10n_br_cte
+#: model:ir.model.fields,help:l10n_br_cte.field_account_bank_statement_line__cte40_vTPrestLiq
+#: model:ir.model.fields,help:l10n_br_cte.field_account_move__cte40_vTPrestLiq
+#: model:ir.model.fields,help:l10n_br_cte.field_l10n_br_fiscal_document__cte40_vTPrestLiq
+msgid "Valor líquido total da prestação, sem IBS e CBS (NT CT-e 2026.004)."
 msgstr ""
 
 #. module: l10n_br_cte
