@@ -16,6 +16,8 @@ from ..constants.fiscal import (
     TAX_BASE_TYPE,
     TAX_BASE_TYPE_PERCENT,
     TAX_BASE_TYPE_VALUE,
+    TAX_DOMAIN_CBS,
+    TAX_DOMAIN_IBS,
     TAX_DOMAIN_ICMS,
     TAX_DOMAIN_ICMS_ST,
 )
@@ -32,6 +34,9 @@ from ..constants.icms import (
     ICMS_ST_BASE_TYPE_DEFAULT,
     ICSM_CST_CSOSN_ST_BASE,
 )
+
+# Taxes whose reduction applies to the rate (pRedAliq), never to the base
+TAX_DOMAINS_RATE_REDUCTION = (TAX_DOMAIN_IBS, TAX_DOMAIN_CBS)
 
 TAX_DICT_VALUES = {
     "name": False,
@@ -285,6 +290,8 @@ class Tax(models.Model):
                 )
             tax_dict["remove_from_base"] += sum([discount_value])
 
+            base = 0.00
+
             if tax_dict["base_type"] == "percent":
                 # Compute initial Tax Base for base_type Percent
                 base = currency.round(fiscal_price * fiscal_quantity)
@@ -306,7 +313,8 @@ class Tax(models.Model):
             base_reduction = base_amount * abs(tax.percent_reduction / 100)
 
             # Compute Tax Base Amount
-            if compute_reduction:
+            # IBS/CBS keep the full base; the reduction applies to the rate.
+            if compute_reduction and tax.tax_domain not in TAX_DOMAINS_RATE_REDUCTION:
                 base_amount = currency.round(base_amount - base_reduction)
 
             if tax_dict.get("icmsst_mva_percent"):
@@ -375,8 +383,11 @@ class Tax(models.Model):
             tax_dict["tax_value"] = tax_dict["tax_value_manual"]
         else:
             if tax_dict["base_type"] == "percent":
+                percent_amount = tax_dict["percent_amount"]
+                if tax.tax_domain in TAX_DOMAINS_RATE_REDUCTION:
+                    percent_amount *= 1 - tax.percent_reduction / 100
                 tax_dict["tax_value"] = currency.round(
-                    base_amount * (tax_dict["percent_amount"] / 100)
+                    base_amount * (percent_amount / 100)
                 )
 
             if tax_dict["base_type"] in ("quantity", "fixed"):
